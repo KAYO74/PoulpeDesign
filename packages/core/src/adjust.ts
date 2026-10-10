@@ -290,6 +290,10 @@ export function gaussianBlurred(px: Pixels, sigma: number): Uint8ClampedArray {
     out.set(data);
     return out;
   }
+  if (engine) {
+    out.set(data);
+    if (engine.blur({ data: out, width: w, height: h }, sigma)) return out;
+  }
   let a = new Float32Array(data.length);
   for (let i = 0; i < data.length; i += 4) {
     const al = data[i + 3] / 255;
@@ -336,8 +340,31 @@ export interface AdjustOptions {
   frame?: { x: number; y: number; width: number; height: number };
 }
 
+/**
+ * Moteur de calcul plus rapide (le moteur Rust, compilé en WebAssembly : packages/engine). Il
+ * donne exactement les mêmes pixels ; s'il n'est pas chargé ou refuse un calcul (`false`), le
+ * calcul se fait ici en TypeScript.
+ */
+export interface AdjustmentEngine {
+  apply(px: Pixels, adj: Adjustment, opts: AdjustOptions): boolean;
+  blur(px: Pixels, sigma: number): boolean;
+}
+
+let engine: AdjustmentEngine | null = null;
+
+/** Branche (ou débranche, avec null) le moteur de calcul des réglages. */
+export function setAdjustmentEngine(e: AdjustmentEngine | null): void {
+  engine = e;
+}
+
 /** Applique un réglage aux pixels, sur place. L'opacité de chaque pixel ne change pas. */
 export function applyAdjustment(px: Pixels, adj: Adjustment, opts: AdjustOptions = {}): void {
+  if (engine && px.width * px.height > 0 && engine.apply(px, adj, opts)) return;
+  applyAdjustmentTs(px, adj, opts);
+}
+
+/** Calcul TypeScript d'origine (référence du moteur Rust, et solution de repli). */
+export function applyAdjustmentTs(px: Pixels, adj: Adjustment, opts: AdjustOptions = {}): void {
   const { data, width: w, height: h } = px;
   const n = data.length;
   const scale = opts.scale ?? 1;

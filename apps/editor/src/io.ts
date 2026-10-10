@@ -14,8 +14,6 @@ import {
   nodeBounds,
   type SceneNode,
   createDocument,
-  decodePoulpe,
-  encodePoulpe,
   type Artboard,
   type PoulpeDocument,
 } from '@poulpe/core';
@@ -28,6 +26,7 @@ import {
   rasterizeArtboard,
 } from '@poulpe/render';
 import { placeImage } from './actions';
+import { decodeFile, encodeFile } from './fileWorker';
 import { t } from './i18n';
 import { editor, toast, ui } from './store';
 import { placeSvg } from './vectorActions';
@@ -164,9 +163,9 @@ export function newDocument(
   requestAnimationFrame(() => window.dispatchEvent(new Event('poulpe:fit')));
 }
 
-export function loadBytes(name: string, bytes: Uint8Array): void {
+export async function loadBytes(name: string, bytes: Uint8Array): Promise<void> {
   try {
-    const doc = decodePoulpe(bytes);
+    const doc = await decodeFile(bytes);
     editor.load({ ...doc, name: baseName(name) });
     ui.set({ filePath: name, dialog: null });
     requestAnimationFrame(() => window.dispatchEvent(new Event('poulpe:fit')));
@@ -239,7 +238,7 @@ async function thumbnail(doc: PoulpeDocument): Promise<Uint8Array | undefined> {
 export async function saveDocument(saveAs = false): Promise<void> {
   const live = editor.doc;
   const doc = await materialize(live);
-  const bytes = encodePoulpe(doc, {
+  const bytes = await encodeFile(doc, {
     thumbnail: await thumbnail(live),
     generator: `Poulpe Design ${__APP_VERSION__}`,
   });

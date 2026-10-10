@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { findCommand } from '../commands';
 import {
   distinctGpus,
@@ -25,6 +25,7 @@ import {
   threadCount,
   usePerf,
   usedMemoryMb,
+  type GpuBackend,
   type GpuPreference,
   type PerfPrefs,
   type PreviewQuality,
@@ -35,6 +36,13 @@ import { NumberField, Select } from './fields';
 import { Icon, type IconName } from './Icon';
 import { ShortcutsEditor } from './ShortcutsDialog';
 import { renderStats, type RenderStats } from '../perf';
+import {
+  nativeEngineInfo,
+  rustEngineStatus,
+  startRustEngine,
+  type NativeEngineInfo,
+  type RustEngineStatus,
+} from '../engine';
 
 const close = () => ui.set({ dialog: null });
 
@@ -179,13 +187,22 @@ function useMemory() {
   return state;
 }
 
+/** Profils : économie d'énergie, équilibré, puissance (mode performance). */
 const PROFILES: Record<'saver' | 'balanced' | 'power', Partial<PerfPrefs>> = {
-  saver: { cacheMb: 128, historyLimit: 50, previewQuality: 'fast', gpuPreference: 'low-power', threads: 1 },
+  saver: {
+    cacheMb: 128,
+    historyLimit: 50,
+    previewQuality: 'fast',
+    gpuPreference: 'low-power',
+    vramMb: 512,
+    threads: 1,
+  },
   balanced: {
     cacheMb: DEFAULT_PERF.cacheMb,
     historyLimit: DEFAULT_PERF.historyLimit,
     previewQuality: DEFAULT_PERF.previewQuality,
     gpuPreference: 'default',
+    vramMb: DEFAULT_PERF.vramMb,
     threads: 0,
   },
   power: {
@@ -193,13 +210,53 @@ const PROFILES: Record<'saver' | 'balanced' | 'power', Partial<PerfPrefs>> = {
     historyLimit: 1000,
     previewQuality: 'full',
     gpuPreference: 'high-performance',
+    vramMb: 4096,
     threads: 0,
   },
 };
 
+/** Le moteur Rust (WebAssembly) est-il chargé ? */
+function useEngineReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void startRustEngine().then((ok) => alive && setReady(ok));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return ready;
+}
+
+/** Interfaces graphiques possibles sur ce système. */
+function backendsHere(): GpuBackend[] {
+  const ua = navigator.userAgent;
+  if (/Mac/.test(ua)) return ['auto', 'metal'];
+  if (/Windows/.test(ua)) return ['auto', 'dx12', 'vulkan', 'gl'];
+  return ['auto', 'vulkan', 'gl'];
+}
+
+/** Cartes graphiques vues par le moteur Rust (appli de bureau), relues quand les réglages changent. */
+function useNativeEngine(perf: PerfPrefs): NativeEngineInfo | null {
+  const [info, setInfo] = useState<NativeEngineInfo | null>(null);
+  useEffect(() => {
+    let alive = true;
+    // Laisse le moteur prendre en compte le nouveau réglage avant de relire son état.
+    const id = setTimeout(() => void nativeEngineInfo().then((i) => alive && setInfo(i)), 50);
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
+  }, [perf.gpuPreference, perf.gpuBackend, perf.vramMb]);
+  return info;
+}
+
 function PerformancePane() {
   const t = useT();
   const perf = usePerf();
+  const settings = useUi((s) => s.settings);
+  const native = useNativeEngine(perf);
+  const engineReady = useEngineReady();
   const mem = useMemory();
   const desktop = isDesktop();
   const cores = navigator.hardwareConcurrency || 1;
@@ -294,24 +351,67 @@ function PerformancePane() {
       </Section>
 
       <Section title={t('prefs.gpu')}>
+        <div className="prefs-grid">
+          <Select<GpuPreference>
+            label={t('prefs.gpuPreference')}
+            value={perf.gpuPreference}
+            testId="prefs-gpu"
+            options={(['default', 'high-performance', 'low-power', 'cpu'] as const).map((g) => ({
+              value: g,
+              label: t(`prefs.gpu.${g}`),
+            }))}
+            onChange={(v) => setPerf({ gpuPreference: v })}
+          />
+          <Select<GpuBackend>
+            label={t('prefs.gpuBackend')}
+            value={perf.gpuBackend}
+            testId="prefs-gpu-backend"
+            disabled={!desktop || perf.gpuPreference === 'cpu'}
+            options={[...new Set([...backendsHere(), perf.gpuBackend])].map((b) => ({
+              value: b,
+              label: t(`prefs.backend.${b}`),
+            }))}
+            onChange={(v) => setPerf({ gpuBackend: v })}
+          />
+          <Select
+            label={t('prefs.vram')}
+            value={perf.vramMb}
+            testId="prefs-vram"
+            disabled={!desktop || perf.gpuPreference === 'cpu'}
+            options={[...new Set([256, 512, 1024, 2048, 4096, 8192, perf.vramMb])]
+              .sort((a, b) => a - b)
+              .map((m) => ({ value: m, label: formatMb(m) }))}
+            onChange={(v) => setPerf({ vramMb: v })}
+          />
+        </div>
         <Check
-          label={t('prefs.hardwareAcceleration')}
-          checked={perf.hardwareAcceleration}
-          disabled={!desktop}
-          testId="prefs-hw-accel"
-          onChange={(v) => setPerf({ hardwareAcceleration: v })}
+          label={t('prefs.perfMeter')}
+          checked={settings.perfMeter}
+          testId="prefs-perf-meter-perf"
+          onChange={(v) => setSettings({ perfMeter: v })}
         />
-        <Select<GpuPreference>
-          label={t('prefs.gpuPreference')}
-          value={perf.gpuPreference}
-          width={320}
-          testId="prefs-gpu"
-          options={(['default', 'high-performance', 'low-power'] as const).map((g) => ({
-            value: g,
-            label: t(`prefs.gpu.${g}`),
-          }))}
-          onChange={(v) => setPerf({ gpuPreference: v })}
-        />
+        <dl className="prefs-facts" data-testid="prefs-engine">
+          <dt>{t('prefs.engine')}</dt>
+          <dd>{t(engineReady ? 'prefs.engineOn' : 'prefs.engineLoading')}</dd>
+          {native && (
+            <>
+              <dt>{t('prefs.engineGpu')}</dt>
+              <dd data-testid="prefs-engine-gpu">
+                {native.active
+                  ? `${native.active.name} (${native.active.backend})`
+                  : t('prefs.engineCpu', { n: native.cores })}
+              </dd>
+              {native.adapters.length > 0 && (
+                <>
+                  <dt>{t('prefs.engineAdapters')}</dt>
+                  <dd>
+                    {native.adapters.map((a) => `${a.name} · ${t(`prefs.kind.${a.kind}`)}`).join(' ; ')}
+                  </dd>
+                </>
+              )}
+            </>
+          )}
+        </dl>
         <p className="note small">{t(desktop ? 'prefs.gpuNoteDesktop' : 'prefs.gpuNoteWeb')}</p>
         {needsRestart(perf) && (
           <div className="prefs-restart" role="status">
@@ -543,6 +643,24 @@ function GpuLine({ label, gpu }: { label: string; gpu: GpuInfo | null }) {
   );
 }
 
+/** Moteur Rust, en texte pour le rapport copié. */
+function engineText(e: RustEngineStatus): string {
+  const lines = [
+    `Moteur Rust : WebAssembly ${e.wasm.active ? `${e.wasm.version}, ${e.wasm.calls} calculs, ${e.wasm.meanMs.toFixed(1)} ms en moyenne` : 'non chargé'}`,
+  ];
+  if (e.native) {
+    lines.push(
+      `Moteur natif : ${e.native.active ? `${e.native.active.name} (${e.native.active.backend}, ${e.native.active.driver})` : `processeur, ${e.native.cores} cœurs`}`,
+      `Cartes : ${e.native.adapters.map((a) => `${a.name} [${a.kind}, ${a.backend}]`).join(' ; ') || 'aucune'}`,
+      `Réglages : ${e.native.settings.device}, ${e.native.settings.backend}, ${e.native.settings.vramMb} Mo`,
+      ...Object.entries(e.native.timings).map(
+        ([k, v]) => `${k} : ${v.meanMs.toFixed(0)} ms en moyenne (${v.count})`,
+      ),
+    );
+  }
+  return lines.join('\n');
+}
+
 function DiagnosticPane() {
   const t = useT();
   const [report, setReport] = useState<DiagnosticReport | null>(null);
@@ -553,10 +671,13 @@ function DiagnosticPane() {
     const id = setInterval(() => setRender(renderStats()), 1000);
     return () => clearInterval(id);
   }, []);
+  const [engine, setEngine] = useState<RustEngineStatus | null>(null);
   const run = async () => {
     setRunning(true);
     try {
       setReport(await runDiagnostic());
+      await startRustEngine();
+      setEngine(await rustEngineStatus());
     } finally {
       setRunning(false);
     }
@@ -569,6 +690,7 @@ function DiagnosticPane() {
     const text =
       reportText(report) +
       `\nRendu : cache ${render.usedMb} / ${render.budgetMb} Mo (${render.entries} images), image ${render.frameAvgMs} ms en moyenne, ${render.frameMaxMs} ms au pire` +
+      (engine ? `\n${engineText(engine)}` : '') +
       (typeof bench === 'number' ? `\nTest de vitesse : ${bench} i/s` : '');
     try {
       await navigator.clipboard.writeText(text);
@@ -625,6 +747,38 @@ function DiagnosticPane() {
             </dl>
             {gpus > 1 && <p className="note small">{t('diag.gpus', { n: gpus })}</p>}
           </Section>
+          {engine && (
+            <Section title={t('prefs.engine')}>
+              <dl className="prefs-facts" data-testid="diag-engine">
+                <dt>WebAssembly</dt>
+                <dd>
+                  {engine.wasm.active
+                    ? t('diag.engineWasm', {
+                        version: engine.wasm.version ?? '?',
+                        n: engine.wasm.calls,
+                        ms: engine.wasm.meanMs.toFixed(1),
+                      })
+                    : t('diag.none')}
+                </dd>
+                {engine.native && (
+                  <>
+                    <dt>{t('prefs.engineGpu')}</dt>
+                    <dd>
+                      {engine.native.active
+                        ? `${engine.native.active.name} · ${engine.native.active.backend} · ${engine.native.active.driver}`
+                        : t('prefs.engineCpu', { n: engine.native.cores })}
+                    </dd>
+                    {Object.entries(engine.native.timings).map(([k, v]) => (
+                      <Fragment key={k}>
+                        <dt>{k}</dt>
+                        <dd>{t('diag.frameMs', { avg: v.meanMs.toFixed(0), max: v.maxMs.toFixed(0) })}</dd>
+                      </Fragment>
+                    ))}
+                  </>
+                )}
+              </dl>
+            </Section>
+          )}
           <Section title={t('diag.render')}>
             <dl className="prefs-facts" data-testid="diag-render">
               <dt>{t('prefs.cache')}</dt>

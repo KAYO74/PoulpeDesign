@@ -871,7 +871,7 @@ function FilterDialog() {
           data-testid="filter-apply"
           onClick={() => {
             close();
-            applyFilter(adj);
+            void applyFilter(adj);
           }}
         >
           {t('filter.apply')}

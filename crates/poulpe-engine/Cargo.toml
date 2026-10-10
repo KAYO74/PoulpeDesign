@@ -1,0 +1,27 @@
+[package]
+name = "poulpe-engine"
+version = "1.1.1"
+edition = "2021"
+rust-version = "1.77"
+license = "MPL-2.0"
+description = "Moteur de Poulpe Design : réglages d'image, filtres, tuiles, carte graphique"
+publish = false
+
+[features]
+default = []
+# Calcul réparti sur tous les cœurs (appli de bureau).
+parallel = ["dep:rayon"]
+# Calcul sur la carte graphique via wgpu (appli de bureau).
+gpu = ["dep:wgpu", "dep:pollster", "dep:bytemuck", "parallel"]
+
+[dependencies]
+bytemuck = { version = "1.25.2", features = ["derive"], optional = true }
+pollster = { version = "1.0.1", optional = true }
+rayon = { version = "1.12.0", optional = true }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.152"
+wgpu = { version = "30.0.1", optional = true }
+
+[[example]]
+name = "bench"
+required-features = ["gpu"]

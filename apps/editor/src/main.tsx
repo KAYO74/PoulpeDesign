@@ -4,6 +4,7 @@ import { App } from './App';
 import { getController } from './components/Viewport';
 import { startDrafts } from './drafts';
 import { chooseStartLanguage } from './startLanguage';
+import { startRustEngine } from './engine';
 import { loadSystemFonts } from './fonts';
 import { getLang } from './i18n';
 import { isDesktop, openPath, openPhotoBytes } from './io';
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 prefs.startPreferences();
+void startRustEngine();
 void loadSystemFonts();
 // La langue d'abord (installeur ou premier lancement), puis le brouillon ou l'écran d'accueil.
 void chooseStartLanguage().then(startDrafts);
@@ -63,6 +65,7 @@ if (isDesktop()) {
   core: { artboardToSvg },
   controller: getController,
   perf: { setPerformanceSettings, getPerformanceSettings, renderStats },
+  engine: { start: startRustEngine },
   loadBenchDocument: (count: number) => import('./bench').then((b) => editor.load(b.benchDocument(count))),
   photo: { ...photo, ...pixelSelection, ...retouch, openPhotoBytes },
   prefs,

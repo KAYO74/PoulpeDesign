@@ -1,0 +1,22 @@
+[package]
+name = "poulpe-engine-wasm"
+version = "1.1.1"
+edition = "2021"
+rust-version = "1.77"
+license = "MPL-2.0"
+description = "Moteur de Poulpe Design compilé en WebAssembly, pour le navigateur et la vue web"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+poulpe-engine = { path = "../poulpe-engine" }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

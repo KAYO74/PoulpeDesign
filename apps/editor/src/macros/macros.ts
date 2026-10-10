@@ -170,7 +170,7 @@ async function playStep(s: MacroStep): Promise<boolean> {
     }
     case 'filter': {
       const before = editor.getState().history.length;
-      applyFilter(s.adjustment);
+      await applyFilter(s.adjustment);
       return editor.getState().history.length !== before;
     }
     case 'adjustment':

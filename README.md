@@ -150,7 +150,7 @@ Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-r
 
 ## Contribuer
 
-Poulpe Design est écrit en TypeScript (React, Vite) et embarqué dans une appli de bureau [Tauri](https://v2.tauri.app/). Il faut Node 20 ou plus et pnpm 10 (`corepack enable`).
+Poulpe Design est écrit en TypeScript (React, Vite) et en Rust, et embarqué dans une appli de bureau [Tauri](https://v2.tauri.app/). Le cœur passe peu à peu en Rust : depuis la 1.1.1, les réglages et filtres d'image sont calculés par le moteur Rust, sur la carte graphique ou sur tous les cœurs ([Moteur Rust](docs/moteur-rust.md)). Il faut Node 20 ou plus et pnpm 10 (`corepack enable`).
 
 ```sh
 pnpm install
@@ -165,10 +165,12 @@ pnpm desktop:dev    # appli de bureau (Rust et dépendances Tauri requis)
 | `packages/core`    | Modèle de document, commandes, historique, export SVG, format `.poulpe` |
 | `packages/render`  | Rendu sur canevas, export PNG et JPEG                                   |
 | `packages/library` | Modèles, éléments, palettes et formats du côté Canva                    |
+| `packages/engine`  | Moteur Rust compilé en WebAssembly, branché sur le rendu                |
+| `crates/`          | Moteur Rust : réglages, filtres, carte graphique (wgpu), tuiles         |
 | `apps/editor`      | Interface façon Affinity (React + Vite)                                 |
 | `apps/desktop`     | Appli de bureau Tauri 2                                                 |
 
-Pour publier une nouvelle version, on change le numéro de version (dans `apps/desktop/src-tauri/tauri.conf.json`, `Cargo.toml` et les `package.json`), puis on ouvre l'onglet **Actions > Installeurs de bureau > Run workflow** et on indique l'étiquette (par exemple `v1.1.0`) ; pousser l'étiquette avec git marche aussi. GitHub fabrique les installeurs et les publie, et les boutons de téléchargement ci-dessus pointent tout seuls vers la nouvelle version.
+Pour publier une nouvelle version, on change le numéro de version (dans `apps/desktop/src-tauri/tauri.conf.json`, `Cargo.toml` et les `package.json`), puis on ouvre l'onglet **Actions > Installeurs de bureau > Run workflow** et on indique l'étiquette (par exemple `v1.1.1`) ; pousser l'étiquette avec git marche aussi. GitHub fabrique les installeurs et les publie, et les boutons de téléchargement ci-dessus pointent tout seuls vers la nouvelle version.
 
 ### Documentation
 
@@ -177,6 +179,7 @@ Pour publier une nouvelle version, on change le numéro de version (dans `apps/d
 - [Moteur d'édition v0.1](docs/moteur-v0.1.md), [Côté Canva v0.2](docs/cote-canva-v0.2.md), [Vectoriel pro v0.3](docs/vectoriel-pro-v0.3.md), [Retouche photo v0.4](docs/retouche-photo-v0.4.md), [Mise en page v0.5](docs/mise-en-page-v0.5.md), [Impression v0.5](docs/impression-v0.5.md), [Outils manquants v0.6](docs/outils-manquants-v0.6.md) [Version 1.0](docs/version-1.0.md) et [Version 1.1](docs/version-1.1.md) : état et organisation du code
 - [Panneaux libres et espaces de travail](docs/panneaux-libres.md), [Écrire une extension](docs/extensions.md)
 - [Signature des installeurs et mises à jour automatiques](docs/signature-et-mises-a-jour.md)
+- [Moteur Rust et carte graphique](docs/moteur-rust.md), [Performances](docs/performances.md)
 - [Format de fichier `.poulpe`](docs/format-poulpe.md)
 - [Cadrage et architecture](docs/cadrage-architecture.md)
 - [Maquette de l'interface v3](design/maquette-v3.html) (voir [design/README.md](design/README.md))

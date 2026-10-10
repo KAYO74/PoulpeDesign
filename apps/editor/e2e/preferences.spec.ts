@@ -158,3 +158,19 @@ test('la langue et le thème se règlent seulement dans les Préférences', asyn
   await expect(page.getByRole('button', { name: 'File' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });
+
+test('le moteur Rust est chargé et la carte graphique se choisit', async ({ page }) => {
+  expect(await page.evaluate(() => (window as any).poulpe.engine.start())).toBe(true);
+  await page.keyboard.press('Control+,');
+  await page.getByTestId('prefs-tab-performance').click();
+  await expect(page.getByTestId('prefs-engine')).toContainText('Actif');
+  const gpu = page.getByTestId('prefs-gpu');
+  await expect(gpu.locator('option')).toHaveCount(4);
+  await gpu.selectOption('cpu');
+  expect(await page.evaluate(() => (window as any).poulpe.prefs.getPerf().hardwareAcceleration)).toBe(false);
+  // Dans le navigateur, l'interface graphique et la mémoire vidéo sont réglées par l'appli de bureau.
+  await expect(page.getByTestId('prefs-gpu-backend')).toBeDisabled();
+  await page.getByTestId('prefs-profile-power').click();
+  await expect(gpu).toHaveValue('high-performance');
+  expect(await page.evaluate(() => (window as any).poulpe.prefs.getPerf().vramMb)).toBe(4096);
+});

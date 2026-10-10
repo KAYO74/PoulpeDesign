@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { clearLayoutCache } from '@poulpe/render';
+import { configureNativeEngine, type GpuBackend, type GpuDevice } from './engine';
 import { isDesktop } from './io';
 import { setPerformanceSettings } from './perf';
 import { t } from './i18n';
@@ -22,7 +23,9 @@ import { editor, toast } from './store';
 
 /** Pendant un zoom ou un défilement : image étirée (`fast`, `balanced`) ou redessinée nette (`full`). */
 export type PreviewQuality = 'fast' | 'balanced' | 'full';
-export type GpuPreference = 'default' | 'high-performance' | 'low-power';
+/** Carte graphique : automatique, dédiée, intégrée, ou aucune (tout sur le processeur). */
+export type GpuPreference = 'default' | 'high-performance' | 'low-power' | 'cpu';
+export type { GpuBackend };
 
 export interface PerfPrefs {
   /** Budget mémoire en Mo pour les caches et l'historique ; 0 : automatique (moitié de la RAM). */
@@ -32,10 +35,14 @@ export interface PerfPrefs {
   /** Nombre d'étapes d'annulation gardées ; 0 : illimité. */
   historyLimit: number;
   previewQuality: PreviewQuality;
-  /** Appli de bureau : accélération matérielle du moteur web (appliquée au redémarrage). */
+  /** Accélération matérielle : vraie sauf si « processeur seulement » est choisi (`gpuPreference`). */
   hardwareAcceleration: boolean;
-  /** Appli de bureau : carte graphique préférée (appliquée au redémarrage). */
+  /** Appli de bureau : carte graphique préférée (moteur Rust tout de suite, moteur web au redémarrage). */
   gpuPreference: GpuPreference;
+  /** Appli de bureau : interface graphique (Vulkan, Metal, DirectX 12, OpenGL). */
+  gpuBackend: GpuBackend;
+  /** Appli de bureau : mémoire vidéo que le moteur Rust s'autorise, en Mo. */
+  vramMb: number;
   /** Threads de calcul pour les traitements lourds ; 0 : automatique. */
   threads: number;
   /** Copie automatique du document non enregistré (brouillon), et délai après une modification. */
@@ -50,6 +57,8 @@ export const DEFAULT_PERF: PerfPrefs = {
   previewQuality: 'balanced',
   hardwareAcceleration: true,
   gpuPreference: 'default',
+  gpuBackend: 'auto',
+  vramMb: 1024,
   threads: 0,
   autosave: true,
   autosaveDelaySec: 1.5,
@@ -61,6 +70,7 @@ export const PERF_LIMITS = {
   cacheMb: [0, 8192],
   historyLimit: [0, 2000],
   threads: [0, 64],
+  vramMb: [256, 16384],
   autosaveDelaySec: [0.5, 600],
 } as const;
 
@@ -78,9 +88,13 @@ function sanitize(raw: unknown): PerfPrefs {
   }
   if (src.previewQuality === 'fast' || src.previewQuality === 'balanced' || src.previewQuality === 'full')
     out.previewQuality = src.previewQuality;
-  if (['default', 'high-performance', 'low-power'].includes(src.gpuPreference as string))
+  if (['default', 'high-performance', 'low-power', 'cpu'].includes(src.gpuPreference as string))
     out.gpuPreference = src.gpuPreference as GpuPreference;
-  if (typeof src.hardwareAcceleration === 'boolean') out.hardwareAcceleration = src.hardwareAcceleration;
+  // Avant la 1.1.1, l'accélération se coupait par une case à part : c'est maintenant « processeur ».
+  if (src.hardwareAcceleration === false && !('gpuBackend' in src)) out.gpuPreference = 'cpu';
+  if (['auto', 'vulkan', 'metal', 'dx12', 'gl'].includes(src.gpuBackend as string))
+    out.gpuBackend = src.gpuBackend as GpuBackend;
+  out.hardwareAcceleration = out.gpuPreference !== 'cpu';
   if (typeof src.autosave === 'boolean') out.autosave = src.autosave;
   return out;
 }
@@ -191,12 +205,27 @@ export function checkMemory(): void {
 
 let launchSent = '';
 
+const DEVICE: Record<GpuPreference, GpuDevice> = {
+  default: 'auto',
+  'high-performance': 'discrete',
+  'low-power': 'integrated',
+  cpu: 'cpu',
+};
+
+/** Réglages du moteur Rust natif (carte graphique, interface graphique, mémoire vidéo). */
+export function engineSettings(p: PerfPrefs = perf) {
+  return { device: DEVICE[p.gpuPreference], backend: p.gpuBackend, vramMb: p.vramMb };
+}
+
 /** Réglages lus par l'appli de bureau avant d'ouvrir sa fenêtre (accélération, carte graphique). */
 async function sendLaunchPrefs(): Promise<void> {
   if (!isDesktop()) return;
   const body = JSON.stringify({
     hardware_acceleration: perf.hardwareAcceleration,
-    gpu_preference: perf.gpuPreference,
+    gpu_preference: perf.gpuPreference === 'cpu' ? 'default' : perf.gpuPreference,
+    gpu_backend: perf.gpuBackend,
+    gpu_device: DEVICE[perf.gpuPreference],
+    vram_mb: perf.vramMb,
   });
   if (body === launchSent) return;
   launchSent = body;
@@ -209,14 +238,14 @@ async function sendLaunchPrefs(): Promise<void> {
 }
 
 /** Réglages de lancement en vigueur depuis l'ouverture de l'appli : un redémarrage est-il nécessaire ? */
-let launchAtStart: Pick<PerfPrefs, 'hardwareAcceleration' | 'gpuPreference'> | null = null;
+let launchAtStart: Pick<PerfPrefs, 'gpuPreference' | 'gpuBackend'> | null = null;
 
+/** Le moteur web ne change de carte graphique qu'au lancement (le moteur Rust, lui, tout de suite). */
 export function needsRestart(p: PerfPrefs = perf): boolean {
   return (
     isDesktop() &&
     launchAtStart !== null &&
-    (launchAtStart.hardwareAcceleration !== p.hardwareAcceleration ||
-      launchAtStart.gpuPreference !== p.gpuPreference)
+    (launchAtStart.gpuPreference !== p.gpuPreference || launchAtStart.gpuBackend !== p.gpuBackend)
   );
 }
 
@@ -230,13 +259,14 @@ function applyPerf(): void {
     workerThreads: threadCount(perf),
   });
   void sendLaunchPrefs();
+  void configureNativeEngine(engineSettings(perf));
 }
 
 let timer: ReturnType<typeof setInterval> | undefined;
 
 /** Au démarrage : applique les préférences et surveille la mémoire. */
 export function startPreferences(): void {
-  launchAtStart = { hardwareAcceleration: perf.hardwareAcceleration, gpuPreference: perf.gpuPreference };
+  launchAtStart = { gpuPreference: perf.gpuPreference, gpuBackend: perf.gpuBackend };
   applyPerf();
   void readSystemMemory();
   clearInterval(timer);

@@ -16,6 +16,34 @@ pub struct LaunchPrefs {
     pub hardware_acceleration: Option<bool>,
     /// "default", "high-performance" ou "low-power".
     pub gpu_preference: Option<String>,
+    /// Interface graphique : "auto", "vulkan", "metal", "dx12" ou "gl" (moteur Rust, et moteur
+    /// web sous Windows).
+    pub gpu_backend: Option<String>,
+    /// Carte du moteur Rust : "auto", "discrete", "integrated" ou "cpu".
+    pub gpu_device: Option<String>,
+    /// Mémoire vidéo que le moteur Rust s'autorise, en Mo.
+    pub vram_mb: Option<u64>,
+}
+
+impl LaunchPrefs {
+    /// Réglages de la carte graphique du moteur Rust.
+    pub fn engine_settings(&self) -> poulpe_engine::gpu::GpuSettings {
+        let mut s = poulpe_engine::gpu::GpuSettings::default();
+        let text = |v: &Option<String>| v.as_deref().map(|v| format!("\"{v}\""));
+        if let Some(d) = text(&self.gpu_device).and_then(|v| serde_json::from_str(&v).ok()) {
+            s.device = d;
+        }
+        if let Some(b) = text(&self.gpu_backend).and_then(|v| serde_json::from_str(&v).ok()) {
+            s.backend = b;
+        }
+        if self.hardware_acceleration == Some(false) {
+            s.device = poulpe_engine::gpu::GpuChoice::Cpu;
+        }
+        if let Some(v) = self.vram_mb {
+            s.vram_mb = v.clamp(64, 65536);
+        }
+        s
+    }
 }
 
 /// Dossier de configuration de l'appli, comme `app_config_dir` de Tauri.
@@ -65,10 +93,18 @@ pub fn env_for(prefs: &LaunchPrefs, os: &str) -> Vec<(&'static str, String)> {
             let mut args = vec!["--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection"];
             if !accel {
                 args.push("--disable-gpu");
-            } else if gpu == "high-performance" {
-                args.push("--force_high_performance_gpu");
-            } else if gpu == "low-power" {
-                args.push("--force_low_power_gpu");
+            } else {
+                if gpu == "high-performance" {
+                    args.push("--force_high_performance_gpu");
+                } else if gpu == "low-power" {
+                    args.push("--force_low_power_gpu");
+                }
+                // Le moteur web dessine par ANGLE : Direct3D 11 par défaut, Vulkan ou OpenGL au choix.
+                match prefs.gpu_backend.as_deref() {
+                    Some("vulkan") => args.push("--use-angle=vulkan"),
+                    Some("gl") => args.push("--use-angle=gl"),
+                    _ => {}
+                }
             }
             if args.len() > 1 {
                 vars.push(("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", args.join(" ")));
@@ -179,7 +215,23 @@ mod tests {
     use super::*;
 
     fn prefs(accel: bool, gpu: &str) -> LaunchPrefs {
-        LaunchPrefs { hardware_acceleration: Some(accel), gpu_preference: Some(gpu.into()) }
+        LaunchPrefs { hardware_acceleration: Some(accel), gpu_preference: Some(gpu.into()), ..Default::default() }
+    }
+
+    #[test]
+    fn reglages_du_moteur_rust() {
+        use poulpe_engine::gpu::{BackendChoice, GpuChoice};
+        let p: LaunchPrefs = serde_json::from_str(
+            r#"{"hardware_acceleration":true,"gpu_device":"integrated","gpu_backend":"vulkan","vram_mb":512}"#,
+        )
+        .unwrap();
+        let s = p.engine_settings();
+        assert_eq!((s.device, s.backend, s.vram_mb), (GpuChoice::Integrated, BackendChoice::Vulkan, 512));
+        let win = env_for(&p, "windows");
+        assert!(win[0].1.ends_with("--use-angle=vulkan"));
+        let off = LaunchPrefs { hardware_acceleration: Some(false), ..p };
+        assert_eq!(off.engine_settings().device, GpuChoice::Cpu);
+        assert_eq!(LaunchPrefs::default().engine_settings().device, GpuChoice::Auto);
     }
 
     #[test]

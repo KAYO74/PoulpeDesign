@@ -50,6 +50,9 @@ importers:
       '@poulpe/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@poulpe/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@poulpe/library':
         specifier: workspace:*
         version: link:../../packages/library
@@ -142,6 +145,19 @@ importers:
         specifier: ^2.2.1
         version: 2.2.1
     devDependencies:
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@26.6.4)(lightningcss@1.33.0)
+
+  packages/engine:
+    dependencies:
+      '@poulpe/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.4
+        version: 26.6.4
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@26.6.4)(lightningcss@1.33.0)

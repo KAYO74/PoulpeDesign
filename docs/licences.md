@@ -25,7 +25,7 @@ Toutes sont sous licences libres compatibles avec la MPL-2.0.
 | Partie                                                | Nombre | Licences                                                                                                                                                                       |
 | ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Interface et moteur (paquets npm livrés dans l'appli) | 116    | MIT pour la plupart, BSD-3-Clause, Apache-2.0 (pdf.js), MIT ou Apache-2.0 (Tauri), MPL-2.0 ou Apache-2.0 (DOMPurify), MIT et Zlib (pako), ISC, 0BSD (tslib), OFL-1.1 (polices) |
-| Appli de bureau (bibliothèques Rust)                  | 481    | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, Unlicense, MPL-2.0, CDLA-Permissive-2.0                                                                                          |
+| Appli de bureau (bibliothèques Rust)                  | 533    | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, Unlicense, MPL-2.0, CDLA-Permissive-2.0, 0BSD, CC0                                                                               |
 
 Pour refaire la vérification : `pnpm licenses list --prod` et, dans `apps/desktop/src-tauri`, `cargo metadata --format-version 1`.
 

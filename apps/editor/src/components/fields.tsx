@@ -110,6 +110,7 @@ export function Select<T extends string | number>({
   label,
   width,
   testId,
+  disabled,
 }: {
   value: T;
   options: { value: T; label: string }[];
@@ -117,12 +118,14 @@ export function Select<T extends string | number>({
   label?: string;
   width?: number;
   testId?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="field" style={width ? { width } : undefined}>
       {label && <span className="field-label">{label}</span>}
       <select
         data-testid={testId}
+        disabled={disabled}
         value={String(value)}
         aria-label={label}
         onChange={(e) => {

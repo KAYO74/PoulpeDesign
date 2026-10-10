@@ -34,6 +34,7 @@ import {
 } from './pixels';
 import { clearSelection, getSelection, selectionIn, selectAll } from './selection';
 import { recordStep } from '../macros/recorder';
+import { nativeApply } from '../engine';
 
 /*
  * Commandes de la Persona Photo : masques, calques de réglage, filtres appliqués aux pixels,
@@ -224,10 +225,8 @@ export function canFilter(): boolean {
   return selectedImage() !== null;
 }
 
-/** Pixels du calque sélectionné après le filtre (limité à la sélection de pixels). */
-export function filteredPixels(
-  adj: Adjustment,
-): { nodeId: string; assetId: string; canvas: HTMLCanvasElement } | null {
+/** Pixels du calque sélectionné, prêts à recevoir un filtre (limité à la sélection de pixels). */
+function prepareFilter() {
   const node = selectedImage();
   if (!node) return null;
   const base = pixelsOf(node);
@@ -238,7 +237,6 @@ export function filteredPixels(
   const scale = Math.sqrt(Math.abs(toPx.a * toPx.d - toPx.b * toPx.c)) || 1;
   const ctx = base.getContext('2d', { willReadFrequently: true })!;
   const img = ctx.getImageData(0, 0, W, H);
-  const out = new Uint8ClampedArray(img.data);
   const ab = findNode(editor.doc, node.id)?.artboard;
   let frame: { x: number; y: number; width: number; height: number } | undefined;
   if (ab) {
@@ -252,38 +250,80 @@ export function filteredPixels(
     };
   }
   const o = toPx.transformPoint(new DOMPoint(0, 0));
-  applyAdjustment({ data: out, width: W, height: H }, adj, { scale, origin: { x: o.x, y: o.y }, frame });
-  const sel = selectionIn(W, H, toPx);
-  if (sel) {
-    const sd = sel.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, W, H).data;
-    const d = img.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const k = sd[i + 3] / 255;
-      out[i] = d[i] + (out[i] - d[i]) * k;
-      out[i + 1] = d[i + 1] + (out[i + 1] - d[i + 1]) * k;
-      out[i + 2] = d[i + 2] + (out[i + 2] - d[i + 2]) * k;
-      out[i + 3] = d[i + 3];
+  const opts = { scale, origin: { x: o.x, y: o.y }, frame };
+  /** Mélange le résultat avec l'original hors de la sélection, et en fait une toile. */
+  const finish = (out: Uint8ClampedArray<ArrayBuffer>) => {
+    const sel = selectionIn(W, H, toPx);
+    if (sel) {
+      const sd = sel.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, W, H).data;
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const k = sd[i + 3] / 255;
+        out[i] = d[i] + (out[i] - d[i]) * k;
+        out[i + 1] = d[i + 1] + (out[i + 1] - d[i + 1]) * k;
+        out[i + 2] = d[i + 2] + (out[i + 2] - d[i + 2]) * k;
+        out[i + 3] = d[i + 3];
+      }
     }
-  }
-  const canvas = makeCanvas(W, H);
-  canvas.getContext('2d')!.putImageData(new ImageData(out, W, H), 0, 0);
-  return { nodeId: node.id, assetId: node.assetId, canvas };
+    const canvas = makeCanvas(W, H);
+    canvas.getContext('2d')!.putImageData(new ImageData(out, W, H), 0, 0);
+    return { nodeId: node.id, assetId: node.assetId, canvas };
+  };
+  return { node, img, W, H, opts, finish };
 }
+
+/** Pixels du calque sélectionné après le filtre (limité à la sélection de pixels). */
+export function filteredPixels(
+  adj: Adjustment,
+): { nodeId: string; assetId: string; canvas: HTMLCanvasElement } | null {
+  const p = prepareFilter();
+  if (!p) return null;
+  const out = new Uint8ClampedArray(p.img.data);
+  applyAdjustment({ data: out, width: p.W, height: p.H }, adj, p.opts);
+  return p.finish(out);
+}
+
+/**
+ * Comme `filteredPixels`, mais dans l'appli de bureau une grande image est calculée par le
+ * moteur Rust natif (carte graphique ou tous les cœurs), sans figer l'interface. Null si l'image
+ * a changé entre-temps.
+ */
+async function filteredPixelsAsync(
+  adj: Adjustment,
+): Promise<{ nodeId: string; assetId: string; canvas: HTMLCanvasElement } | null> {
+  const p = prepareFilter();
+  if (!p) return null;
+  const out = new Uint8ClampedArray(p.img.data);
+  const px = { data: out, width: p.W, height: p.H };
+  if (!(await nativeApply(px, adj, p.opts))) return filteredPixels(adj);
+  // Pendant le calcul, l'image a pu être modifiée ou désélectionnée : le résultat ne vaut plus.
+  if (selectedImage()?.assetId !== p.node.assetId) return null;
+  return p.finish(out);
+}
+
+let previewToken = 0;
 
 export function previewFilter(adj: Adjustment | null): void {
   const node = selectedImage();
   if (!node) return;
   if (!adj) {
+    previewToken++;
     setLiveBitmap(node.assetId, null);
     return;
   }
-  const r = filteredPixels(adj);
-  if (r) setLiveBitmap(r.assetId, r.canvas);
-  getController()?.requestDraw();
+  const token = ++previewToken;
+  void filteredPixelsAsync(adj).then((r) => {
+    // Un aperçu plus récent (ou sa fermeture) a pris la place de celui-ci.
+    if (token !== previewToken) return;
+    if (r) setLiveBitmap(r.assetId, r.canvas);
+    getController()?.requestDraw();
+  });
 }
 
-export function applyFilter(adj: Adjustment): void {
-  const r = filteredPixels(adj);
+/** Applique le filtre au calque d'image choisi (une étape d'historique). */
+export async function applyFilter(adj: Adjustment): Promise<void> {
+  previewToken++;
+  const r = await filteredPixelsAsync(adj);
   if (!r) return;
   recordStep({ kind: 'filter', adjustment: adj });
   setLiveBitmap(r.assetId, null);

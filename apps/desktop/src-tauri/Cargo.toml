@@ -1,6 +1,6 @@
 [package]
 name = "poulpe"
-version = "1.1.0"
+version = "1.1.1"
 description = "Poulpe Design, application libre de création graphique"
 authors = ["Contributeurs de Poulpe Design"]
 license = "MPL-2.0"
@@ -21,6 +21,8 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-process = "2"
 fontdb = "0.23"
+# Moteur de calcul des images (carte graphique via wgpu, ou tous les cœurs du processeur).
+poulpe-engine = { path = "../../../crates/poulpe-engine", features = ["gpu"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
@@ -34,3 +36,7 @@ lto = true
 opt-level = "s"
 panic = "abort"
 strip = true
+
+[dev-dependencies]
+# Appel des commandes comme depuis l'interface, dans les tests.
+tauri = { version = "2", features = ["test"] }

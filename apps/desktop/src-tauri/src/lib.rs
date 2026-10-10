@@ -1,10 +1,12 @@
 //! Appli de bureau Poulpe Design : une fenêtre Tauri qui embarque l'éditeur web (`apps/editor`).
 //!
-//! Le côté Rust reste minimal : ouverture des fichiers `.poulpe` par double-clic,
+//! Le côté Rust : moteur de calcul des images (crates/poulpe-engine : filtres et réglages sur la
+//! carte graphique ou sur tous les cœurs), ouverture des fichiers `.poulpe` par double-clic,
 //! liste et données des polices installées, mesure des performances, réglages de la carte
 //! graphique et mémoire de l'ordinateur (Préférences), langue choisie dans l'installeur Windows,
 //! et accès aux fichiers via les extensions officielles de Tauri.
 
+mod engine;
 mod launch;
 
 use std::path::PathBuf;
@@ -122,7 +124,9 @@ fn parse_language(text: &str) -> Option<String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let context = tauri::generate_context!();
-    launch::apply(&context.config().identifier);
+    let identifier = context.config().identifier.clone();
+    launch::apply(&identifier);
+    let engine = engine::Engine::new(launch::read(&identifier).engine_settings());
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -133,6 +137,7 @@ pub fn run() {
             _app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
             Ok(())
         })
+        .manage(engine)
         .manage(OpenedFile(Mutex::new(poulpe_file_from_args(std::env::args()))))
         .invoke_handler(tauri::generate_handler![
             opened_file,
@@ -142,7 +147,10 @@ pub fn run() {
             bench_report,
             system_memory,
             save_launch_prefs,
-            installer_language
+            installer_language,
+            engine::engine_info,
+            engine::engine_configure,
+            engine::engine_apply
         ])
         .build(context)
         .expect("impossible de démarrer Poulpe Design");
