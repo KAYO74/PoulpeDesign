@@ -499,13 +499,8 @@ const fr = {
   'ctx.penHint': 'Clic : angle · Glisser : courbe · Clic sur le premier nœud : fermer · Entrée : terminer',
   'ctx.pencilHint': 'Dessinez à main levée ; finir près du départ ferme la forme.',
   'ctx.pathOffset': 'Position sur le tracé',
-  'ctx.nodes': 'Nœuds',
-  'ctx.nodeSharp': 'Net',
-  'ctx.nodeSmooth': 'Lisse',
-  'ctx.nodeDelete': 'Supprimer',
-  'ctx.nodeClose': 'Fermer / ouvrir',
   'ctx.nodeHint':
-    'Clic sur le tracé : ajouter un nœud · Glisser le tracé : le courber · Double-clic : net ou lisse',
+    'Clic sur le trait : ajouter un nœud · Alt+clic : le redresser · Ctrl+clic : le supprimer · [ ] : nœud précédent / suivant',
 
   // Mise en page v0.5
   'persona.layout': 'Mise en page',
@@ -1431,12 +1426,8 @@ const en: Record<
   'ctx.penHint': 'Click: corner · Drag: curve · Click the first node: close · Enter: finish',
   'ctx.pencilHint': 'Draw freehand; ending near the start closes the shape.',
   'ctx.pathOffset': 'Position on path',
-  'ctx.nodes': 'Nodes',
-  'ctx.nodeSharp': 'Sharp',
-  'ctx.nodeSmooth': 'Smooth',
-  'ctx.nodeDelete': 'Delete',
-  'ctx.nodeClose': 'Close / open',
-  'ctx.nodeHint': 'Click the path: add a node · Drag the path: bend it · Double-click: sharp or smooth',
+  'ctx.nodeHint':
+    'Click the path: add a node · Alt+click: straighten · Ctrl+click: delete segment · [ ]: previous / next node',
 
   // Mise en page v0.5
   'persona.layout': 'Layout',

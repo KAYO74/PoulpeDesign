@@ -1,5 +1,6 @@
 import { COLOR_ADJUSTMENTS, LIVE_FILTERS, findNode, type AdjustmentKind } from '@poulpe/core';
 import * as A from './actions';
+import type { NodeAction } from './canvas/pathTools';
 import { beginTextEdit, endTextEdit, isEditingText } from './canvas/textEdit';
 import { getController } from './components/Viewport';
 import { t, type MessageKey } from './i18n';
@@ -46,6 +47,10 @@ export interface Command {
 }
 
 const photoSel = () => ui.get().hasPixelSelection;
+/** Outil Nœud : un tracé est en cours d'édition (avec des nœuds sélectionnés). */
+const nodePath = () => !!getController()?.paths.editablePath();
+const nodeSel = () => nodePath() && ui.get().nodeSelection.length > 0;
+const nodeRun = (kind: NodeAction) => () => getController()?.paths.editNodes(kind);
 const pixelSel = () => photoSel() && selectedImage() !== null;
 
 /** Une commande par réglage (calque de réglage) et par filtre (appliqué aux pixels). */
@@ -262,6 +267,21 @@ export const COMMANDS = {
     run: () => void V.convertToCurves(),
     enabled: V.canConvertToCurves,
   },
+  'node.sharp': { label: 'node.sharp', run: nodeRun('sharp'), enabled: nodeSel },
+  'node.smooth': { label: 'node.smooth', run: nodeRun('smooth'), enabled: nodeSel },
+  'node.smart': { label: 'node.smart', run: nodeRun('smart'), enabled: nodeSel },
+  'node.split': { label: 'node.split', run: nodeRun('split'), enabled: nodeSel },
+  'node.break': { label: 'node.break', run: nodeRun('break'), enabled: nodeSel },
+  'node.close': { label: 'node.close', run: nodeRun('toggleClosed'), enabled: nodePath },
+  'node.smoothCurve': { label: 'node.smoothCurve', run: nodeRun('smoothCurve'), enabled: nodePath },
+  'node.join': {
+    label: 'node.join',
+    run: nodeRun('join'),
+    enabled: () => nodePath() || (ui.get().tool === 'direct' && editor.selection.length > 1),
+  },
+  'node.reverse': { label: 'node.reverse', run: nodeRun('reverse'), enabled: nodePath },
+  'node.delete': { label: 'node.delete', run: nodeRun('delete'), enabled: nodeSel },
+  'node.fitDelete': { label: 'node.fitDelete', run: nodeRun('fitDelete'), enabled: nodeSel },
   'layer.outlineStroke': {
     label: 'layer.outlineStroke',
     run: V.outlineStroke,

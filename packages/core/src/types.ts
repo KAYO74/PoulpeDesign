@@ -287,6 +287,8 @@ export interface PathNode extends NodeBase, Styled {
   viewBox: { x: number; y: number; width: number; height: number };
   /** Règle de remplissage des tracés qui se recoupent (`nonzero` par défaut). */
   fillRule?: 'nonzero' | 'evenodd';
+  /** Nœuds intelligents (outil Nœud), repérés par leur position dans le repère `d`. */
+  smartNodes?: { x: number; y: number }[];
 }
 
 /** Rectangle en fractions (0 à 1) de l'image source. */

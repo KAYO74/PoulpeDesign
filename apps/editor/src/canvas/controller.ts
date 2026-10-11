@@ -1194,6 +1194,12 @@ export class CanvasController {
     if (this.gesture || this.paths.busy || this.photo.busy || this.styleTools.busy) return;
     const r = this.canvas.getBoundingClientRect();
     const tool = this.effectiveTool();
+    // Outil Nœud : clic droit sur un nœud, menu des nœuds (comme dans Affinity).
+    if (tool === 'direct' && this.paths.nodeMenuAt({ x: e.clientX - r.left, y: e.clientY - r.top })) {
+      this.requestDraw();
+      openCanvasMenu(e.clientX, e.clientY, 'nodes');
+      return;
+    }
     if (ui.get().persona !== 'photo') {
       const hit = this.hitTest(this.toWorld(e.clientX - r.left, e.clientY - r.top), tool === 'direct');
       if (hit && !editor.selection.includes(hit.id)) editor.select([hit.id]);
