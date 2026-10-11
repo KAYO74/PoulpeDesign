@@ -138,6 +138,20 @@ test('bulle d’aide des outils et création au centre avec Ctrl', async ({ page
   expect(r.width).toBeGreaterThan(80);
 });
 
+test('menu du clic droit sur le canevas', async ({ page }) => {
+  const { at, drag } = await canvas(page);
+  await page.keyboard.press('u');
+  await drag([300, 300], [450, 400]);
+  await page.keyboard.press('v');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(...at(380, 350), { button: 'right' });
+  const menu = page.getByTestId('canvas-menu');
+  await expect(menu).toBeVisible();
+  await page.screenshot({ path: 'test-results/menu-clic-droit.png' });
+  await menu.getByRole('menuitem', { name: /Dupliquer/ }).click();
+  expect(await nodes(page)).toHaveLength(2);
+});
+
 test('dessine au crayon', async ({ page }) => {
   const { at } = await canvas(page);
   await page.keyboard.press('n');

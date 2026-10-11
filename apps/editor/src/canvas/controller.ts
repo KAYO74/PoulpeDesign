@@ -1,3 +1,4 @@
+import { openCanvasMenu } from '../components/CanvasMenu';
 import {
   artboardAt,
   boxCenter,
@@ -523,14 +524,16 @@ export class CanvasController {
       this.startPan(e);
       return;
     }
-    if (e.button === 2 && this.effectiveTool() === 'direct') {
-      // Outil Nœud : glisser avec le bouton droit retire des nœuds de la sélection.
+    if (e.button === 2) {
+      // Clic droit : menu du canevas au relâchement s'il n'y a pas eu de glissement.
+      this.rightDown = { x: e.clientX, y: e.clientY };
+      this.canvas.setPointerCapture(e.pointerId);
+      if (this.paths.busy || this.photo.busy) return;
       const r = this.canvas.getBoundingClientRect();
       const s = { x: e.clientX - r.left, y: e.clientY - r.top };
-      if (this.paths.nodeSelectDown(e, this.toWorld(s.x, s.y), s)) {
-        this.canvas.setPointerCapture(e.pointerId);
+      // Outil Nœud : glisser avec le bouton droit retire des nœuds de la sélection.
+      if (this.effectiveTool() === 'direct' && this.paths.nodeSelectDown(e, this.toWorld(s.x, s.y), s))
         this.requestDraw();
-      }
       return;
     }
     if (e.button !== 0) return;
@@ -1171,7 +1174,32 @@ export class CanvasController {
     }
   }
 
+  /** Position du clic droit en cours (fenêtre), pour ouvrir le menu du canevas au relâchement. */
+  private rightDown: Vec | null = null;
+
+  /** Clic droit relâché sans glisser : sélectionne l'objet visé, puis ouvre le menu du canevas. */
+  private rightUp(e: PointerEvent): void {
+    const start = this.rightDown;
+    this.rightDown = null;
+    if (!start || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 4) return;
+    if (this.gesture || this.paths.busy || this.photo.busy) return;
+    const r = this.canvas.getBoundingClientRect();
+    const tool = this.effectiveTool();
+    if (ui.get().persona !== 'photo') {
+      const hit = this.hitTest(this.toWorld(e.clientX - r.left, e.clientY - r.top), tool === 'direct');
+      if (hit && !editor.selection.includes(hit.id)) editor.select([hit.id]);
+    }
+    openCanvasMenu(e.clientX, e.clientY);
+  }
+
   private onPointerUp = (e: PointerEvent) => {
+    if (e.button === 2) {
+      if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+      if (!this.gesture) this.paths.pointerUp();
+      this.requestDraw();
+      this.rightUp(e);
+      return;
+    }
     const g = this.gesture;
     this.gesture = null;
     this.guides = [];
@@ -1296,9 +1324,9 @@ export class CanvasController {
     }
   };
 
-  /** Le bouton droit sert à l'outil Nœud : pas de menu du navigateur sur le canevas. */
+  /** Le clic droit ouvre le menu de l'appli (au relâchement), jamais celui du navigateur. */
   private onContextMenu = (e: MouseEvent) => {
-    if (this.effectiveTool() === 'direct') e.preventDefault();
+    e.preventDefault();
   };
 
   private onDoubleClick = (e: MouseEvent) => {

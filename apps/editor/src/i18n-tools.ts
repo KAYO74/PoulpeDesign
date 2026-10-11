@@ -4,6 +4,8 @@
  */
 
 export const frTools = {
+  'menu.align': 'Alignement',
+  'menu.transform': 'Transformer',
   'tip.more': 'En savoir plus…',
   'tip.tool': 'Outil {name}',
   'tip.select.desc': 'Sélectionnez, déplacez, faites pivoter et redimensionnez les objets.',
@@ -75,6 +77,8 @@ export const frTools = {
 export type MessageKeyTools = keyof typeof frTools;
 
 export const enTools: Record<MessageKeyTools, string> = {
+  'menu.align': 'Align',
+  'menu.transform': 'Transform',
   'tip.more': 'Learn more…',
   'tip.tool': '{name} Tool',
   'tip.select.desc': 'Select, move, rotate and resize objects.',

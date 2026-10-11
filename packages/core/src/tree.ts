@@ -250,7 +250,8 @@ function closeTextChains(doc: PoulpeDocument, removed: Set<string>): void {
 
 /** Copie profonde avec de nouveaux identifiants. Une copie de cadre de texte n'est liée à rien. */
 export function cloneWithNewIds<T extends SceneNode>(node: T): T {
-  const copy = structuredClone(node) as T;
+  // Dans une modification en cours (brouillon immer), on copie l'état courant de l'objet.
+  const copy = structuredClone(isDraft(node) ? current(node) : node) as T;
   const renew = (n: SceneNode) => {
     n.id = newId();
     if (n.type === 'text') delete n.next;
