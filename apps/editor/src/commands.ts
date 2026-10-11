@@ -622,7 +622,7 @@ function matches(e: KeyboardEvent, shortcut: string): boolean {
 export function handleKeyDown(e: KeyboardEvent): void {
   const target = e.target as HTMLElement;
   if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
-  if (ui.get().dialog) return;
+  if (ui.get().dialog || ui.get().updateOpen) return;
   if (isEditingText()) {
     // Le focus a quitté le texte édité (clic dans un panneau) : la touche termine l'édition.
     endTextEdit();

@@ -69,4 +69,6 @@ if (isDesktop()) {
   loadBenchDocument: (count: number) => import('./bench').then((b) => editor.load(b.benchDocument(count))),
   photo: { ...photo, ...pixelSelection, ...retouch, openPhotoBytes },
   prefs,
+  offerUpdate: (found: { version: string; current: string; notes?: string }) =>
+    import('./updater').then((u) => u.offerUpdate(found)),
 };

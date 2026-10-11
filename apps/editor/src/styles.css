@@ -1014,6 +1014,20 @@ h4.sub {
 .modal.wide {
   width: min(760px, calc(100vw - 32px));
 }
+.modal.small {
+  width: min(400px, calc(100vw - 32px));
+}
+.modal-backdrop.top {
+  z-index: 110;
+}
+.update-details summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.update-details .update-notes {
+  max-height: 160px;
+  overflow: auto;
+}
 .modal header {
   display: flex;
   align-items: center;

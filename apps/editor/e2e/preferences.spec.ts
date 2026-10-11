@@ -19,6 +19,29 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByTestId('canvas')).toBeVisible();
 });
 
+test('une nouvelle version s’affiche dans une petite fenêtre, même par-dessus l’accueil', async ({
+  page,
+}) => {
+  // L'écran d'accueil (Nouveau document) est ouvert quand la mise à jour est trouvée.
+  await page.keyboard.press('Control+n');
+  await expect(page.getByRole('dialog').first()).toBeVisible();
+  await page.evaluate(() =>
+    (window as any).poulpe.offerUpdate({ version: '9.9.9', current: '1.1.4', notes: '- Outil Nœud' }),
+  );
+  const box = page.getByRole('dialog', { name: 'Mise à jour disponible' });
+  await expect(box).toContainText('Poulpe Design 9.9.9 est disponible');
+  await expect(box.getByRole('button', { name: 'Installer et redémarrer' })).toBeVisible();
+  const r = (await box.boundingBox())!;
+  expect(r.width).toBeLessThanOrEqual(400);
+  // Au centre de la fenêtre.
+  expect(Math.abs(r.x + r.width / 2 - 720)).toBeLessThan(4);
+  await page.screenshot({ path: 'test-results/fenetre-mise-a-jour.png' });
+  await box.getByRole('button', { name: 'Plus tard' }).click();
+  await expect(box).toBeHidden();
+  // L'écran d'accueil reste ouvert.
+  await expect(page.getByRole('dialog').first()).toBeVisible();
+});
+
 test('Édition > Préférences ouvre les sept catégories, aussi au clavier', async ({ page }) => {
   await menu(page, 'Édition', /Préférences/);
   const dialog = page.getByRole('dialog', { name: 'Préférences' });

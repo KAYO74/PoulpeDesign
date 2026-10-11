@@ -92,7 +92,6 @@ export type Dialog =
   | 'vectorize'
   | 'extensions'
   | 'extensionParams'
-  | 'update'
   | 'imageSize'
   | 'canvasSize'
   | 'workspace'
@@ -195,6 +194,11 @@ export interface UiState {
   /** Fichier courant : chemin (bureau) ou nom (navigateur). */
   filePath: string | null;
   dialog: Dialog;
+  /**
+   * Petite fenêtre « nouvelle version disponible » : elle s'affiche par-dessus les autres fenêtres
+   * (écran d'accueil compris), pour qu'une mise à jour trouvée au démarrage soit toujours proposée.
+   */
+  updateOpen: boolean;
   toast: string | null;
   cursor: { x: number; y: number } | null;
   /** Panneau glissé au-dessus de sa zone d'ancrage (surbrillance du point de chute). */
@@ -288,6 +292,7 @@ export const ui = new Store<UiState>({
   softProof: false,
   filePath: null,
   dialog: null,
+  updateOpen: false,
   toast: null,
   cursor: null,
   panelDock: null,
