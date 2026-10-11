@@ -2,7 +2,7 @@ import { current, isDraft } from 'immer';
 import { createArtboard } from './factory';
 import type { PageFields } from './flow';
 import { newId } from './ids';
-import { cloneNodesKeepLinks, translateNode } from './tree';
+import { cloneNodesKeepLinks, cloneWithNewIds, translateNode } from './tree';
 import type { Artboard, DocumentLayout, Margins, PoulpeDocument } from './types';
 
 /*
@@ -47,11 +47,70 @@ export function documentMasters(doc: PoulpeDocument): Artboard[] {
   return doc.artboards.filter((a) => a.master);
 }
 
-/** Page maître d'une page, si elle existe encore. */
+/** Page maître vue depuis une page qui en a détaché des objets, mémorisée tant que rien ne change. */
+const withoutHidden = new WeakMap<Artboard, WeakMap<string[], Artboard>>();
+
+/**
+ * Page maître d'une page, si elle existe encore. Les objets détachés sur la page (`masterHidden`)
+ * n'y figurent pas : la page en a sa propre copie.
+ */
 export function masterOf(doc: PoulpeDocument, page: Artboard): Artboard | null {
   if (!page.masterId || page.master) return null;
   const m = doc.artboards.find((a) => a.id === page.masterId);
-  return m?.master ? m : null;
+  if (!m?.master) return null;
+  const hidden = page.masterHidden;
+  if (!hidden?.length) return m;
+  let byHidden = withoutHidden.get(m);
+  if (!byHidden) withoutHidden.set(m, (byHidden = new WeakMap()));
+  let out = byHidden.get(hidden);
+  if (!out) {
+    const set = new Set(hidden);
+    out = { ...m, children: m.children.filter((c) => !set.has(c.id)) };
+    byHidden.set(hidden, out);
+  }
+  return out;
+}
+
+/**
+ * Détache un objet de la page maître sur une page (comme « Modifier détaché » d'Affinity
+ * Publisher) : la page en reçoit une copie modifiable, au même endroit, et ne montre plus
+ * l'original. Renvoie l'id de la copie.
+ */
+export function detachMasterObject(doc: PoulpeDocument, pageId: string, nodeId: string): string | null {
+  const page = doc.artboards.find((a) => a.id === pageId);
+  const master = page && masterOf(doc, page);
+  if (!page || !master) return null;
+  const index = master.children.findIndex((c) => c.id === nodeId);
+  if (index < 0) return null;
+  const copy = cloneWithNewIds(master.children[index]);
+  translateNode(copy, page.x - master.x, page.y - master.y);
+  // Sous les objets de la page, dans l'ordre de la page maître parmi les objets déjà détachés.
+  const full = doc.artboards.find((a) => a.id === page.masterId)!;
+  const hidden = new Set(page.masterHidden ?? []);
+  const below = full.children.slice(
+    0,
+    full.children.findIndex((c) => c.id === nodeId),
+  );
+  const at = Math.min(page.children.length, below.filter((c) => hidden.has(c.id)).length);
+  page.children.splice(at, 0, copy);
+  page.masterHidden = [...(page.masterHidden ?? []), nodeId];
+  return copy.id;
+}
+
+/** Détache une page de sa page maître : elle garde une copie de ses objets et n'y est plus liée. */
+export function detachFromMaster(doc: PoulpeDocument, pageId: string): string[] {
+  const page = doc.artboards.find((a) => a.id === pageId);
+  const master = page && masterOf(doc, page);
+  if (!page) return [];
+  const copies = (master?.children ?? []).map((n) => {
+    const c = cloneWithNewIds(n);
+    translateNode(c, page.x - master!.x, page.y - master!.y);
+    return c;
+  });
+  page.children.splice(0, 0, ...copies);
+  delete page.masterId;
+  delete page.masterHidden;
+  return copies.map((c) => c.id);
 }
 
 /** Numéro affiché d'une page (le premier numéro peut être réglé), ou null pour une page maître. */

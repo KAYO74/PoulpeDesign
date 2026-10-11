@@ -144,6 +144,10 @@ test('recadre une image', async ({ page }) => {
   await (
     await chooser
   ).setFiles(new URL('../../desktop/src-tauri/icons/128x128.png', import.meta.url).pathname);
+  // Comme dans Affinity, l'image choisie se pose d'un clic (à sa taille réelle).
+  await expect.poll(() => page.evaluate(() => (window as any).poulpe.ui.get().tool)).toBe('image');
+  const area = (await page.getByTestId('canvas').boundingBox())!;
+  await page.mouse.click(area.x + area.width / 2, area.y + area.height / 2);
   await expect.poll(async () => (await snapshot(page)).nodes.length).toBe(1);
   const toScreen = async (x: number, y: number): Promise<[number, number]> => {
     const box = (await page.getByTestId('canvas').boundingBox())!;

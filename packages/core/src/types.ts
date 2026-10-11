@@ -321,6 +321,40 @@ export interface GroupNode extends NodeBase {
   children: SceneNode[];
   /** Masque d'écrêtage : l'objet du dessous découpe les autres. */
   clip: boolean;
+  /** Cadre d'image (avec `clip`) : la forme du dessous est le cadre, l'image suit son ajustement. */
+  picture?: PictureFrame;
+  /** Tableau : les enfants sont ses cellules (voir `TableInfo`). */
+  table?: TableInfo;
+}
+
+/**
+ * Ajustement de l'image dans un cadre d'image, comme dans Affinity Publisher : `fill` couvre le
+ * cadre (le surplus est caché), `fit` montre l'image entière, `stretch` la déforme pour remplir le
+ * cadre, `none` garde sa taille.
+ */
+export type FrameFit = 'fill' | 'fit' | 'stretch' | 'none';
+
+/**
+ * Cadre d'image : un groupe à masque d'écrêtage dont le premier enfant (rectangle, ellipse…) est
+ * le cadre et le suivant l'image. Sans image, le cadre est vide. L'ajustement se réapplique quand
+ * le cadre change de taille ; le zoom et le décalage de l'image se lisent dans sa position.
+ */
+export interface PictureFrame {
+  fit: FrameFit;
+}
+
+/**
+ * Tableau : un groupe dont les enfants sont, ligne par ligne, chaque cellule (un rectangle pour
+ * le fond et les bordures) suivie de son texte (un cadre de texte). Les largeurs des colonnes et
+ * les hauteurs des lignes se lisent dans les rectangles ; une ligne grandit avec son texte.
+ */
+export interface TableInfo {
+  rows: number;
+  cols: number;
+  /** Première ligne en en-tête (fond distinct, texte en gras). */
+  header?: boolean;
+  /** Marge intérieure des cellules, en pixels (6 si absent). */
+  padding?: number;
 }
 
 /** Réglage d'image (couleurs, tons) ou filtre dynamique (flou, netteté…), non destructif. */
@@ -399,6 +433,8 @@ export interface Artboard {
   master?: boolean;
   /** Page maître utilisée par cette page. */
   masterId?: string;
+  /** Objets de la page maître cachés sur cette page (détachés : la page en a une copie). */
+  masterHidden?: string[];
 }
 
 /** Marges d'une page, en pixels. Sur les pages en vis-à-vis, `inside` est du côté de la reliure. */

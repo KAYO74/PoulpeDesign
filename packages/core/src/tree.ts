@@ -1,5 +1,15 @@
 import { current, isDraft } from 'immer';
-import { boxCenter, boxContains, nodeBounds, rotatePoint, unionBoxes, type Box, type Vec } from './geometry';
+import {
+  boxCenter,
+  boxContains,
+  clipMaskOf,
+  nodeBounds,
+  rotatePoint,
+  unionBoxes,
+  type Box,
+  type Vec,
+} from './geometry';
+import { captureFrame, restoreFrame } from './frames';
 import { newId } from './ids';
 import type {
   Artboard,
@@ -111,7 +121,8 @@ export function fitGroups(doc: PoulpeDocument): void {
     for (const n of nodes) {
       if (n.type !== 'group') continue;
       fit(n.children);
-      const b = unionBoxes(n.children.map(nodeBounds));
+      const mask = clipMaskOf(n);
+      const b = mask ? nodeBounds(mask) : unionBoxes(n.children.map(nodeBounds));
       if (b) Object.assign(n, { x: b.x, y: b.y, width: b.width, height: b.height, rotation: 0 });
     }
   };
@@ -188,7 +199,10 @@ export function normalizeAngle(deg: number): number {
  */
 export function scaleNode(node: SceneNode, sx: number, sy: number, origin: Vec, scaleText = false): void {
   if (node.type === 'group') {
+    // Cadre d'image : l'image ne suit pas le cadre, elle reprend son ajustement dans le nouveau cadre.
+    const frame = node.picture ? captureFrame(node) : null;
     node.children.forEach((c) => scaleNode(c, sx, sy, origin, scaleText));
+    if (frame) restoreFrame(node, frame);
     return;
   }
   const c = boxCenter(node);
