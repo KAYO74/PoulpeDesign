@@ -175,7 +175,16 @@ export function worldOutline(node: SceneNode): PathCommand[] | null {
  * Renvoie null pour un texte (il faut ses polices), une image ou un groupe.
  */
 export function toPathNode(node: SceneNode): PathNode | null {
-  if (node.type === 'path') return cloneData(node) as PathNode;
+  if (node.type === 'path') {
+    const copy = cloneData(node) as PathNode;
+    if (!copy.shape && !copy.corners) return copy;
+    // Forme paramétrique ou coins non destructifs : le contour actuel devient de simples nœuds.
+    delete copy.corners;
+    delete copy.smartNodes;
+    copy.viewBox = { x: 0, y: 0, width: node.width, height: node.height };
+    setPathCommands(copy, shapePath(node));
+    return copy;
+  }
   if (!isStyled(node) || node.type === 'text') return null;
   const p: PathNode = {
     id: node.id,

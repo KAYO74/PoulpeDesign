@@ -203,7 +203,16 @@ const NodeRow = memo(function NodeRow({
           <span className="twisty" />
         )}
         <span className="layer-icon">
-          <Icon name={n.type === 'group' && n.clip ? 'mask' : TYPE_ICON[n.type]} size={14} />
+          <Icon
+            name={
+              n.type === 'group' && n.clip
+                ? 'mask'
+                : n.type === 'path' && n.shape
+                  ? n.shape.kind
+                  : TYPE_ICON[n.type]
+            }
+            size={14}
+          />
         </span>
         {n.mask && <MaskThumb node={n} active={maskActive} onClick={() => {}} />}
         {renaming ? (

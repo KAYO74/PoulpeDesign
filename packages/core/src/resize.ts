@@ -136,7 +136,16 @@ function scaleDetails(node: SceneNode, k: number): void {
   if (node.type === 'group') return node.children.forEach((c) => scaleDetails(c, k));
   if (!isStyled(node)) return;
   node.stroke = { ...node.stroke, width: node.stroke.width * k };
-  if (node.type === 'rect') node.cornerRadius *= k;
+  if (node.type === 'rect') {
+    node.cornerRadius *= k;
+    if (node.radii) node.radii = node.radii.map((r) => r * k) as [number, number, number, number];
+  }
+  if ((node.type === 'polygon' || node.type === 'star' || node.type === 'path') && node.corners)
+    node.corners = Object.fromEntries(
+      Object.entries(node.corners).map(([key, c]) => [key, { ...c, radius: c.radius * k }]),
+    );
+  if (node.type === 'path' && node.shape?.params.radius !== undefined)
+    node.shape = { ...node.shape, params: { ...node.shape.params, radius: node.shape.params.radius * k } };
 }
 
 function hasText(nodes: Artboard['children']): boolean {

@@ -12,8 +12,10 @@ import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
 import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
 import { isPhotoTool } from '../photo/photoTools';
+import { SHAPE_FAMILY } from '../toolCatalog';
 
-const SHAPES: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line'];
+/** Outils de forme : leurs réglages viennent de tools/shapes (barre ajoutée en fin de barre). */
+const SHAPES: ToolId[] = SHAPE_FAMILY;
 
 function PaintSwatches({ node }: { node: SceneNode | null }) {
   const t = useT();
@@ -68,8 +70,6 @@ export function ContextBar() {
   const defaults = useUi((s) => s.defaults);
   const cropId = useUi((s) => s.cropId);
   const smoothing = useUi((s) => s.pencilSmoothing);
-  const cornerRadius = useUi((s) => s.cornerRadiusTool);
-  const cornerKind = useUi((s) => s.cornerKind);
   const fonts = useFonts();
   const node = selection.length === 1 ? (findNode(doc, selection[0])?.node ?? null) : null;
   const ab = findArtboard(doc, activeArtboardId);
@@ -101,28 +101,6 @@ export function ContextBar() {
           </label>
         )}
         <span className="ctx-dim">{t(tool === 'pen' ? 'ctx.penHint' : 'ctx.pencilHint')}</span>
-      </>
-    );
-  } else if (tool === 'corner') {
-    content = (
-      <>
-        <NumberField
-          label={t('ctx.cornerRadius')}
-          value={cornerRadius}
-          min={0}
-          max={500}
-          unit="px"
-          testId="corner-radius"
-          onChange={(cornerRadiusTool) => ui.set({ cornerRadiusTool })}
-        />
-        <Select
-          label={t('ctx.cornerKind')}
-          value={cornerKind}
-          testId="corner-kind"
-          options={(['round', 'chamfer'] as const).map((k) => ({ value: k, label: t(`ctx.corner.${k}`) }))}
-          onChange={(k) => ui.set({ cornerKind: k })}
-        />
-        <span className="ctx-dim">{t('ctx.cornerHint')}</span>
       </>
     );
   } else if (tool === 'scissors' || tool === 'knife' || tool === 'shapeBuilder') {
@@ -195,37 +173,6 @@ export function ContextBar() {
                 : t('ctx.noSelection')}
         </span>
         {(node || tool !== 'select' || !selection.length) && <PaintSwatches node={node} />}
-        {kind === 'rect' && (
-          <NumberField
-            label={t('ctx.cornerRadius')}
-            value={shape?.type === 'rect' ? shape.cornerRadius : defaults.cornerRadius}
-            min={0}
-            unit="px"
-            width={84}
-            onChange={(v) =>
-              shape
-                ? updateSelected('history.style', (n) => void (n.type === 'rect' && (n.cornerRadius = v)))
-                : ui.set({ defaults: { ...defaults, cornerRadius: v } })
-            }
-          />
-        )}
-        {kind === 'polygon' && (
-          <NumberField
-            label={t('ctx.sides')}
-            value={shape?.type === 'polygon' ? shape.sides : defaults.sides}
-            min={3}
-            max={64}
-            width={70}
-            onChange={(v) =>
-              shape
-                ? updateSelected(
-                    'history.style',
-                    (n) => void (n.type === 'polygon' && (n.sides = Math.round(v))),
-                  )
-                : ui.set({ defaults: { ...defaults, sides: Math.round(v) } })
-            }
-          />
-        )}
         {shape?.type === 'image' && (
           <>
             <button
@@ -259,41 +206,6 @@ export function ContextBar() {
             >
               {t('ctx.resetCrop')}
             </button>
-          </>
-        )}
-        {kind === 'star' && (
-          <>
-            <NumberField
-              label={t('ctx.points')}
-              value={shape?.type === 'star' ? shape.points : defaults.points}
-              min={3}
-              max={64}
-              width={70}
-              onChange={(v) =>
-                shape
-                  ? updateSelected(
-                      'history.style',
-                      (n) => void (n.type === 'star' && (n.points = Math.round(v))),
-                    )
-                  : ui.set({ defaults: { ...defaults, points: Math.round(v) } })
-              }
-            />
-            <NumberField
-              label={t('ctx.innerRatio')}
-              value={Math.round((shape?.type === 'star' ? shape.innerRatio : defaults.innerRatio) * 100)}
-              min={5}
-              max={100}
-              unit="%"
-              width={84}
-              onChange={(v) =>
-                shape
-                  ? updateSelected(
-                      'history.style',
-                      (n) => void (n.type === 'star' && (n.innerRatio = v / 100)),
-                    )
-                  : ui.set({ defaults: { ...defaults, innerRatio: v / 100 } })
-              }
-            />
           </>
         )}
         {tool === 'direct' && node?.type === 'path' && !node.locked && <NodeButtons single />}

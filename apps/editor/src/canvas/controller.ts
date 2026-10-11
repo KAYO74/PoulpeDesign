@@ -2,6 +2,7 @@ import { openCanvasMenu } from '../components/CanvasMenu';
 import { cursorFor } from './cursors';
 import { StyleTools } from './styleTools';
 import { TOOL_MODULES } from '../tools/registry';
+import { NEW_SHAPE_TOOLS, makeShapeNode } from '../tools/shapes/make';
 import type { ToolDelegate } from '../tools/types';
 import {
   artboardAt,
@@ -126,7 +127,7 @@ type Gesture =
   | { kind: 'cropPan'; start: Vec; node: ImageNode; full: Box; moved: boolean }
   | { kind: 'artboardMove'; id: string; start: Vec; origin: Vec; moved: boolean };
 
-const SHAPE_TOOLS: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line'];
+const SHAPE_TOOLS: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line', ...NEW_SHAPE_TOOLS];
 
 /** État de l'interface sans effet sur le dessin du canevas. */
 const UI_IGNORED = new Set<keyof UiState>([
@@ -1212,7 +1213,7 @@ export class CanvasController {
       case 'line':
         return createLine({ ...box, direction, name: t('name.line') }, d);
       default:
-        return createText({ ...box, name: t('name.text'), autoWidth: false }, d);
+        return makeShapeNode(tool, box) ?? createText({ ...box, name: t('name.text'), autoWidth: false }, d);
     }
   }
 

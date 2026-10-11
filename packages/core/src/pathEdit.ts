@@ -1,6 +1,8 @@
 import { localToWorld, pathToSvg, worldToLocal, type PathCommand, type Vec } from './geometry';
 import { cubicPoint, exactBounds, nearestOnCubic, splitCubic, type Cubic } from './bezier';
-import type { PathNode } from './types';
+import { cachedSvgPath, fitCommands } from './path';
+import { shapeCommands } from './shapes';
+import type { Corners, PathNode } from './types';
 
 /*
  * Tracés modifiables : la plume, l'outil Nœud et le crayon travaillent sur des sous-tracés faits
@@ -326,6 +328,7 @@ export function worldToPath(node: PathNode, p: Vec): Vec {
  * contour, sans le déplacer à l'écran. Modifie l'objet reçu (brouillon).
  */
 export function setPathCommands(node: PathNode, cmds: PathCommand[]): void {
+  if (node.corners) remapCorners(node, cmds);
   const nb = exactBounds(cmds) ?? { x: 0, y: 0, width: 0, height: 0 };
   const { kx, ky } = pathScale(node);
   const vb = node.viewBox;
@@ -340,4 +343,46 @@ export function setPathCommands(node: PathNode, cmds: PathCommand[]): void {
   node.y = c.y - h / 2;
   node.viewBox = { ...nb };
   node.d = pathToSvg(cmds);
+  // Des nœuds modifiés à la main : ce n'est plus une forme paramétrique.
+  delete node.shape;
+}
+
+/**
+ * Coins de l'outil Coin quand des nœuds sont ajoutés ou retirés : chaque coin suit son nœud (même
+ * position), un coin dont le nœud a disparu est retiré. Les nœuds simplement déplacés gardent leur
+ * coin (mêmes indices).
+ */
+function remapCorners(node: PathNode, cmds: PathCommand[]): void {
+  const corners = node.corners!;
+  const old = node.shape
+    ? fitCommands(
+        shapeCommands(node.shape, node.width, node.height),
+        { x: 0, y: 0, width: node.width, height: node.height },
+        node.viewBox,
+      )
+    : cachedSvgPath(node.d);
+  const before = toSubpaths(old),
+    after = toSubpaths(cmds);
+  if (
+    before.length === after.length &&
+    before.every((sp, i) => sp.anchors.length === after[i].anchors.length)
+  )
+    return;
+  const next: Corners = {};
+  for (const [key, corner] of Object.entries(corners)) {
+    if (key === '*') {
+      next[key] = corner;
+      continue;
+    }
+    const [si, ai] = parseAnchorKey(key);
+    const a = before[si]?.anchors[ai];
+    if (!a) continue;
+    after.forEach((sp, sj) =>
+      sp.anchors.forEach((b, bj) => {
+        if (Math.abs(a.x - b.x) < 1e-3 && Math.abs(a.y - b.y) < 1e-3) next[anchorKey(sj, bj)] = corner;
+      }),
+    );
+  }
+  if (Object.keys(next).length) node.corners = next;
+  else delete node.corners;
 }

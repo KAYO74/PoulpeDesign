@@ -1,5 +1,140 @@
 /* Textes de ces outils (français, puis anglais). Ce fichier n'importe rien. */
 
-export const fr: Record<string, string> = {};
+const DRAG_FR =
+  '**Glisser** pour créer, **+Maj** pour garder les proportions, **+Ctrl** pour partir du centre, **+Alt** pour ignorer le magnétisme. **Cliquer** pour une forme de taille standard.';
+const DRAG_EN =
+  '**Drag** to create, **+Shift** to keep proportions, **+Ctrl** to draw from the center, **+Alt** to ignore snapping. **Click** for a default-sized shape.';
+const RED_FR =
+  ' Les **poignées rouges** de la forme changent ses réglages (**Double-clic** : valeur par défaut).';
+const RED_EN = " The shape's **red handles** change its settings (**Double-click**: default value).";
+const HINT_FR =
+  'glisser pour dessiner. Maj garde les proportions, Ctrl part du centre, Alt ignore le magnétisme. Les poignées rouges règlent la forme.';
+const HINT_EN =
+  'drag to draw. Shift keeps proportions, Ctrl draws from the center, Alt ignores snapping. Red handles adjust the shape.';
+const TOOLS = [
+  'roundRect',
+  'triangle',
+  'arrow',
+  'callout',
+  'donut',
+  'pie',
+  'cog',
+  'cloud',
+  'heart',
+  'spiral',
+];
+const hints = (text: string) => Object.fromEntries(TOOLS.map((k) => [`hint.${k}`, text]));
 
-export const en: Record<string, string> = {};
+export const fr: Record<string, string> = {
+  'history.shapeParams': 'Réglage de forme',
+  'history.corner': 'Coins',
+  'shape.param.apex': 'Sommet',
+  'shape.param.head': 'Pointe',
+  'shape.param.shaft': 'Corps',
+  'shape.param.radius': 'Arrondi',
+  'shape.param.tipX': 'Pointe de la queue',
+  'shape.param.baseX': 'Base de la queue',
+  'shape.param.tailWidth': 'Largeur de la queue',
+  'shape.param.tail': 'Hauteur de la queue',
+  'shape.param.hole': 'Trou',
+  'shape.param.start': 'Début',
+  'shape.param.end': 'Fin',
+  'shape.param.teeth': 'Dents',
+  'shape.param.depth': 'Profondeur',
+  'shape.param.bumps': 'Bosses',
+  'shape.param.puff': 'Rondeur',
+  'shape.param.cleft': 'Creux',
+  'shape.param.turns': 'Tours',
+  'shape.param.inner': 'Départ',
+  'shape.curve': 'Courbure',
+  'corner.type': 'Coins',
+  'corner.type.round': 'Arrondis',
+  'corner.type.straight': 'Droits',
+  'corner.type.concave': 'Concaves',
+  'corner.type.cutout': 'Encoches',
+  'corner.link': 'Même rayon aux quatre coins',
+  'corner.tl': 'HG',
+  'corner.tr': 'HD',
+  'corner.br': 'BD',
+  'corner.bl': 'BG',
+  'corner.applyAll': 'Appliquer à tous les coins',
+  'corner.clear': 'Retirer les coins',
+  'corner.hint': 'Glissez depuis un coin, Alt pour tous ; un clic pose le rayon',
+  'vector.noCorner': 'Cet objet n’a pas de coin à arrondir',
+  'tip.rect.how': DRAG_FR + RED_FR,
+  'tip.roundRect.how': DRAG_FR + RED_FR,
+  'tip.polygon.how': DRAG_FR + RED_FR,
+  'tip.star.how': DRAG_FR + RED_FR,
+  'tip.triangle.how': DRAG_FR + RED_FR,
+  'tip.arrow.how': DRAG_FR + RED_FR,
+  'tip.callout.how': DRAG_FR + RED_FR,
+  'tip.donut.how': DRAG_FR + RED_FR,
+  'tip.pie.how': DRAG_FR + RED_FR,
+  'tip.cog.how': DRAG_FR + RED_FR,
+  'tip.cloud.how': DRAG_FR + RED_FR,
+  'tip.heart.how': DRAG_FR + RED_FR,
+  'tip.spiral.how': DRAG_FR + RED_FR,
+  ...hints(HINT_FR),
+  'hint.corner':
+    'glisser depuis un coin pour l’arrondir, Alt pour tous les coins ; un clic pose le rayon de la barre. Rayon nul : coin retiré.',
+  'tip.corner.desc': 'Arrondissez les coins des formes et des tracés, sans rien figer.',
+  'tip.corner.how':
+    "**Glisser** depuis un coin pour l'arrondir, **+Alt** pour tous les coins à la fois. **Cliquer** un coin pour lui appliquer le rayon choisi. Un rayon nul retire le coin ; l'outil Nœud modifie toujours la forme de base.",
+};
+
+export const en: Record<string, string> = {
+  'history.shapeParams': 'Shape setting',
+  'history.corner': 'Corners',
+  'shape.param.apex': 'Top point',
+  'shape.param.head': 'Head',
+  'shape.param.shaft': 'Shaft',
+  'shape.param.radius': 'Corner',
+  'shape.param.tipX': 'Tail tip',
+  'shape.param.baseX': 'Tail position',
+  'shape.param.tailWidth': 'Tail width',
+  'shape.param.tail': 'Tail height',
+  'shape.param.hole': 'Hole',
+  'shape.param.start': 'Start',
+  'shape.param.end': 'End',
+  'shape.param.teeth': 'Teeth',
+  'shape.param.depth': 'Depth',
+  'shape.param.bumps': 'Bumps',
+  'shape.param.puff': 'Puffiness',
+  'shape.param.cleft': 'Cleft',
+  'shape.param.turns': 'Turns',
+  'shape.param.inner': 'Start radius',
+  'shape.curve': 'Curve',
+  'corner.type': 'Corners',
+  'corner.type.round': 'Rounded',
+  'corner.type.straight': 'Straight',
+  'corner.type.concave': 'Concave',
+  'corner.type.cutout': 'Cutout',
+  'corner.link': 'Same radius on all four corners',
+  'corner.tl': 'TL',
+  'corner.tr': 'TR',
+  'corner.br': 'BR',
+  'corner.bl': 'BL',
+  'corner.applyAll': 'Apply to all corners',
+  'corner.clear': 'Remove corners',
+  'corner.hint': 'Drag from a corner, Alt for all; a click applies the radius',
+  'vector.noCorner': 'This object has no corner to round',
+  'tip.rect.how': DRAG_EN + RED_EN,
+  'tip.roundRect.how': DRAG_EN + RED_EN,
+  'tip.polygon.how': DRAG_EN + RED_EN,
+  'tip.star.how': DRAG_EN + RED_EN,
+  'tip.triangle.how': DRAG_EN + RED_EN,
+  'tip.arrow.how': DRAG_EN + RED_EN,
+  'tip.callout.how': DRAG_EN + RED_EN,
+  'tip.donut.how': DRAG_EN + RED_EN,
+  'tip.pie.how': DRAG_EN + RED_EN,
+  'tip.cog.how': DRAG_EN + RED_EN,
+  'tip.cloud.how': DRAG_EN + RED_EN,
+  'tip.heart.how': DRAG_EN + RED_EN,
+  'tip.spiral.how': DRAG_EN + RED_EN,
+  ...hints(HINT_EN),
+  'hint.corner':
+    'drag from a corner to round it, Alt for all corners; a click applies the bar radius. Zero radius removes the corner.',
+  'tip.corner.desc': 'Round the corners of shapes and paths, without freezing them.',
+  'tip.corner.how':
+    '**Drag** from a corner to round it, **+Alt** for all corners at once. **Click** a corner to apply the chosen radius. A zero radius removes the corner; the Node tool still edits the base shape.',
+};

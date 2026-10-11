@@ -163,9 +163,29 @@ interface Styled {
   strokes?: Stroke[];
 }
 
+/** Forme d'un coin : arrondi, droit (chanfrein), concave ou en encoche (découpe carrée). */
+export type CornerType = 'round' | 'straight' | 'concave' | 'cutout';
+
+/** Coin non destructif (outil Coin) : rayon en pixels et forme (arrondi si absente). */
+export interface Corner {
+  radius: number;
+  type?: CornerType;
+}
+
+/**
+ * Coins non destructifs d'un contour, par nœud du contour de base (« sous-tracé:nœud », comme
+ * l'outil Nœud). La clé `*` vaut pour tous les coins qui n'ont pas leur propre réglage.
+ */
+export type Corners = Record<string, Corner>;
+
 export interface RectNode extends NodeBase, Styled {
   type: 'rect';
+  /** Rayon des quatre coins (ou de ceux que `radii` ne précise pas). */
   cornerRadius: number;
+  /** Rayons distincts : haut gauche, haut droit, bas droit, bas gauche. Absent : tous à `cornerRadius`. */
+  radii?: [number, number, number, number];
+  /** Forme des coins (arrondie si absente). */
+  cornerType?: CornerType;
 }
 
 export interface EllipseNode extends NodeBase, Styled {
@@ -175,6 +195,9 @@ export interface EllipseNode extends NodeBase, Styled {
 export interface PolygonNode extends NodeBase, Styled {
   type: 'polygon';
   sides: number;
+  /** Côtés courbes, de -1 (creusés) à 1 (bombés). Absent : côtés droits. */
+  curve?: number;
+  corners?: Corners;
 }
 
 export interface StarNode extends NodeBase, Styled {
@@ -182,6 +205,7 @@ export interface StarNode extends NodeBase, Styled {
   points: number;
   /** Rayon intérieur / rayon extérieur, de 0.05 à 1. */
   innerRatio: number;
+  corners?: Corners;
 }
 
 export interface LineNode extends NodeBase, Styled {
@@ -289,6 +313,23 @@ export interface PathNode extends NodeBase, Styled {
   fillRule?: 'nonzero' | 'evenodd';
   /** Nœuds intelligents (outil Nœud), repérés par leur position dans le repère `d`. */
   smartNodes?: { x: number; y: number }[];
+  /**
+   * Forme paramétrique (triangle, flèche, bulle…) : le contour est recalculé d'après ses réglages à
+   * chaque taille ; `d` en garde une copie pour les anciennes versions de l'appli.
+   */
+  shape?: ShapeSpec;
+  /** Coins non destructifs (outil Coin), appliqués au contour de base. */
+  corners?: Corners;
+}
+
+/** Formes paramétriques des outils de forme (voir `shapes.ts`). */
+export type ShapeKind =
+  'triangle' | 'arrow' | 'callout' | 'donut' | 'pie' | 'cog' | 'cloud' | 'heart' | 'spiral';
+
+export interface ShapeSpec {
+  kind: ShapeKind;
+  /** Réglages de la forme (voir `SHAPE_PARAMS`) ; un réglage absent prend sa valeur par défaut. */
+  params: Record<string, number>;
 }
 
 /** Rectangle en fractions (0 à 1) de l'image source. */
