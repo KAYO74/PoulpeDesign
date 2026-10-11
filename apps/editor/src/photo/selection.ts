@@ -594,3 +594,16 @@ export class QuickSelect {
     editor.mark('history.selection', this.before);
   }
 }
+
+/**
+ * Masque rapide (version 1.2) : une copie modifiable de la sélection, ou un masque vide dans le
+ * cadre d'une nouvelle sélection s'il n'y en a pas.
+ */
+export function selectionForEdit(): SelectionMask | null {
+  return current ? cloneMask(current) : blank();
+}
+
+/** Remplace la sélection par un masque modifié à la main (masque rapide), en une étape d'historique. */
+export function setSelectionMask(next: SelectionMask, label = 'history.selection'): void {
+  commit(isEmpty(next) ? null : next, label);
+}

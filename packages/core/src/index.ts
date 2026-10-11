@@ -36,3 +36,4 @@ export * from './pathCut';
 export * from './styles';
 export * from './frames';
 export * from './tables';
+export * from './pixelTools';

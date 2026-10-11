@@ -16,7 +16,8 @@ import {
 import { useShortcuts } from '../shortcuts';
 import { exportDocument } from '../io';
 import { useT } from '../i18n';
-import { setSettings, useEditor, useUi } from '../store';
+import { setSettings, useEditor, useStore, useUi } from '../store';
+import { pixelStore } from '../tools/pixel/store';
 import { Icon } from './Icon';
 import { WorkspaceItems } from './WorkspaceMenu';
 import { useActiveWorkspace } from '../workspaces';
@@ -101,6 +102,7 @@ export function MenuBar() {
   const persona = useUi((s) => s.persona);
   const custom = useActiveWorkspace();
   const softProof = useUi((s) => s.softProof);
+  const quickMask = useStore(pixelStore, (s) => s.quickMask);
   const { activeArtboardId } = useEditor();
   const quickExport = (kind: 'png' | 'jpeg' | 'svg' | 'pdf') =>
     void exportDocument({
@@ -213,6 +215,8 @@ export function MenuBar() {
         <Sep />
         <Item id="select.fromLayer" />
         <Item id="select.subject" />
+        <Sep />
+        <Item id="select.quickMask" checked={quickMask} />
       </Top>
       <Top label={t('menu.adjust')}>
         {COLOR_ADJUSTMENTS.map((k) => (
