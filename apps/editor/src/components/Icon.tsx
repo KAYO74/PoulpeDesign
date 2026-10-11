@@ -213,6 +213,10 @@ export const ICON_PATHS = {
   blemish: 'M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z M8 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
   redEye:
     'M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z M8 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4z M8 7.5v1',
+  // Outil Déplacer (tools/move) : point d'origine, transformer séparément.
+  transformOrigin: 'M8 4.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7z M8 1.5v4 M8 10.5v4 M1.5 8h4 M10.5 8h4',
+  transformSeparately:
+    'M2 2h5v5H2z M9 9h5v5H9z M4.5 4.5v.1 M11.5 11.5v.1 M9.5 2.5a4 4 0 0 1 4 4 M6.5 13.5a4 4 0 0 1-4-4',
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

@@ -74,6 +74,7 @@ import {
 } from './textEdit';
 import { editParts, indexAtWorld, partAt } from './textParts';
 import { linkTextFrames } from '../layoutActions';
+import * as moveTool from '../tools/move/hooks';
 import { PhotoTools } from '../photo/photoTools';
 
 type HandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -422,7 +423,7 @@ export class CanvasController {
 
   // ————— Sélection et cadre —————
 
-  private selectionFrame(): Frame | null {
+  selectionFrame(): Frame | null {
     const { doc, selection } = editor.getState();
     if (!selection.length) return null;
     if (selection.length === 1) {
@@ -721,7 +722,8 @@ export class CanvasController {
     }
     if (handle === 'rotate') {
       const f = this.selectionFrame()!;
-      const c = boxCenter(f);
+      const pivot = moveTool.pivotLocal(f);
+      const c = pivot ? localToWorld(f, pivot) : boxCenter(f);
       const ids = topLevelIds(doc, editor.selection);
       editor.begin();
       this.gesture = { kind: 'rotate', center: c, startAngle: Math.atan2(p.y - c.y, p.x - c.x), ids };
@@ -742,7 +744,7 @@ export class CanvasController {
       };
       return;
     }
-    const hit = this.hitTest(p, tool === 'direct' || e.metaKey || e.ctrlKey);
+    const hit = moveTool.clickTarget(this, p, tool, e);
     if (hit) {
       let selection = editor.selection;
       if (e.shiftKey) {
@@ -819,12 +821,17 @@ export class CanvasController {
       case 'move':
         return this.dragMove(g, p, e.shiftKey, snap);
       case 'resize':
-        return this.dragResize(g, p, e.shiftKey, e.altKey, snap);
+        // Ctrl (comme dans Affinity) ou Alt : à partir du centre ou du point d'origine.
+        return this.dragResize(g, p, e.shiftKey, e.altKey || e.ctrlKey || e.metaKey, this.snapping());
       case 'rotate': {
         let delta = ((Math.atan2(p.y - g.center.y, p.x - g.center.x) - g.startAngle) * 180) / Math.PI;
         if (e.shiftKey) delta = Math.round(delta / 15) * 15;
+        const apart = moveTool.separately(g.ids.length);
         editor.preview((d) => {
-          for (const id of g.ids) rotateNode(findNode(d, id)!.node, normalizeAngle(delta), g.center);
+          for (const id of g.ids) {
+            const n = findNode(d, id)!.node;
+            rotateNode(n, normalizeAngle(delta), apart ? boxCenter(nodeBounds(n)) : g.center);
+          }
         });
         return;
       }
@@ -888,7 +895,8 @@ export class CanvasController {
       if (clones) {
         ids = clones.map((c, i) => {
           const loc = findNode(d, g.ids[i])!;
-          loc.parent.children.splice(loc.index + 1, 0, c);
+          // Une copie neuve à chaque aperçu : immer fige les objets ajoutés au document.
+          loc.parent.children.splice(loc.index + 1, 0, structuredClone(c));
           return c.id;
         });
       }
@@ -919,24 +927,29 @@ export class CanvasController {
     const corner = hx !== 0.5 && hy !== 0.5;
     // Un texte artistique s'agrandit proportionnellement par les coins.
     if (text?.autoWidth && corner) keepRatio = true;
-    const ax = fromCenter ? f.width / 2 : (1 - hx) * f.width;
-    const ay = fromCenter ? f.height / 2 : (1 - hy) * f.height;
+    // À partir du centre : du point d'origine de la transformation s'il est affiché.
+    const pivot = fromCenter ? (moveTool.pivotLocal(f) ?? { x: f.width / 2, y: f.height / 2 }) : null;
+    const ax = pivot ? pivot.x : (1 - hx) * f.width;
+    const ay = pivot ? pivot.y : (1 - hy) * f.height;
+    const ratio = (a: number, b: number) => (Math.abs(b) > 1e-9 ? Math.abs(a / b) : 1);
     let x0 = 0,
       x1 = f.width,
       y0 = 0,
       y1 = f.height;
     if (hx !== 0.5) {
       const edge = l.x;
-      if (fromCenter) {
-        x0 = ax - Math.abs(edge - ax);
-        x1 = ax + Math.abs(edge - ax);
+      if (pivot) {
+        const k = ratio(edge - ax, hx * f.width - ax);
+        x0 = ax - ax * k;
+        x1 = ax + (f.width - ax) * k;
       } else [x0, x1] = hx === 1 ? [ax, edge] : [edge, ax];
     }
     if (hy !== 0.5) {
       const edge = l.y;
-      if (fromCenter) {
-        y0 = ay - Math.abs(edge - ay);
-        y1 = ay + Math.abs(edge - ay);
+      if (pivot) {
+        const k = ratio(edge - ay, hy * f.height - ay);
+        y0 = ay - ay * k;
+        y1 = ay + (f.height - ay) * k;
       } else [y0, y1] = hy === 1 ? [ay, edge] : [edge, ay];
     }
     let sx = f.width ? (x1 - x0) / f.width : 1;
@@ -947,9 +960,9 @@ export class CanvasController {
       sy = Math.sign(sy || 1) * k;
       const w = f.width * sx,
         h = f.height * sy;
-      if (fromCenter) {
-        x0 = ax - w / 2;
-        y0 = ay - h / 2;
+      if (pivot) {
+        x0 = ax - (ax * w) / (f.width || 1);
+        y0 = ay - (ay * h) / (f.height || 1);
       } else {
         x0 = hx === 0 ? ax - w : hx === 1 ? ax : ax - w / 2;
         y0 = hy === 0 ? ay - h : hy === 1 ? ay : ay - h / 2;
@@ -988,14 +1001,17 @@ export class CanvasController {
       const origin = localToWorld(f, { x: ax, y: ay });
       const sxx = (x1 - x0) / (f.width || 1);
       const syy = (y1 - y0) / (f.height || 1);
-      for (const id of g.ids)
+      const apart = moveTool.separately(g.ids.length);
+      for (const id of g.ids) {
+        const n = findNode(d, id)!.node;
         scaleNode(
-          findNode(d, id)!.node,
+          n,
           hx === 0.5 && !keepRatio ? 1 : sxx,
           hy === 0.5 && !keepRatio ? 1 : syy,
-          fromCenter ? boxCenter(f) : origin,
+          apart ? boxCenter(nodeBounds(n)) : origin,
           keepRatio,
         );
+      }
     });
   }
 
@@ -1280,6 +1296,8 @@ export class CanvasController {
       case 'move':
         if (!g.moved) {
           editor.cancel();
+          // Alt + clic sans glisser : l'objet de dessous.
+          if (g.clones) moveTool.altClick(this);
           break;
         }
         // Un objet glissé sur un autre plan de travail y est rattaché.
@@ -1289,12 +1307,14 @@ export class CanvasController {
           return ids;
         });
         editor.commit(g.clones ? 'history.duplicate' : 'history.move');
+        if (g.clones) moveTool.noteDuplicate(g.ids, editor.selection);
         break;
       case 'resize':
         editor.commit('history.resize');
         break;
       case 'rotate':
         editor.commit('history.rotate');
+        moveTool.keepPivot(this, g.center);
         break;
       case 'marquee':
         break;
@@ -1468,7 +1488,7 @@ export class CanvasController {
       if (guide) cursor = guide.axis === 'x' ? 'col-resize' : 'row-resize';
       else if (h === 'rotate') cursor = 'grab';
       else if (h) cursor = handleCursor(h, this.selectionFrame()?.rotation ?? 0);
-      else hover = this.hitTest(p, tool === 'direct')?.id ?? null;
+      else hover = moveTool.clickTarget(this, p, tool, null)?.id ?? null;
     }
     this.canvas.style.cursor = cursor || this.toolCursor(tool);
     if (hover !== this.hoverId) {
