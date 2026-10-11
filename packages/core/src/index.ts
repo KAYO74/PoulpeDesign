@@ -34,3 +34,5 @@ export * from './symbols';
 export * from './strokeProfile';
 export * from './pathCut';
 export * from './styles';
+export * from './frames';
+export * from './tables';

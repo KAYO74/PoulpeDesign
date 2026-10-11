@@ -115,6 +115,8 @@ export function applyMaster(masterId: string | null, pageIds: string[]): void {
   editor.apply('history.master', (d) => {
     for (const a of d.artboards) {
       if (!pageIds.includes(a.id) || a.master) continue;
+      // Une autre page maître : les objets détachés de l'ancienne ne la concernent plus.
+      if (a.masterId !== masterId) delete a.masterHidden;
       if (masterId) a.masterId = masterId;
       else delete a.masterId;
     }

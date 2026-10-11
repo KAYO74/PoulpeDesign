@@ -16,6 +16,7 @@ import {
   unregisterCommand,
 } from './registry';
 import { exportDocument, importImage, isDesktop, openDocument, saveDocument } from './io';
+import { startPlaceImage } from './tools/frames/frameActions';
 import { checkForUpdates } from './updater';
 import * as V from './vectorActions';
 import * as L from './layoutActions';
@@ -782,7 +783,7 @@ export function handleKeyDown(e: KeyboardEvent): void {
     const current = ui.get().tool;
     const tool = toolForKey(tools, current);
     held = tools.includes(current) ? null : { key, prev: current, used: false };
-    if (tool === 'image') void importImage();
+    if (tool === 'image') void startPlaceImage();
     else setTool(tool);
   }
 }

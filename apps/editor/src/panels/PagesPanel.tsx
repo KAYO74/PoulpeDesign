@@ -11,18 +11,17 @@ import { ImageCache, drawArtboard } from '@poulpe/render';
 import { Icon } from '../components/Icon';
 import { Select } from '../components/fields';
 import { useT } from '../i18n';
+import { addMaster, addPage, applyMaster, arrange, canDeletePage, reorderPage } from '../layoutActions';
+import { ui, useEditor, useStore } from '../store';
+import { AddPagesDialog, ApplyMasterDialog } from '../tools/frames/PageDialogs';
 import {
-  addMaster,
-  addPage,
-  applyMaster,
-  arrange,
-  canDeletePage,
-  deletePage,
-  duplicatePage,
-  goToPage,
-  reorderPage,
-} from '../layoutActions';
-import { ui, useEditor } from '../store';
+  chosenPages,
+  clickPage,
+  deletePages,
+  detachPages,
+  duplicatePages,
+} from '../tools/frames/pageActions';
+import { framesState } from '../tools/frames/state';
 
 /*
  * Panneau Pages de la Persona Mise en page, comme celui d'Affinity Publisher : les pages maîtres
@@ -74,24 +73,27 @@ function PageCard({
   index,
   active,
   label,
+  chosen,
 }: {
   doc: PoulpeDocument;
   ab: Artboard;
   index: number;
   active: boolean;
   label: string;
+  /** Choisie avec d'autres (Maj ou Ctrl + clic). */
+  chosen?: boolean;
 }) {
   const t = useT();
   const [over, setOver] = useState(false);
   const master = masterOf(doc, ab);
   return (
     <button
-      className={`page-card${active ? ' on' : ''}${over ? ' drop' : ''}`}
+      className={`page-card${active || chosen ? ' on' : ''}${over ? ' drop' : ''}`}
       data-testid={ab.master ? `master-${index}` : `page-${index}`}
-      aria-pressed={active}
+      aria-pressed={active || chosen}
       title={ab.name}
       draggable
-      onClick={() => goToPage(ab.id)}
+      onClick={(e) => clickPage(ab.id, e)}
       onDragStart={(e) => {
         e.dataTransfer.setData(ab.master ? MASTER_MIME : PAGE_MIME, ab.id);
         e.dataTransfer.effectAllowed = 'move';
@@ -131,6 +133,14 @@ function PageCard({
 export function PagesPanel() {
   const t = useT();
   const { doc, activeArtboardId } = useEditor();
+  // Pages choisies ensemble (Maj ou Ctrl + clic) : supprimées, dupliquées ou détachées ensemble.
+  useStore(framesState, (s) => s.pages);
+  const chosen = chosenPages(doc);
+  const [dialog, setDialog] = useState<'add' | 'master' | null>(null);
+  const linked = chosen.some((id) => {
+    const a = doc.artboards.find((p) => p.id === id);
+    return !!a && !!masterOf(doc, a);
+  });
   const pages = documentPages(doc);
   const masters = documentMasters(doc);
   const active = doc.artboards.find((a) => a.id === activeArtboardId);
@@ -148,6 +158,7 @@ export function PagesPanel() {
       ab={ab}
       index={i}
       active={ab.id === activeArtboardId}
+      chosen={chosen.length > 1 && chosen.includes(ab.id)}
       label={String(pageNumber(doc, ab) ?? i + 1)}
     />
   );
@@ -237,29 +248,61 @@ export function PagesPanel() {
           </button>
           <button
             className="ib"
-            title={t('pages.duplicate')}
-            aria-label={t('pages.duplicate')}
+            title={t('frames.addPages')}
+            aria-label={t('frames.addPages')}
+            data-testid="add-pages"
+            onClick={() => setDialog('add')}
+          >
+            <Icon name="pages" />
+          </button>
+          <button
+            className="ib"
+            title={t(chosen.length > 1 ? 'frames.duplicatePages' : 'pages.duplicate')}
+            aria-label={t(chosen.length > 1 ? 'frames.duplicatePages' : 'pages.duplicate')}
             data-testid="duplicate-page"
-            onClick={() => duplicatePage()}
+            onClick={() => duplicatePages(chosen)}
           >
             <Icon name="duplicate" />
           </button>
           <button
             className="ib"
-            title={t('pages.delete')}
-            aria-label={t('pages.delete')}
+            title={t(chosen.length > 1 ? 'frames.deletePages' : 'pages.delete')}
+            aria-label={t(chosen.length > 1 ? 'frames.deletePages' : 'pages.delete')}
             data-testid="delete-page"
-            disabled={!canDeletePage()}
-            onClick={() => deletePage()}
+            disabled={chosen.length > 1 ? false : !canDeletePage()}
+            onClick={() => deletePages(chosen)}
           >
             <Icon name="trash" />
+          </button>
+          <button
+            className="ib"
+            title={t('frames.applyMaster')}
+            aria-label={t('frames.applyMaster')}
+            data-testid="apply-master"
+            disabled={!masters.length}
+            onClick={() => setDialog('master')}
+          >
+            <Icon name="master" />
+          </button>
+          <button
+            className="ib"
+            title={`${t('frames.detachMaster')} — ${t('frames.detachHint')}`}
+            aria-label={t('frames.detachMaster')}
+            data-testid="detach-master"
+            disabled={!linked}
+            onClick={() => detachPages(chosen)}
+          >
+            <Icon name="unlink" />
           </button>
           <span className="spacer" />
           <button className="ib" title={t('pages.arrange')} aria-label={t('pages.arrange')} onClick={arrange}>
             <Icon name="arrange" />
           </button>
         </div>
+        {chosen.length > 1 && <p className="note small">{t('frames.chosen', { n: chosen.length })}</p>}
       </footer>
+      {dialog === 'add' && <AddPagesDialog onClose={() => setDialog(null)} />}
+      {dialog === 'master' && <ApplyMasterDialog onClose={() => setDialog(null)} />}
     </aside>
   );
 }

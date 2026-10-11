@@ -1,7 +1,7 @@
 import { setPaint } from '../actions';
 import { toolKeyOf } from '../commands';
 import { useT } from '../i18n';
-import { importImage } from '../io';
+import { startPlaceImage } from '../tools/frames/frameActions';
 import { setTool, ui, useEditor, useUi, type Persona, type ToolId } from '../store';
 import { activeWorkspace, useActiveWorkspace } from '../workspaces';
 import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona, withFamilies } from '../toolCatalog';
@@ -29,7 +29,7 @@ export function pickTool(id: ToolId): void {
   const persona = ui.get().persona;
   if (ws && need === 'photo' && persona !== 'photo') setPersona('photo');
   if (ws && need === 'draw' && persona === 'photo') setPersona(ws.base === 'photo' ? 'draw' : ws.base);
-  if (id === 'image') void importImage();
+  if (id === 'image') void startPlaceImage();
   else setTool(id);
 }
 

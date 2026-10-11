@@ -1,6 +1,6 @@
 import { distanceToPolylines, flattenCommands, pointInPolylines } from './bezier';
 import { cachedSvgPath, fitCommands } from './path';
-import type { SceneNode, Artboard, Paint } from './types';
+import type { SceneNode, Artboard, GroupNode, Paint } from './types';
 
 export interface Vec {
   x: number;
@@ -85,9 +85,18 @@ export function unionBoxes(boxes: Box[]): Box | null {
   );
 }
 
+/** Masque d'un groupe écrêté (son premier enfant), comme le dessinent le rendu et l'export SVG. */
+export function clipMaskOf(g: GroupNode): SceneNode | null {
+  const kids = g.children;
+  return g.clip && kids.length > 1 && kids[0].type !== 'group' ? kids[0] : null;
+}
+
 /** Boîte englobante alignée sur les axes, dans le monde. */
 export function nodeBounds(node: SceneNode): Box {
   if (node.type === 'group') {
+    // Un masque d'écrêtage borne ce qu'on voit du groupe (cadre d'image : le cadre, pas l'image).
+    const mask = clipMaskOf(node);
+    if (mask) return nodeBounds(mask);
     return unionBoxes(node.children.map(nodeBounds)) ?? { x: node.x, y: node.y, width: 0, height: 0 };
   }
   return boundsOfPoints(corners(node));
@@ -253,7 +262,17 @@ const flatCache = new WeakMap<SceneNode, ReturnType<typeof flattenCommands>>();
 export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
   // Un calque de réglage couvre tout le plan de travail : on le choisit dans le panneau Calques.
   if (!node.visible || node.type === 'adjustment') return false;
-  if (node.type === 'group') return node.children.some((c) => hitNode(c, p, tolerance));
+  if (node.type === 'group') {
+    // Groupe écrêté : seul ce qui est dans le masque se voit, donc se touche.
+    const mask = clipMaskOf(node);
+    if (mask && !hitNode(mask, p, tolerance)) {
+      const b = nodeBounds(mask);
+      const t = tolerance;
+      if (p.x < b.x - t || p.y < b.y - t || p.x > b.x + b.width + t || p.y > b.y + b.height + t) return false;
+      return node.children.some((c, i) => i > 0 && hitNode(c, p, tolerance));
+    }
+    return !!mask || node.children.some((c) => hitNode(c, p, tolerance));
+  }
   const l = worldToLocal(node, p);
   if (node.type === 'line') {
     const a = node.direction === 1 ? { x: 0, y: 0 } : { x: 0, y: node.height };
