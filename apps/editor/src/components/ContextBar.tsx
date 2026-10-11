@@ -10,6 +10,7 @@ import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vecto
 import { canLinkSelection, linkSelection, toggleFrame } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
+import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
 import { isPhotoTool } from '../photo/photoTools';
 
 const SHAPES: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line'];
@@ -75,8 +76,11 @@ export function ContextBar() {
 
   const toolName = t(`tool.${tool}`);
   let content: React.ReactNode;
+  const Own = contextFor(tool);
 
-  if (isPhotoTool(tool)) {
+  if (Own) {
+    content = <Own />;
+  } else if (isPhotoTool(tool)) {
     content = <PhotoContext tool={tool} />;
   } else if (tool === 'pen' || tool === 'pencil') {
     content = (
@@ -371,6 +375,9 @@ export function ContextBar() {
     <div className="contextbar" role="region" aria-label={toolName}>
       <b className="ctx-tool">{toolName}</b>
       {content}
+      {CONTEXT_EXTRAS.map((Extra, i) => (
+        <Extra key={i} />
+      ))}
     </div>
   );
 }

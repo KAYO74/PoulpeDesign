@@ -20,7 +20,7 @@ import { checkForUpdates } from './updater';
 import * as V from './vectorActions';
 import * as L from './layoutActions';
 import * as S from './symbolActions';
-import { editor, setSettings, setTool, ui, type Persona, type ToolId } from './store';
+import { editor, isBrushTool, setBrush, setSettings, setTool, ui, type Persona, type ToolId } from './store';
 import * as P from './photo/photoActions';
 import { clearSelection, invertSelection, selectAll, selectFromLayer } from './photo/selection';
 import { images, newPixelLayer, selectedImage } from './photo/pixels';
@@ -537,51 +537,131 @@ export function runCommand(id: string): unknown {
   return result;
 }
 
-/** Raccourcis des outils de la Persona Photo. */
-export const PHOTO_TOOL_KEYS: Record<string, ToolId> = {
-  v: 'select',
-  m: 'marqueeRect',
-  l: 'lasso',
-  w: 'magicWand',
-  b: 'brush',
-  e: 'eraser',
-  g: 'fill',
-  j: 'magicEraser',
-  y: 'heal',
-  s: 'clone',
-  p: 'polyLasso',
-  q: 'quickSelect',
-  u: 'smudge',
-  k: 'liquify',
-  o: 'dodge',
-  r: 'blurBrush',
-  t: 'text',
-  i: 'eyedropper',
-  h: 'hand',
-  z: 'zoom',
+/*
+ * Raccourcis d'outils, sans modificateur, ceux d'Affinity (Designer, Publisher et Photo). Une
+ * touche partagée par plusieurs outils passe de l'un à l'autre à chaque appui, comme dans Affinity.
+ */
+
+/** Persona Dessin (Affinity Designer). */
+export const TOOL_KEYS: Record<string, ToolId[]> = {
+  v: ['select'],
+  a: ['direct'],
+  c: ['corner'],
+  p: ['pen'],
+  n: ['pencil'],
+  b: ['vectorBrush'],
+  k: ['knife'],
+  u: ['rect', 'roundRect', 'ellipse'],
+  e: ['ellipse'],
+  l: ['line'],
+  s: ['shapeBuilder'],
+  o: ['contour'],
+  w: ['strokeWidth'],
+  g: ['gradient'],
+  y: ['transparency'],
+  r: ['vectorFill'],
+  t: ['text', 'frameText'],
+  i: ['eyedropper', 'stylePicker'],
+  h: ['hand'],
+  z: ['zoom'],
 };
 
-/** Raccourcis d'outils, sans modificateur, ceux d'Affinity Designer. */
-export const TOOL_KEYS: Record<string, ToolId> = {
-  v: 'select',
-  a: 'direct',
-  c: 'corner',
-  p: 'pen',
-  n: 'pencil',
-  k: 'knife',
-  u: 'rect',
-  e: 'ellipse',
-  l: 'line',
-  s: 'shapeBuilder',
-  o: 'contour',
-  w: 'strokeWidth',
-  g: 'gradient',
-  y: 'transparency',
-  t: 'text',
-  i: 'eyedropper',
-  h: 'hand',
-  z: 'zoom',
+/** Persona Mise en page (Affinity Publisher). */
+export const LAYOUT_TOOL_KEYS: Record<string, ToolId[]> = {
+  v: ['select'],
+  a: ['direct'],
+  t: ['frameText', 'text', 'table'],
+  f: ['pictureFrameRect', 'pictureFrameEllipse'],
+  p: ['pen'],
+  u: ['rect', 'roundRect', 'ellipse'],
+  e: ['ellipse'],
+  l: ['line'],
+  g: ['gradient'],
+  y: ['transparency'],
+  i: ['eyedropper', 'stylePicker'],
+  h: ['hand'],
+  z: ['zoom'],
 };
+
+/** Persona Photo (Affinity Photo). */
+export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
+  v: ['select'],
+  c: ['crop', 'straighten'],
+  m: ['marqueeRect', 'marqueeEllipse'],
+  l: ['lasso', 'polyLasso'],
+  w: ['quickSelect', 'magicWand'],
+  b: ['brush'],
+  r: ['colorReplace'],
+  e: ['eraser', 'backgroundEraser', 'floodEraser'],
+  g: ['fill', 'pixelGradient'],
+  j: ['magicEraser', 'heal', 'patch', 'blemish', 'redEye'],
+  k: ['clone'],
+  s: ['smudge'],
+  o: ['dodge', 'burn', 'sponge'],
+  t: ['text'],
+  i: ['eyedropper'],
+  h: ['hand'],
+  z: ['zoom'],
+};
+
+export function toolKeysFor(persona: Persona): Record<string, ToolId[]> {
+  return persona === 'photo' ? PHOTO_TOOL_KEYS : persona === 'layout' ? LAYOUT_TOOL_KEYS : TOOL_KEYS;
+}
+
+/** Touche d'un outil dans une Persona (affichée dans les bulles d'aide), ou undefined. */
+export function toolKeyOf(id: ToolId, persona: Persona): string | undefined {
+  const hit = Object.entries(toolKeysFor(persona)).find(([, tools]) => tools.includes(id));
+  return hit?.[0].toUpperCase();
+}
+
+/** Outil choisi par une touche : le suivant de la famille si l'outil actif en fait déjà partie. */
+function toolForKey(tools: ToolId[], current: ToolId): ToolId {
+  const i = tools.indexOf(current);
+  return i >= 0 ? tools[(i + 1) % tools.length] : tools[0];
+}
+
+/**
+ * Touche d'outil maintenue : si l'on se sert de l'outil pendant qu'elle est enfoncée, on revient
+ * à l'outil précédent en la lâchant (outil temporaire, comme dans Affinity).
+ */
+let held: { key: string; prev: ToolId; used: boolean } | null = null;
+if (typeof window !== 'undefined')
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      if (held) held.used = true;
+    },
+    true,
+  );
+
+export function handleKeyUp(e: KeyboardEvent): void {
+  if (!held || e.key.toLowerCase() !== held.key) return;
+  const { prev, used } = held;
+  held = null;
+  if (used && !getController()?.busy()) setTool(prev);
+}
+
+/**
+ * Touches 1 à 0 : opacité de la sélection (ou du pinceau en Persona Photo), 1 = 10 %, 0 = 100 %.
+ * Deux chiffres tapés vite donnent une valeur précise (4 puis 5 = 45 %), comme dans Affinity.
+ */
+let lastDigit: { digit: string; at: number } | null = null;
+function opacityKey(e: KeyboardEvent): boolean {
+  if (e.shiftKey || !/^(Digit|Numpad)\d$/.test(e.code)) return false;
+  const d = e.code.slice(-1);
+  const now = performance.now();
+  const quick = lastDigit && now - lastDigit.at < 600;
+  const value = quick ? Number(lastDigit!.digit + d) : d === '0' ? 100 : Number(d) * 10;
+  lastDigit = quick ? null : { digit: d, at: now };
+  const tool = ui.get().tool;
+  if (ui.get().persona === 'photo' && isBrushTool(tool)) {
+    setBrush({ opacity: value });
+    return true;
+  }
+  if (!editor.selection.length) return false;
+  A.updateSelected('history.style', (n) => void (n.opacity = value / 100));
+  return true;
+}
 
 export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -627,6 +707,10 @@ export function handleKeyDown(e: KeyboardEvent): void {
     // Le focus a quitté le texte édité (clic dans un panneau) : la touche termine l'édition.
     endTextEdit();
     if (e.key === 'Escape') return;
+  }
+  if (!e.ctrlKey && !e.metaKey && getController()?.moduleKey(e)) {
+    e.preventDefault();
+    return;
   }
   if (!e.ctrlKey && !e.metaKey && getController()?.paths.key(e)) {
     e.preventDefault();
@@ -686,9 +770,18 @@ export function handleKeyDown(e: KeyboardEvent): void {
     beginTextEdit(editor.selection[0], false);
     return;
   }
-  const tool = (persona === 'photo' ? PHOTO_TOOL_KEYS : TOOL_KEYS)[e.key.toLowerCase()];
-  if (tool && !e.shiftKey) {
+  if (opacityKey(e)) {
     e.preventDefault();
+    return;
+  }
+  const key = e.key.toLowerCase();
+  const tools = toolKeysFor(persona)[key];
+  if (tools && !e.shiftKey) {
+    e.preventDefault();
+    if (e.repeat) return;
+    const current = ui.get().tool;
+    const tool = toolForKey(tools, current);
+    held = tools.includes(current) ? null : { key, prev: current, used: false };
     if (tool === 'image') void importImage();
     else setTool(tool);
   }

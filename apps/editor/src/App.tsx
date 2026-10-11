@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { baseName, isDesktop } from './io';
-import { handleKeyDown } from './commands';
+import { handleKeyDown, handleKeyUp } from './commands';
 import { ContextBar } from './components/ContextBar';
 import { Dialogs } from './components/Dialogs';
 import { MenuBar } from './components/MenuBar';
@@ -39,12 +39,14 @@ export function App() {
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
     const beforeUnload = (e: BeforeUnloadEvent) => {
       if (!isDesktop() && editor.getState().dirty) e.preventDefault();
     };
     window.addEventListener('beforeunload', beforeUnload);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('beforeunload', beforeUnload);
     };
   }, []);

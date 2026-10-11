@@ -1,5 +1,5 @@
 import { setPaint } from '../actions';
-import { PHOTO_TOOL_KEYS, TOOL_KEYS } from '../commands';
+import { toolKeyOf } from '../commands';
 import { useT } from '../i18n';
 import { importImage } from '../io';
 import { setTool, ui, useEditor, useUi, type Persona, type ToolId } from '../store';
@@ -36,11 +36,6 @@ export function pickTool(id: ToolId): void {
 /** Au-delà de ce nombre d'outils, la colonne passe sur deux rangées (comme dans Affinity). */
 const TWO_COLUMNS = 18;
 
-const KEY_OF = Object.fromEntries(Object.entries(TOOL_KEYS).map(([k, v]) => [v, k.toUpperCase()]));
-const PHOTO_KEY_OF = Object.fromEntries(
-  Object.entries(PHOTO_TOOL_KEYS).map(([k, v]) => [v, k.toUpperCase()]),
-);
-
 export function ToolColumn() {
   const t = useT();
   const tool = useUi((s) => s.tool);
@@ -56,7 +51,7 @@ export function ToolColumn() {
   const groups = custom ? (grouped ? smallGroups : customGroups)(custom) : toolGroupsFor(persona);
   const keyOf = (id: ToolId) => {
     const need = toolPersona(id);
-    return (need === 'photo' || (!need && photo) ? PHOTO_KEY_OF : KEY_OF)[id];
+    return toolKeyOf(id, need === 'photo' || (!need && photo) ? 'photo' : photo ? 'draw' : persona);
   };
   const columns = useUi((s) => s.settings.toolsColumns);
   const locked = useUi((s) => s.settings.toolsLocked);

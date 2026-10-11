@@ -3,6 +3,16 @@ import { useSyncExternalStore } from 'react';
 import { enV1, frV1, type MessageKeyV1 } from './i18n-v1';
 import { enPrefs, frPrefs, type MessageKeyPrefs } from './i18n-prefs';
 import { enLayers, frLayers, type MessageKeyLayers } from './i18n-layers';
+import { enV12, frV12, type MessageKeyV12 } from './i18n-v12';
+import { en as en_shapes, fr as fr_shapes } from './tools/shapes/i18n';
+import { en as en_paint, fr as fr_paint } from './tools/paint/i18n';
+import { en as en_paths, fr as fr_paths } from './tools/paths/i18n';
+import { en as en_move, fr as fr_move } from './tools/move/i18n';
+import { en as en_pixel, fr as fr_pixel } from './tools/pixel/i18n';
+import { en as en_brushes, fr as fr_brushes } from './tools/brushes/i18n';
+import { en as en_text, fr as fr_text } from './tools/text/i18n';
+import { en as en_textFlow, fr as fr_textFlow } from './tools/textFlow/i18n';
+import { en as en_frames, fr as fr_frames } from './tools/frames/i18n';
 
 export type Lang = 'fr' | 'en';
 
@@ -932,10 +942,10 @@ const fr = {
 } as const;
 
 export type MessageKey =
-  keyof typeof fr | MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools;
+  keyof typeof fr | MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools | MessageKeyV12;
 
 const en: Record<
-  Exclude<MessageKey, MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools>,
+  Exclude<MessageKey, MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools | MessageKeyV12>,
   string
 > = {
   'app.name': 'Poulpe Design',
@@ -1850,9 +1860,51 @@ const en: Record<
   'char.columnsFixed': 'Columns need a fixed-width frame.',
 };
 
-const dictionaries: Record<Lang, Record<MessageKey, string>> = {
-  fr: { ...fr, ...frV1, ...frLayers, ...frPrefs, ...frTools },
-  en: { ...en, ...enV1, ...enLayers, ...enPrefs, ...frTools, ...enTools },
+const dictionaries: Record<Lang, Record<string, string>> = {
+  fr: {
+    ...fr,
+    ...frV1,
+    ...frLayers,
+    ...frPrefs,
+    ...frTools,
+    ...frV12,
+    ...fr_shapes,
+    ...fr_paint,
+    ...fr_paths,
+    ...fr_move,
+    ...fr_pixel,
+    ...fr_brushes,
+    ...fr_text,
+    ...fr_textFlow,
+    ...fr_frames,
+  },
+  en: {
+    ...en,
+    ...enV1,
+    ...enLayers,
+    ...enPrefs,
+    ...frTools,
+    ...enTools,
+    ...enV12,
+    ...fr_shapes,
+    ...en_shapes,
+    ...fr_paint,
+    ...en_paint,
+    ...fr_paths,
+    ...en_paths,
+    ...fr_move,
+    ...en_move,
+    ...fr_pixel,
+    ...en_pixel,
+    ...fr_brushes,
+    ...en_brushes,
+    ...fr_text,
+    ...en_text,
+    ...fr_textFlow,
+    ...en_textFlow,
+    ...fr_frames,
+    ...en_frames,
+  },
 };
 
 function initialLang(): Lang {

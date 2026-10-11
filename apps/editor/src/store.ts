@@ -54,7 +54,35 @@ export type ToolId =
   | 'smudge'
   | 'liquify'
   | 'straighten'
-  | 'perspective';
+  | 'perspective'
+  // Version 1.2 : outils repris d'Affinity
+  | 'roundRect'
+  | 'triangle'
+  | 'arrow'
+  | 'callout'
+  | 'donut'
+  | 'pie'
+  | 'cog'
+  | 'cloud'
+  | 'heart'
+  | 'spiral'
+  | 'vectorBrush'
+  | 'vectorFill'
+  | 'vectorCrop'
+  | 'stylePicker'
+  | 'frameText'
+  | 'table'
+  | 'pictureFrameRect'
+  | 'pictureFrameEllipse'
+  | 'crop'
+  | 'pixelGradient'
+  | 'sponge'
+  | 'backgroundEraser'
+  | 'floodEraser'
+  | 'colorReplace'
+  | 'patch'
+  | 'blemish'
+  | 'redEye';
 
 /** Espaces de travail, comme les Personas d'Affinity. */
 export type Persona = 'draw' | 'photo' | 'layout';
@@ -235,7 +263,7 @@ function loadSettings(): Settings {
 }
 
 /** Petit magasin d'état observable, lu par React via `useSyncExternalStore`. */
-class Store<T> {
+export class Store<T> {
   private listeners = new Set<() => void>();
   constructor(private state: T) {}
   get = () => this.state;
@@ -329,6 +357,11 @@ export function useEditor(): EditorState {
 
 export function useUi<T>(select: (s: UiState) => T): T {
   return useSyncExternalStore(ui.subscribe, () => select(ui.get()));
+}
+
+/** Lit un petit magasin d'état (réglages propres à un outil) dans un composant React. */
+export function useStore<S, T>(store: Store<S>, select: (s: S) => T): T {
+  return useSyncExternalStore(store.subscribe, () => select(store.get()));
 }
 
 const BRUSH_DEFAULTS: Partial<Record<ToolId, BrushSettings>> = {
