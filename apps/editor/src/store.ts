@@ -30,6 +30,10 @@ export type ToolId =
   | 'hand'
   | 'zoom'
   | 'eyedropper'
+  | 'gradient'
+  | 'transparency'
+  | 'contour'
+  | 'strokeWidth'
   // Persona Photo
   | 'marqueeRect'
   | 'marqueeEllipse'

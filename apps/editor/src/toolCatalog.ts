@@ -7,6 +7,7 @@ export const DRAW_GROUPS: ToolId[][] = [
   ['pen', 'pencil'],
   ['rect', 'ellipse', 'polygon', 'star', 'line'],
   ['knife', 'scissors', 'corner', 'shapeBuilder'],
+  ['contour', 'strokeWidth', 'gradient', 'transparency'],
   ['text', 'image'],
   ['eyedropper', 'hand', 'zoom'],
 ];
@@ -85,6 +86,10 @@ export const TOOL_CATALOG: { id: 'select' | 'vector' | 'pixel' | 'other'; tools:
       'knife',
       'corner',
       'shapeBuilder',
+      'contour',
+      'strokeWidth',
+      'gradient',
+      'transparency',
     ],
   },
   {

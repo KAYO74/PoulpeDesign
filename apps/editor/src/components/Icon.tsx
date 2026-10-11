@@ -154,6 +154,10 @@ export const ICON_PATHS = {
   symbol: 'M8 1.8l5.5 3.1v6.2L8 14.2 2.5 11.1V4.9z M8 5.3l2.8 1.6v3.2L8 11.7l-2.8-1.6V6.9z',
   styleSave: 'M3 2.5h8l2.5 2.5v8.5H3z M5.5 2.5v4h5v-4 M5.5 9.5h5v4h-5z',
   columns: 'M2.5 2.5h11v11h-11z M8 2.5v11 M4 5h2.5 M4 7.5h2.5 M4 10h2.5 M9.5 5H12 M9.5 7.5H12 M9.5 10H12',
+  gradient: 'M2.5 3.5h11v9h-11z M5 10l6-4 M5 10a1 1 0 1 0 0-.1 M11 6a1 1 0 1 0 0-.1',
+  transparency: 'M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z M8 2.5v11 M8 4.5h3.5 M8 8h5.5 M8 11.5h3.5',
+  contour: 'M5.5 5.5h5v5h-5z M2.5 4.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2z',
+  strokeWidth: 'M1.5 11.5c3-6.5 10-6.5 13 0 M1.5 11.5c3-3 10-3 13 0 M8 2v4.5',
   opentype: 'M2 12.5l3-9 3 9 M3 9.5h4 M10 3.5v9 M8.5 3.5h3 M13 6.5v6 M12 9.5h2',
 } as const;
 

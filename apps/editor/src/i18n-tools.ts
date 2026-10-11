@@ -4,6 +4,22 @@
  */
 
 export const frTools = {
+  'tool.gradient': 'Remplissage',
+  'tool.transparency': 'Transparence',
+  'tool.contour': 'Contour',
+  'tool.strokeWidth': 'Largeur de trait',
+  'tip.gradient.desc': 'Appliquez un dégradé au remplissage des objets sélectionnés.',
+  'tip.gradient.how':
+    "**Glisser** sur l'objet pour régler la direction du dégradé, **+Maj** par pas de 45°. **Cliquer** sur un objet pour le sélectionner.",
+  'tip.transparency.desc': 'Faites disparaître progressivement le remplissage vers le transparent.',
+  'tip.transparency.how':
+    "**Glisser** sur l'objet : du côté opaque vers le côté transparent, **+Maj** par pas de 45°.",
+  'tip.contour.desc': 'Agrandissez ou rétrécissez la forme des objets en décalant leur tracé.',
+  'tip.contour.how':
+    "**Glisser** vers la droite pour agrandir, vers la gauche pour rétrécir. **+Alt** garde l'original et crée le contour à côté.",
+  'tip.strokeWidth.desc': 'Faites varier l’épaisseur du trait le long du tracé.',
+  'tip.strokeWidth.how':
+    '**Glisser** depuis un point du trait : plus loin, le trait s’épaissit à cet endroit ; plus près, il s’affine.',
   'menu.align': 'Alignement',
   'menu.transform': 'Transformer',
   'tip.more': 'En savoir plus…',
@@ -77,6 +93,22 @@ export const frTools = {
 export type MessageKeyTools = keyof typeof frTools;
 
 export const enTools: Record<MessageKeyTools, string> = {
+  'tool.gradient': 'Fill',
+  'tool.transparency': 'Transparency',
+  'tool.contour': 'Contour',
+  'tool.strokeWidth': 'Stroke Width',
+  'tip.gradient.desc': 'Apply a gradient to the fill of the selected objects.',
+  'tip.gradient.how':
+    '**Drag** on the object to set the gradient direction, **+Shift** in 45° steps. **Click** an object to select it.',
+  'tip.transparency.desc': 'Fade the fill out to transparent.',
+  'tip.transparency.how':
+    '**Drag** on the object from the opaque side to the transparent side, **+Shift** in 45° steps.',
+  'tip.contour.desc': 'Grow or shrink the shape of objects by offsetting their path.',
+  'tip.contour.how':
+    '**Drag** right to grow, left to shrink. **+Alt** keeps the original and adds the contour beside it.',
+  'tip.strokeWidth.desc': 'Vary the stroke width along the path.',
+  'tip.strokeWidth.how':
+    '**Drag** from a point on the stroke: farther makes the stroke thicker there, closer makes it thinner.',
   'menu.align': 'Align',
   'menu.transform': 'Transform',
   'tip.more': 'Learn more…',
