@@ -38,12 +38,25 @@ export async function checkForUpdates(silent = false): Promise<void> {
       return;
     }
     update = found;
-    info = { version: found.version, current: found.currentVersion, notes: found.body, date: found.date };
-    if (!ui.get().dialog) ui.set({ dialog: 'update' });
+    offerUpdate({
+      version: found.version,
+      current: found.currentVersion,
+      notes: found.body,
+      date: found.date,
+    });
   } catch (e) {
     console.warn('Mises à jour :', e);
     if (!silent) toast(t('update.error'));
   }
+}
+
+/**
+ * Propose la nouvelle version dans une petite fenêtre au centre, même si une autre fenêtre
+ * (écran d'accueil, brouillon…) est ouverte : elle passe par-dessus.
+ */
+export function offerUpdate(found: PendingUpdate): void {
+  info = found;
+  ui.set({ updateOpen: true });
 }
 
 /** Télécharge et installe la mise à jour trouvée, puis redémarre Poulpe. */
@@ -65,5 +78,6 @@ export async function installUpdate(onProgress: (f: number | null) => void): Pro
 /** Au lancement de l'appli de bureau : vérification discrète, si l'option est active. */
 export function startUpdateChecks(): void {
   if (!isDesktop() || !ui.get().settings.autoUpdate) return;
-  setTimeout(() => void checkForUpdates(true), 8000);
+  // Juste après le démarrage, sans ralentir l'ouverture de la fenêtre.
+  setTimeout(() => void checkForUpdates(true), 1500);
 }

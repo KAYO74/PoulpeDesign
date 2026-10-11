@@ -13,6 +13,7 @@ export * from './resize';
 export * from './recolor';
 export * from './bezier';
 export * from './pathEdit';
+export * from './pathActions';
 export * from './vector';
 export * from './effects';
 export * from './boolean';

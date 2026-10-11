@@ -4,21 +4,30 @@ import { setSettings, ui, useUi } from '../store';
 import { installUpdate, pendingUpdate } from '../updater';
 import { Modal } from './Dialogs';
 
-const close = () => ui.set({ dialog: null });
+const close = () => ui.set({ updateOpen: false });
 
-/** Une nouvelle version est disponible : notes de version, installation et redémarrage. */
+/**
+ * Petite fenêtre au centre : une nouvelle version est disponible. Installer la télécharge et
+ * redémarre Poulpe Design ; les nouveautés se déplient au besoin.
+ */
 export function UpdateDialog() {
   const t = useT();
+  const open = useUi((s) => s.updateOpen);
   const auto = useUi((s) => s.settings.autoUpdate);
   const [progress, setProgress] = useState<number | null | undefined>(undefined);
   const [failed, setFailed] = useState(false);
   const info = pendingUpdate();
-  if (!info) return null;
+  if (!open || !info) return null;
   const busy = progress !== undefined && !failed;
   return (
-    <Modal title={t('update.title')} onClose={() => !busy && close()}>
+    <Modal title={t('update.title')} onClose={() => !busy && close()} small top>
       <p>{t('update.available', { version: info.version, current: info.current })}</p>
-      {info.notes && <pre className="update-notes">{info.notes}</pre>}
+      {info.notes && (
+        <details className="update-details">
+          <summary>{t('update.notes')}</summary>
+          <pre className="update-notes">{info.notes}</pre>
+        </details>
+      )}
       {busy && (
         <p className="update-progress" role="status">
           {t('update.downloading')}

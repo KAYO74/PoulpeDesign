@@ -1,34 +1,51 @@
 import {
   anchorKey,
+  anchorsOf,
   applyBoolean,
   applyKnife,
   artboardAt,
   bendSegment,
+  breakAtAnchors,
   cachedSvgPath,
   cloneSubpaths,
   cornerKeys,
   createPath,
   cutPathAtPoint,
   deleteAnchors,
+  deleteSegment,
   exactBounds,
   findArtboard,
   findNode,
+  fitDeleteAnchors,
   fromSubpaths,
   hasClosedSubpath,
   insertAnchor,
   isSmooth,
+  joinEnds,
+  keysOf,
+  markSmart,
   moveAnchors,
   moveHandle,
+  nearestEnds,
   nearestSegment,
   newId,
   parseAnchorKey,
   pathToSvg,
   pathToWorld,
+  refreshSmart,
   removeNodes,
+  reverseSubpaths,
   roundCorners,
+  segmentCount,
+  segmentCubic,
   setAnchorKind,
   setPathCommands,
   simplifyPoints,
+  smartMarks,
+  smoothSubpaths,
+  splitAfterAnchors,
+  straightenSegment,
+  subpathsOfKeys,
   toPathNode,
   topLevelIds,
   toSubpaths,
@@ -44,7 +61,7 @@ import {
 import { t } from '../i18n';
 import { editor, toast, ui } from '../store';
 import type { CanvasController } from './controller';
-import { collectSnapLines, snapPoint } from './snapping';
+import { collectSnapLines, snapPoint, type SnapLines } from './snapping';
 
 /*
  * Outils de tracé : plume (courbes de Bézier nœud par nœud), crayon (main levée, lissé) et
@@ -54,8 +71,29 @@ import { collectSnapLines, snapPoint } from './snapping';
 
 const HIT = 7;
 
+/** Poignées du cadre de transformation des nœuds (option « Transformer »). */
+type BoxHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'rotate';
+interface Box4 {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 type NodeDrag =
-  | { kind: 'anchors'; id: string; base: SubPath[]; start: Vec; keys: string[]; moved: boolean }
+  | {
+      kind: 'anchors';
+      id: string;
+      base: SubPath[];
+      start: Vec;
+      keys: string[];
+      moved: boolean;
+      /** Nœud saisi (repère du tracé) : c'est lui qui s'aimante. */
+      grab: Vec;
+      /** Autres nœuds du tracé (monde), pour s'aligner dessus. */
+      targets: Vec[];
+      lines: SnapLines | null;
+    }
   | { kind: 'handle'; id: string; base: SubPath[]; key: string; which: 'in' | 'out'; smooth: boolean }
   | {
       kind: 'segment';
@@ -66,7 +104,56 @@ type NodeDrag =
       t: number;
       startScreen: Vec;
       moved: boolean;
+      /** Simple clic : ajouter un nœud, redresser (Alt) ou supprimer le segment (Ctrl). */
+      mod: SegmentMod;
+    }
+  | {
+      kind: 'box';
+      id: string;
+      base: SubPath[];
+      keys: string[];
+      handle: BoxHandle;
+      /** Cadre des nœuds sélectionnés (monde), centre et point de départ du pointeur. */
+      box: Box4;
+      center: Vec;
+      start: Vec;
+      startScreen: Vec;
+      moved: boolean;
     };
+
+type SegmentMod = 'add' | 'straighten' | 'delete';
+
+/** Actions de l'outil Nœud (barre contextuelle, menu du clic droit, raccourcis). */
+export type NodeAction =
+  | 'sharp'
+  | 'smooth'
+  | 'smart'
+  | 'delete'
+  | 'fitDelete'
+  | 'toggleClosed'
+  | 'split'
+  | 'break'
+  | 'smoothCurve'
+  | 'join'
+  | 'reverse';
+
+/** Écrit des sous-tracés dans un tracé (brouillon), avec ses nœuds intelligents. */
+function writePath(n: PathNode, sps: SubPath[]): void {
+  setPathCommands(n, fromSubpaths(sps));
+  const marks = smartMarks(sps);
+  if (marks.length) n.smartNodes = marks;
+  else delete n.smartNodes;
+}
+
+/** Effet d'un clic sur un segment, d'après les touches : comme dans Affinity. */
+function segmentMod(e: { ctrlKey: boolean; metaKey: boolean; altKey: boolean }): SegmentMod {
+  return e.ctrlKey || e.metaKey ? 'delete' : e.altKey ? 'straighten' : 'add';
+}
+
+const unit = (v: Vec): Vec | null => {
+  const l = Math.hypot(v.x, v.y);
+  return l < 1e-9 ? null : { x: v.x / l, y: v.y / l };
+};
 
 /** Effet d'une sélection de nœuds à la zone (comme dans Affinity). */
 type NodeSelOp = 'replace' | 'add' | 'subtract' | 'toggle';
@@ -134,6 +221,10 @@ export class PathTools {
   /** Sélection de nœuds au polygone (Alt+clic), sommet par sommet. */
   private polygon: { id: string; points: Vec[]; hover: Vec | null; op: NodeSelOp; base: string[] } | null =
     null;
+  /** Segment survolé par l'outil Nœud (repère du tracé) : il s'éclaire avant le clic. */
+  private segHover: { id: string; si: number; seg: number; point: Vec; mod: SegmentMod } | null = null;
+  /** Repères d'aimantation des nœuds et des poignées (monde), pendant un glissement. */
+  private snapGuides: { a: Vec; b: Vec }[] = [];
 
   constructor(private readonly c: CanvasController) {
     window.addEventListener('poulpe:toolchange', this.finishPen);
@@ -308,7 +399,7 @@ export class PathTools {
   // ————— Outil Nœud —————
 
   private subpathsOf(n: PathNode): SubPath[] {
-    return toSubpaths(cachedSvgPath(n.d));
+    return markSmart(toSubpaths(cachedSvgPath(n.d)), n.smartNodes);
   }
 
   /** Nœud ou poignée sous le point écran. */
@@ -336,6 +427,24 @@ export class PathTools {
 
   private nodeDown(e: PointerEvent, p: Vec, s: Vec, n: PathNode): boolean {
     const sps = this.subpathsOf(n);
+    const handle = this.boxHit(n, sps, s);
+    const nb = handle && this.nodeBox(n, sps);
+    if (handle && nb) {
+      editor.begin();
+      this.drag = {
+        kind: 'box',
+        id: n.id,
+        base: sps,
+        keys: ui.get().nodeSelection,
+        handle,
+        box: nb.box,
+        center: nb.center,
+        start: p,
+        startScreen: s,
+        moved: false,
+      };
+      return true;
+    }
     const hit = this.hitAnchor(n, sps, s);
     const pp = worldToPath(n, p);
     if (hit?.which) {
@@ -352,13 +461,36 @@ export class PathTools {
       return true;
     }
     if (hit) {
+      if (e.altKey) {
+        // Alt+clic sur un nœud : il devient net, comme dans Affinity.
+        ui.set({ nodeSelection: [hit.key] });
+        this.editNodes('sharp');
+        return true;
+      }
       let sel = ui.get().nodeSelection;
       if (e.shiftKey) sel = sel.includes(hit.key) ? sel.filter((k) => k !== hit.key) : [...sel, hit.key];
       else if (!sel.includes(hit.key)) sel = [hit.key];
       ui.set({ nodeSelection: sel });
       if (!sel.includes(hit.key)) return true;
+      const [si, ai] = parseAnchorKey(hit.key);
+      const grab = sps[si].anchors[ai];
+      const chosen = new Set(sel);
+      const targets: Vec[] = [];
+      sps.forEach((sp, i) =>
+        sp.anchors.forEach((a, j) => !chosen.has(anchorKey(i, j)) && targets.push(pathToWorld(n, a))),
+      );
       editor.begin();
-      this.drag = { kind: 'anchors', id: n.id, base: sps, start: pp, keys: sel, moved: false };
+      this.drag = {
+        kind: 'anchors',
+        id: n.id,
+        base: sps,
+        start: pp,
+        keys: sel,
+        moved: false,
+        grab: { x: grab.x, y: grab.y },
+        targets,
+        lines: this.c.snapping() ? collectSnapLines(editor.doc, new Set([n.id])) : null,
+      };
       return true;
     }
     const seg = nearestSegment(sps, pp);
@@ -375,11 +507,105 @@ export class PathTools {
           t: seg.t,
           startScreen: s,
           moved: false,
+          mod: segmentMod(e),
         };
         return true;
       }
     }
     return false;
+  }
+
+  /** Clic droit sur un nœud : il est sélectionné (s'il ne l'était pas) pour le menu des nœuds. */
+  nodeMenuAt(s: Vec): boolean {
+    const n = this.editablePath();
+    if (!n) return false;
+    const hit = this.hitAnchor(n, this.subpathsOf(n), s);
+    if (!hit) return false;
+    if (!ui.get().nodeSelection.includes(hit.key)) ui.set({ nodeSelection: [hit.key] });
+    return true;
+  }
+
+  // ————— Cadre de transformation des nœuds —————
+
+  /** Cadre des nœuds sélectionnés (monde) et sa version écran, agrandie d'une marge. */
+  private nodeBox(n: PathNode, sps: SubPath[]): { box: Box4; center: Vec; scr: Box4 } | null {
+    if (!ui.get().nodeOptions.transform) return null;
+    const keys = ui.get().nodeSelection;
+    if (keys.length < 2) return null;
+    const pts = [...anchorsOf(sps, keys)].map((a) => pathToWorld(n, a));
+    if (pts.length < 2) return null;
+    const box = {
+      x0: Math.min(...pts.map((q) => q.x)),
+      y0: Math.min(...pts.map((q) => q.y)),
+      x1: Math.max(...pts.map((q) => q.x)),
+      y1: Math.max(...pts.map((q) => q.y)),
+    };
+    const a = this.c.toScreen({ x: box.x0, y: box.y0 }),
+      b = this.c.toScreen({ x: box.x1, y: box.y1 });
+    const pad = 10;
+    return {
+      box,
+      center: { x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2 },
+      scr: { x0: a.x - pad, y0: a.y - pad, x1: b.x + pad, y1: b.y + pad },
+    };
+  }
+
+  private boxHandles(b: Box4): [BoxHandle, Vec][] {
+    const mx = (b.x0 + b.x1) / 2,
+      my = (b.y0 + b.y1) / 2;
+    return [
+      ['nw', { x: b.x0, y: b.y0 }],
+      ['n', { x: mx, y: b.y0 }],
+      ['ne', { x: b.x1, y: b.y0 }],
+      ['e', { x: b.x1, y: my }],
+      ['se', { x: b.x1, y: b.y1 }],
+      ['s', { x: mx, y: b.y1 }],
+      ['sw', { x: b.x0, y: b.y1 }],
+      ['w', { x: b.x0, y: my }],
+    ];
+  }
+
+  /** Poignée du cadre de transformation sous le point écran (un peu en dehors d'un coin : rotation). */
+  private boxHit(n: PathNode, sps: SubPath[], s: Vec): BoxHandle | null {
+    const nb = this.nodeBox(n, sps);
+    if (!nb) return null;
+    let rotate = false;
+    for (const [h, q] of this.boxHandles(nb.scr)) {
+      const d = Math.hypot(q.x - s.x, q.y - s.y);
+      if (d <= 6) return h;
+      const outside = s.x < nb.scr.x0 || s.x > nb.scr.x1 || s.y < nb.scr.y0 || s.y > nb.scr.y1;
+      if (h.length === 2 && outside && d <= 20) rotate = true;
+    }
+    return rotate ? 'rotate' : null;
+  }
+
+  /** Transformation (monde → monde) du glissement en cours sur le cadre. */
+  private boxTransform(g: Extract<NodeDrag, { kind: 'box' }>, p: Vec, shift: boolean): (w: Vec) => Vec {
+    const c = g.center;
+    if (g.handle === 'rotate') {
+      let ang = Math.atan2(p.y - c.y, p.x - c.x) - Math.atan2(g.start.y - c.y, g.start.x - c.x);
+      if (shift) ang = Math.round(ang / (Math.PI / 12)) * (Math.PI / 12);
+      const cos = Math.cos(ang),
+        sin = Math.sin(ang);
+      return (w) => ({
+        x: c.x + (w.x - c.x) * cos - (w.y - c.y) * sin,
+        y: c.y + (w.x - c.x) * sin + (w.y - c.y) * cos,
+      });
+    }
+    const b = g.box;
+    const hx = g.handle.includes('w') ? -1 : g.handle.includes('e') ? 1 : 0;
+    const hy = g.handle.includes('n') ? -1 : g.handle.includes('s') ? 1 : 0;
+    // Le côté opposé à la poignée ne bouge pas.
+    const ox = hx < 0 ? b.x1 : b.x0,
+      oy = hy < 0 ? b.y1 : b.y0;
+    const ratio = (cur: number, start: number, o: number) => {
+      const r = (cur - o) / (start - o);
+      return isFinite(r) ? r : 1;
+    };
+    let sx = hx ? ratio(p.x, g.start.x, ox) : 1,
+      sy = hy ? ratio(p.y, g.start.y, oy) : 1;
+    if (shift && hx && hy) sx = sy = Math.abs(sx) > Math.abs(sy) ? sx : sy;
+    return (w) => ({ x: ox + (w.x - ox) * sx, y: oy + (w.y - oy) * sy });
   }
 
   /**
@@ -472,8 +698,103 @@ export class PathTools {
   private previewNodes(id: string, sps: SubPath[]): void {
     editor.preview((d) => {
       const n = findNode(d, id)?.node;
-      if (n?.type === 'path') setPathCommands(n, fromSubpaths(sps));
+      if (n?.type === 'path') writePath(n, sps);
     });
+  }
+
+  /**
+   * Aimantation du nœud saisi : sur les autres nœuds du tracé (alignement horizontal ou vertical),
+   * puis sur les repères du document. Renvoie le déplacement corrigé (repère du tracé).
+   */
+  private snapAnchors(
+    origin: PathNode,
+    g: Extract<NodeDrag, { kind: 'anchors' }>,
+    dx: number,
+    dy: number,
+    free: boolean,
+  ): [number, number] {
+    if (free) return [dx, dy];
+    const w = pathToWorld(origin, { x: g.grab.x + dx, y: g.grab.y + dy });
+    const thr = this.c.snapThreshold();
+    let x: number | null = null,
+      y: number | null = null;
+    if (ui.get().nodeOptions.alignNodes) {
+      let bx = thr,
+        by = thr;
+      for (const t of g.targets) {
+        if (Math.abs(t.x - w.x) < bx) {
+          bx = Math.abs(t.x - w.x);
+          x = t.x;
+        }
+        if (Math.abs(t.y - w.y) < by) {
+          by = Math.abs(t.y - w.y);
+          y = t.y;
+        }
+      }
+    }
+    if (g.lines && (x === null || y === null)) {
+      const r = snapPoint(w, g.lines, thr, this.c.gridStep());
+      if (x === null && r.x !== w.x) x = r.x;
+      if (y === null && r.y !== w.y) y = r.y;
+    }
+    const q = { x: x ?? w.x, y: y ?? w.y };
+    // Repères : du nœud aligné jusqu'au nœud déplacé.
+    for (const t of g.targets) {
+      if (x !== null && t.x === x) this.snapGuides.push({ a: t, b: q });
+      if (y !== null && t.y === y) this.snapGuides.push({ a: t, b: q });
+    }
+    const pq = worldToPath(origin, q);
+    return [pq.x - g.grab.x, pq.y - g.grab.y];
+  }
+
+  /**
+   * Aimantation de construction d'une poignée : alignée sur le nœud voisin, à 90° de lui, ou dans le
+   * prolongement de l'autre poignée. Renvoie la position corrigée (repère du tracé).
+   */
+  private snapHandle(
+    origin: PathNode,
+    sp: SubPath,
+    ai: number,
+    which: 'in' | 'out',
+    q: Vec,
+    mirrored: boolean,
+  ): Vec {
+    const a = sp.anchors[ai];
+    const n = sp.anchors.length;
+    const nb =
+      which === 'out'
+        ? (sp.anchors[ai + 1] ?? (sp.closed ? sp.anchors[0] : null))
+        : (sp.anchors[ai - 1] ?? (sp.closed ? sp.anchors[n - 1] : null));
+    const W = (v: Vec) => pathToWorld(origin, v);
+    const wa = W(a),
+      wq = W(q);
+    const v = { x: wq.x - wa.x, y: wq.y - wa.y };
+    const len = Math.hypot(v.x, v.y);
+    const dir = unit(v);
+    if (!dir) return q;
+    const cands: Vec[] = [];
+    const toNb = nb && unit({ x: W(nb).x - wa.x, y: W(nb).y - wa.y });
+    if (toNb) cands.push(toNb, { x: -toNb.y, y: toNb.x }, { x: toNb.y, y: -toNb.x });
+    const other = which === 'out' ? a.in : a.out;
+    const away = !mirrored && other && unit({ x: wa.x - W(other).x, y: wa.y - W(other).y });
+    if (away) cands.push(away);
+    let best: Vec | null = null,
+      bestCos = Math.cos((4 * Math.PI) / 180);
+    for (const c of cands) {
+      const cos = c.x * dir.x + c.y * dir.y;
+      if (cos > bestCos) {
+        bestCos = cos;
+        best = c;
+      }
+    }
+    if (!best) return q;
+    const snapped = { x: wa.x + best.x * len, y: wa.y + best.y * len };
+    const reach = Math.max(len, 40 / this.c.view.zoom);
+    this.snapGuides.push({
+      a: { x: wa.x - best.x * reach, y: wa.y - best.y * reach },
+      b: { x: wa.x + best.x * reach * 2, y: wa.y + best.y * reach * 2 },
+    });
+    return worldToPath(origin, snapped);
   }
 
   private nodeMove(e: PointerEvent, p: Vec, s: Vec): void {
@@ -485,23 +806,46 @@ export class PathTools {
     if (!origin) return;
     const pp = worldToPath(origin, p);
     const sps = cloneSubpaths(g.base);
+    this.snapGuides = [];
     if (g.kind === 'anchors') {
       let dx = pp.x - g.start.x,
         dy = pp.y - g.start.y;
       if (!g.moved && this.dist(pathToWorld(origin, g.start), p) < 3) return;
       g.moved = true;
       if (e.shiftKey) Math.abs(dx) > Math.abs(dy) ? (dy = 0) : (dx = 0);
+      else [dx, dy] = this.snapAnchors(origin, g, dx, dy, e.ctrlKey || e.metaKey);
       moveAnchors(sps, g.keys, dx, dy);
     } else if (g.kind === 'handle') {
       const [si, ai] = parseAnchorKey(g.key);
       const a = sps[si].anchors[ai];
-      const q = e.shiftKey ? constrain45(a, pp) : pp;
-      moveHandle(a, g.which, q, g.smooth && !e.altKey ? 'angle' : false);
+      // Tirer la poignée d'un nœud intelligent le rend lisse.
+      delete a.smart;
+      const mirrored = g.smooth && !e.altKey;
+      let q = e.shiftKey ? constrain45(a, pp) : pp;
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey && ui.get().nodeOptions.snapHandles)
+        q = this.snapHandle(origin, sps[si], ai, g.which, q, mirrored);
+      moveHandle(a, g.which, q, mirrored ? 'angle' : false);
+    } else if (g.kind === 'box') {
+      if (!g.moved && Math.hypot(s.x - g.startScreen.x, s.y - g.startScreen.y) < 3) return;
+      g.moved = true;
+      const f = this.boxTransform(g, p, e.shiftKey);
+      const conv = (v: Vec) => worldToPath(origin, f(pathToWorld(origin, v)));
+      for (const a of anchorsOf(sps, g.keys)) {
+        const q = conv(a);
+        a.in = a.in && conv(a.in);
+        a.out = a.out && conv(a.out);
+        a.x = q.x;
+        a.y = q.y;
+      }
     } else {
       if (!g.moved && Math.hypot(s.x - g.startScreen.x, s.y - g.startScreen.y) < 3) return;
       g.moved = true;
+      const sp = sps[g.si];
+      delete sp.anchors[g.seg].smart;
+      delete sp.anchors[(g.seg + 1) % sp.anchors.length].smart;
       bendSegment(sps, g.si, g.seg, g.t, pp);
     }
+    refreshSmart(sps);
     this.previewNodes(g.id, sps);
   }
 
@@ -516,54 +860,186 @@ export class PathTools {
     const g = this.drag;
     this.drag = null;
     this.gestureBase = null;
+    this.snapGuides = [];
     if (!g) return;
     if (g.kind === 'segment' && !g.moved) {
-      // Simple clic sur un segment : on y ajoute un nœud.
       editor.cancel();
-      const sps = cloneSubpaths(g.base);
-      const key = insertAnchor(sps, g.si, g.seg, g.t);
-      editor.apply('history.nodes', (d) => {
-        const n = findNode(d, g.id)?.node;
-        if (n?.type === 'path') setPathCommands(n, fromSubpaths(sps));
-      });
-      ui.set({ nodeSelection: [key] });
+      let sps = cloneSubpaths(g.base);
+      let sel: string[] = [];
+      if (g.mod === 'straighten') straightenSegment(sps, g.si, g.seg);
+      else if (g.mod === 'delete') sps = deleteSegment(sps, g.si, g.seg);
+      else sel = [insertAnchor(sps, g.si, g.seg, g.t)];
+      refreshSmart(sps);
+      this.commitNodes(g.id, sps, g.mod === 'delete' ? 'history.deleteSegment' : 'history.nodes');
+      ui.set({ nodeSelection: sel });
       return;
     }
-    if (g.kind === 'anchors' && !g.moved) {
+    if ((g.kind === 'anchors' || g.kind === 'box') && !g.moved) {
       editor.cancel();
       return;
     }
     editor.commit('history.nodes');
   }
 
-  /** Applique une modification aux nœuds sélectionnés du tracé édité (barre contextuelle, clavier). */
-  editNodes(kind: 'sharp' | 'smooth' | 'delete' | 'toggleClosed'): void {
+  /** Enregistre de nouveaux sous-tracés (un tracé vidé est supprimé). */
+  private commitNodes(id: string, sps: SubPath[], label: string): void {
+    if (!sps.length) {
+      editor.apply('history.delete', (d) => {
+        removeNodes(d, [id]);
+        return [];
+      });
+      return;
+    }
+    editor.apply(label, (d) => {
+      const m = findNode(d, id)?.node;
+      if (m?.type === 'path') writePath(m, sps);
+    });
+  }
+
+  /**
+   * Applique une action de l'outil Nœud au tracé édité, sur les nœuds sélectionnés ou, pour les
+   * actions qui portent sur la courbe, sur les sous-tracés qui les contiennent (tous sans sélection).
+   */
+  editNodes(kind: NodeAction): void {
+    if (kind === 'join' && !this.editablePath()) return this.joinObjects();
     const n = this.editablePath();
     if (!n) return;
     let sps = cloneSubpaths(this.subpathsOf(n));
-    const keys = ui.get().nodeSelection;
-    if (kind === 'delete') {
-      if (!keys.length) return;
-      sps = deleteAnchors(sps, keys);
-      ui.set({ nodeSelection: [] });
-      if (!sps.length) {
-        editor.apply('history.delete', (d) => {
-          removeNodes(d, [n.id]);
-          return [];
-        });
-        return;
+    const keys = ui.get().nodeSelection.filter((k) => {
+      const [si, ai] = parseAnchorKey(k);
+      return !!sps[si]?.anchors[ai];
+    });
+    const keep = anchorsOf(sps, keys);
+    let label = 'history.nodes';
+    switch (kind) {
+      case 'delete':
+      case 'fitDelete':
+        if (!keys.length) return;
+        sps = kind === 'delete' ? deleteAnchors(sps, keys) : fitDeleteAnchors(sps, keys);
+        keep.clear();
+        break;
+      case 'toggleClosed':
+        for (const si of subpathsOfKeys(sps, keys)) sps[si].closed = !sps[si].closed;
+        break;
+      case 'sharp':
+      case 'smooth':
+      case 'smart':
+        if (!keys.length) return;
+        setAnchorKind(sps, keys, kind);
+        break;
+      case 'split': {
+        if (!keys.length) return;
+        const added = splitAfterAnchors(sps, keys);
+        if (!added.size) return;
+        keep.clear();
+        added.forEach((a) => keep.add(a));
+        break;
       }
-    } else if (kind === 'toggleClosed') {
-      const touched = new Set(keys.map((k) => parseAnchorKey(k)[0]));
-      const which = touched.size ? [...touched] : sps.map((_, i) => i);
-      for (const si of which) if (sps[si]) sps[si].closed = !sps[si].closed;
-    } else {
-      if (!keys.length) return;
-      setAnchorKind(sps, keys, kind);
+      case 'break':
+        if (!keys.length) return;
+        sps = breakAtAnchors(sps, keys);
+        keep.clear();
+        break;
+      case 'reverse':
+        reverseSubpaths(sps, subpathsOfKeys(sps, keys));
+        break;
+      case 'smoothCurve': {
+        const b = exactBounds(fromSubpaths(sps));
+        const size = b ? Math.max(b.width, b.height) : 100;
+        sps = smoothSubpaths(sps, subpathsOfKeys(sps, keys), Math.max(0.5, size * 0.01));
+        keep.clear();
+        break;
+      }
+      case 'join': {
+        const ends = keys.length === 2 ? (keys as [string, string]) : nearestEnds(sps);
+        const joined = ends && joinEnds(sps, ends[0], ends[1]);
+        if (!joined) {
+          toast(t('node.joinNothing'));
+          return;
+        }
+        sps = joined;
+        keep.clear();
+        label = 'history.join';
+        break;
+      }
     }
-    editor.apply('history.nodes', (d) => {
-      const m = findNode(d, n.id)?.node;
-      if (m?.type === 'path') setPathCommands(m, fromSubpaths(sps));
+    refreshSmart(sps);
+    ui.set({ nodeSelection: keysOf(sps, keep) });
+    this.commitNodes(n.id, sps, kind === 'delete' || kind === 'fitDelete' ? 'history.deleteNodes' : label);
+  }
+
+  /**
+   * Joindre les courbes de plusieurs objets sélectionnés : ils deviennent un seul tracé, et leurs
+   * extrémités libres les plus proches se rejoignent.
+   */
+  private joinObjects(): void {
+    const doc = editor.doc;
+    const ids = topLevelIds(doc, editor.selection);
+    const nodes = ids
+      .map((id) => findNode(doc, id)?.node)
+      .map((m) => (m && !m.locked ? toPathNode(m) : null));
+    if (nodes.length < 2 || nodes.some((m) => !m)) {
+      toast(t('node.joinNothing'));
+      return;
+    }
+    const [first, ...others] = nodes as PathNode[];
+    let sps = this.subpathsOf(first);
+    let owner = sps.map(() => 0);
+    others.forEach((m, k) => {
+      const conv = (v: Vec) => worldToPath(first, pathToWorld(m, v));
+      for (const sp of this.subpathsOf(m)) {
+        sps.push({
+          closed: sp.closed,
+          anchors: sp.anchors.map((a) => {
+            const q = conv(a);
+            return { x: q.x, y: q.y, in: a.in && conv(a.in), out: a.out && conv(a.out) };
+          }),
+        });
+        owner.push(k + 1);
+      }
+    });
+    let joinedAny = false;
+    for (let round = 0; round < others.length; round++) {
+      // Extrémités les plus proches entre le premier objet (déjà joint) et un autre.
+      let best: { a: string; b: string; d: number; o: number } | null = null;
+      for (let i = 0; i < sps.length; i++) {
+        const sa = sps[i];
+        if (owner[i] !== 0 || sa.closed) continue;
+        for (let j = 0; j < sps.length; j++) {
+          const sb = sps[j];
+          if (owner[j] === 0 || sb.closed) continue;
+          for (const ia of [0, sa.anchors.length - 1])
+            for (const ib of [0, sb.anchors.length - 1]) {
+              const d = Math.hypot(sa.anchors[ia].x - sb.anchors[ib].x, sa.anchors[ia].y - sb.anchors[ib].y);
+              if (!best || d < best.d) best = { a: anchorKey(i, ia), b: anchorKey(j, ib), d, o: owner[j] };
+            }
+        }
+      }
+      if (!best) break;
+      const { a, b, o } = best;
+      const [sa] = parseAnchorKey(a),
+        [sb] = parseAnchorKey(b);
+      const joined = joinEnds(sps, a, b);
+      if (!joined) break;
+      joinedAny = true;
+      owner = owner.flatMap((w, i) => (i === sb ? [] : [w === o || i === sa ? 0 : w]));
+      sps = joined;
+    }
+    if (!joinedAny) {
+      toast(t('node.joinNothing'));
+      return;
+    }
+    const node = structuredClone(first);
+    writePath(node, sps);
+    editor.apply('history.join', (d) => {
+      const loc = findNode(d, first.id);
+      if (!loc) return;
+      loc.parent.children.splice(loc.index, 1, node);
+      removeNodes(
+        d,
+        others.map((m) => m.id),
+      );
+      return [node.id];
     });
   }
 
@@ -748,6 +1224,7 @@ export class PathTools {
       return true;
     }
     const n = this.editablePath();
+    this.segHover = null;
     if (n && this.polygon) return this.nodeSelectDown(e, p, s);
     if (n && this.nodeDown(e, p, s, n)) {
       this.gestureBase = { id: n.id, node: n };
@@ -800,6 +1277,7 @@ export class PathTools {
       this.c.requestDraw();
       return true;
     }
+    if (tool === 'direct') this.hoverSegment(e, p, s);
     return false;
   }
 
@@ -836,6 +1314,7 @@ export class PathTools {
   }
 
   pointerCancel(): void {
+    this.snapGuides = [];
     if (this.drag || this.corner) editor.cancel();
     this.drag = null;
     this.corner = null;
@@ -892,11 +1371,59 @@ export class PathTools {
       this.editNodes('delete');
       return true;
     }
+    const step =
+      e.code === 'BracketRight' || e.key === ']' ? 1 : e.code === 'BracketLeft' || e.key === '[' ? -1 : 0;
+    if (step && !e.altKey && this.editablePath()) {
+      this.stepNode(step);
+      return true;
+    }
     if (e.key === 'Escape' && ui.get().nodeSelection.length) {
       ui.set({ nodeSelection: [] });
       return true;
     }
     return false;
+  }
+
+  /** [ et ] : sélectionne le nœud précédent ou suivant du tracé édité. */
+  stepNode(step: 1 | -1): void {
+    const n = this.editablePath();
+    if (!n) return;
+    const sps = this.subpathsOf(n);
+    if (!sps.length) return;
+    const sel = ui.get().nodeSelection;
+    const last = sel[sel.length - 1];
+    let [si, ai] = last ? parseAnchorKey(last) : [0, step > 0 ? -1 : 0];
+    if (!sps[si]) [si, ai] = [0, -1];
+    const count = sps[si].anchors.length;
+    ai += step;
+    if (ai >= count || ai < 0) {
+      if (sps[si].closed) ai = (ai + count) % count;
+      else {
+        // Tracé ouvert : on passe au sous-tracé suivant (ou précédent).
+        si = (si + step + sps.length) % sps.length;
+        ai = step > 0 ? 0 : sps[si].anchors.length - 1;
+      }
+    }
+    ui.set({ nodeSelection: [anchorKey(si, ai)] });
+    this.c.requestDraw();
+  }
+
+  /** Survol de l'outil Nœud : le segment sous le pointeur s'éclaire, avec l'effet du clic. */
+  private hoverSegment(e: PointerEvent, p: Vec, s: Vec): void {
+    const n = this.editablePath();
+    let next: PathTools['segHover'] = null;
+    if (n) {
+      const sps = this.subpathsOf(n);
+      if (!this.hitAnchor(n, sps, s) && !this.boxHit(n, sps, s)) {
+        const seg = nearestSegment(sps, worldToPath(n, p));
+        const q = seg && this.c.toScreen(pathToWorld(n, seg.point));
+        if (seg && q && Math.hypot(q.x - s.x, q.y - s.y) <= HIT)
+          next = { id: n.id, si: seg.si, seg: seg.seg, point: seg.point, mod: segmentMod(e) };
+      }
+    }
+    if (!next && !this.segHover) return;
+    this.segHover = next;
+    this.c.requestDraw();
   }
 
   // ————— Dessin (repère de l'écran) —————
@@ -1013,19 +1540,122 @@ export class PathTools {
     }
 
     const n = this.editablePath();
-    if (n && !this.pen) {
-      const sps = this.subpathsOf(n);
-      const sel = new Set(ui.get().nodeSelection);
-      const w = (p: Vec) => pathToWorld(n, p);
-      sps.forEach((sp, si) =>
-        sp.anchors.forEach((a, ai) => {
-          if (!sel.has(anchorKey(si, ai))) return;
-          handle(w(a), a.in && w(a.in));
-          handle(w(a), a.out && w(a.out));
-        }),
-      );
-      sps.forEach((sp, si) => sp.anchors.forEach((a, ai) => square(w(a), sel.has(anchorKey(si, ai)))));
-    }
+    if (n && !this.pen) this.drawNodes(ctx, color, n, handle);
     ctx.restore();
+  }
+
+  /** Nœuds du tracé édité : net = carré, lisse = rond, intelligent = rond pointé (comme dans Affinity). */
+  private drawNodes(
+    ctx: CanvasRenderingContext2D,
+    color: string,
+    n: PathNode,
+    handle: (a: Vec, h: Vec | null) => void,
+  ): void {
+    const sps = this.subpathsOf(n);
+    const sel = new Set(ui.get().nodeSelection);
+    const w = (p: Vec) => pathToWorld(n, p);
+    const opts = ui.get().nodeOptions;
+    const curve = (sp: SubPath, i: number) => {
+      const b = segmentCubic(sp, i).map((q) => this.c.toScreen(w(q)));
+      ctx.beginPath();
+      ctx.moveTo(b[0].x, b[0].y);
+      ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
+      ctx.stroke();
+    };
+    if (opts.orientation) {
+      // Sens du tracé : le segment qui mène au dernier nœud est en rouge.
+      ctx.save();
+      ctx.strokeStyle = '#e5484d';
+      ctx.lineWidth = 2;
+      for (const sp of sps) {
+        const count = segmentCount(sp);
+        if (count) curve(sp, count - 1);
+      }
+      ctx.restore();
+    }
+    const hov = this.segHover?.id === n.id && !this.drag ? this.segHover : null;
+    const hsp = hov && sps[hov.si];
+    if (hov && hsp && hov.seg < segmentCount(hsp)) {
+      ctx.save();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = hov.mod === 'delete' ? '#e5484d' : color;
+      if (hov.mod === 'straighten') {
+        // Alt : aperçu du segment redressé.
+        ctx.setLineDash([4, 3]);
+        const a = this.c.toScreen(w(hsp.anchors[hov.seg])),
+          b = this.c.toScreen(w(hsp.anchors[(hov.seg + 1) % hsp.anchors.length]));
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      } else curve(hsp, hov.seg);
+      if (hov.mod === 'add') {
+        const q = this.c.toScreen(w(hov.point));
+        ctx.lineWidth = 1.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    sps.forEach((sp, si) =>
+      sp.anchors.forEach((a, ai) => {
+        if (!sel.has(anchorKey(si, ai))) return;
+        handle(w(a), a.in && w(a.in));
+        handle(w(a), a.out && w(a.out));
+      }),
+    );
+    sps.forEach((sp, si) =>
+      sp.anchors.forEach((a, ai) => {
+        const q = this.c.toScreen(w(a));
+        const on = sel.has(anchorKey(si, ai));
+        ctx.fillStyle = on ? color : '#ffffff';
+        if (a.smart || isSmooth(a)) {
+          ctx.beginPath();
+          ctx.arc(q.x, q.y, 3.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          if (a.smart) {
+            ctx.fillStyle = on ? '#ffffff' : color;
+            ctx.beginPath();
+            ctx.arc(q.x, q.y, 1.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          ctx.fillRect(q.x - 3.5, q.y - 3.5, 7, 7);
+          ctx.strokeRect(q.x - 3, q.y - 3, 6, 6);
+        }
+      }),
+    );
+    const nb = this.drag?.kind === 'box' && this.drag.moved ? null : this.nodeBox(n, sps);
+    if (nb) {
+      const b = nb.scr;
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(b.x0 + 0.5, b.y0 + 0.5, b.x1 - b.x0, b.y1 - b.y0);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffffff';
+      for (const [, q] of this.boxHandles(b)) {
+        ctx.fillRect(q.x - 3, q.y - 3, 6, 6);
+        ctx.strokeRect(q.x - 2.5, q.y - 2.5, 5, 5);
+      }
+      ctx.restore();
+    }
+    if (this.snapGuides.length) {
+      ctx.save();
+      ctx.strokeStyle = '#e5484d';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      for (const g of this.snapGuides) {
+        const a = this.c.toScreen(g.a),
+          b = this.c.toScreen(g.b);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 }

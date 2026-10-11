@@ -13,6 +13,8 @@ export interface Anchor {
   y: number;
   in: Vec | null;
   out: Vec | null;
+  /** Nœud intelligent : ses poignées se recalculent d'après ses voisins (comme dans Affinity). */
+  smart?: boolean;
 }
 
 export interface SubPath {
@@ -102,6 +104,7 @@ export function cloneSubpaths(sps: SubPath[]): SubPath[] {
       y: a.y,
       in: a.in && { ...a.in },
       out: a.out && { ...a.out },
+      ...(a.smart ? { smart: true } : {}),
     })),
   }));
 }
@@ -217,33 +220,63 @@ export function moveHandle(
   a[other] = pt(a.x - (dx / len) * olen, a.y - (dy / len) * olen);
 }
 
-/** Nœud net (sans poignées) ou lisse (poignées alignées sur ses voisins). */
-export function setAnchorKind(sps: SubPath[], keys: string[], kind: 'sharp' | 'smooth'): void {
+/** Poignées lisses d'un nœud : alignées sur ses voisins, au tiers de la distance qui les sépare. */
+function smoothHandles(sp: SubPath, ai: number): void {
+  const a = sp.anchors[ai];
+  const n = sp.anchors.length;
+  const prev = ai > 0 ? sp.anchors[ai - 1] : sp.closed ? sp.anchors[n - 1] : null;
+  const next = ai < n - 1 ? sp.anchors[ai + 1] : sp.closed ? sp.anchors[0] : null;
+  if (!prev && !next) return;
+  const from = prev ?? a,
+    to = next ?? a;
+  let dx = to.x - from.x,
+    dy = to.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  dx /= len;
+  dy /= len;
+  const lp = prev ? Math.hypot(a.x - prev.x, a.y - prev.y) / 3 : 0;
+  const ln = next ? Math.hypot(next.x - a.x, next.y - a.y) / 3 : 0;
+  a.in = prev ? pt(a.x - dx * lp, a.y - dy * lp) : null;
+  a.out = next ? pt(a.x + dx * ln, a.y + dy * ln) : null;
+}
+
+/**
+ * Type de nœud : net (sans poignées), lisse (poignées alignées sur ses voisins) ou intelligent
+ * (lisse, et ses poignées suivent quand ses voisins bougent).
+ */
+export function setAnchorKind(sps: SubPath[], keys: string[], kind: 'sharp' | 'smooth' | 'smart'): void {
   for (const k of keys) {
     const [si, ai] = parseAnchorKey(k);
     const sp = sps[si];
     const a = sp?.anchors[ai];
     if (!a) continue;
+    delete a.smart;
     if (kind === 'sharp') {
       a.in = a.out = null;
       continue;
     }
-    const n = sp.anchors.length;
-    const prev = ai > 0 ? sp.anchors[ai - 1] : sp.closed ? sp.anchors[n - 1] : null;
-    const next = ai < n - 1 ? sp.anchors[ai + 1] : sp.closed ? sp.anchors[0] : null;
-    if (!prev && !next) continue;
-    const from = prev ?? a,
-      to = next ?? a;
-    let dx = to.x - from.x,
-      dy = to.y - from.y;
-    const len = Math.hypot(dx, dy) || 1;
-    dx /= len;
-    dy /= len;
-    const lp = prev ? Math.hypot(a.x - prev.x, a.y - prev.y) / 3 : 0;
-    const ln = next ? Math.hypot(next.x - a.x, next.y - a.y) / 3 : 0;
-    a.in = prev ? pt(a.x - dx * lp, a.y - dy * lp) : null;
-    a.out = next ? pt(a.x + dx * ln, a.y + dy * ln) : null;
+    smoothHandles(sp, ai);
+    if (kind === 'smart') a.smart = true;
   }
+}
+
+/** Recalcule les poignées des nœuds intelligents (après un déplacement de nœuds). */
+export function refreshSmart(sps: SubPath[]): void {
+  for (const sp of sps) sp.anchors.forEach((a, ai) => a.smart && smoothHandles(sp, ai));
+}
+
+/** Positions des nœuds intelligents, pour les garder dans le document (`PathNode.smartNodes`). */
+export function smartMarks(sps: SubPath[]): Vec[] {
+  return sps.flatMap((sp) => sp.anchors.filter((a) => a.smart).map((a) => pt(a.x, a.y)));
+}
+
+/** Marque comme intelligents les nœuds qui sont aux positions gardées dans le document. */
+export function markSmart(sps: SubPath[], marks: Vec[] | undefined): SubPath[] {
+  if (!marks?.length) return sps;
+  for (const sp of sps)
+    for (const a of sp.anchors)
+      if (marks.some((m) => Math.abs(m.x - a.x) < 1e-3 && Math.abs(m.y - a.y) < 1e-3)) a.smart = true;
+  return sps;
 }
 
 /**

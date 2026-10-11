@@ -1,5 +1,6 @@
 import { openCanvasMenu } from '../components/CanvasMenu';
 import { cursorFor } from './cursors';
+import { StyleTools } from './styleTools';
 import {
   artboardAt,
   boxCenter,
@@ -161,6 +162,7 @@ export class CanvasController {
   readonly images: ImageCache;
   /** Plume, crayon et outil Nœud. */
   readonly paths: PathTools;
+  readonly styleTools: StyleTools;
   /** Outils de la Persona Photo. */
   readonly photo: PhotoTools;
   private ctx: CanvasRenderingContext2D;
@@ -191,6 +193,7 @@ export class CanvasController {
     this.ctx = canvas.getContext('2d')!;
     this.images = new ImageCache(() => this.requestDraw());
     this.paths = new PathTools(this);
+    this.styleTools = new StyleTools(this);
     this.photo = new PhotoTools(this);
     this.readColors();
     this.unsubscribe.push(
@@ -598,6 +601,10 @@ export class CanvasController {
       this.requestDraw();
       return;
     }
+    if (this.styleTools.pointerDown(e, p, { x: sx, y: sy })) {
+      this.requestDraw();
+      return;
+    }
     if (tool === 'image') {
       void importImage();
       return;
@@ -761,6 +768,7 @@ export class CanvasController {
     this.lastPointer = { x: sx, y: sy };
     ui.set({ cursor: { x: Math.round(p.x), y: Math.round(p.y) } });
     if (!this.gesture && this.photo.pointerMove(e, p, { x: sx, y: sy })) return;
+    if (!this.gesture && this.styleTools.pointerMove(e, p, { x: sx, y: sy })) return;
     if (!this.gesture && this.paths.pointerMove(e, p, { x: sx, y: sy })) {
       if (this.effectiveTool() === 'direct') this.canvas.style.cursor = cursorFor('direct');
       return;
@@ -1183,9 +1191,15 @@ export class CanvasController {
     const start = this.rightDown;
     this.rightDown = null;
     if (!start || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 4) return;
-    if (this.gesture || this.paths.busy || this.photo.busy) return;
+    if (this.gesture || this.paths.busy || this.photo.busy || this.styleTools.busy) return;
     const r = this.canvas.getBoundingClientRect();
     const tool = this.effectiveTool();
+    // Outil Nœud : clic droit sur un nœud, menu des nœuds (comme dans Affinity).
+    if (tool === 'direct' && this.paths.nodeMenuAt({ x: e.clientX - r.left, y: e.clientY - r.top })) {
+      this.requestDraw();
+      openCanvasMenu(e.clientX, e.clientY, 'nodes');
+      return;
+    }
     if (ui.get().persona !== 'photo') {
       const hit = this.hitTest(this.toWorld(e.clientX - r.left, e.clientY - r.top), tool === 'direct');
       if (hit && !editor.selection.includes(hit.id)) editor.select([hit.id]);
@@ -1209,6 +1223,7 @@ export class CanvasController {
       this.requestDraw();
       return;
     }
+    if (!g && this.styleTools.pointerUp()) return;
     if (!g && this.paths.pointerUp()) {
       this.requestDraw();
       return;
@@ -1309,6 +1324,7 @@ export class CanvasController {
 
   private onPointerCancel = () => {
     this.paths.pointerCancel();
+    this.styleTools.cancel();
     this.photo.pointerCancel();
     if (this.gesture && this.gesture.kind !== 'pan' && this.gesture.kind !== 'marquee') editor.cancel();
     this.gesture = null;
@@ -1522,6 +1538,7 @@ export class CanvasController {
     if (!editingTextId && (tool === 'select' || tool === 'direct' || SHAPE_TOOLS.includes(tool)))
       this.drawHandles();
     this.paths.draw(ctx, this.colors.sel);
+    this.styleTools.draw(ctx, this.colors.sel);
     this.photo.draw(ctx);
     const g = this.gesture;
     if (g?.kind === 'marquee' || g?.kind === 'artboardCreate') {

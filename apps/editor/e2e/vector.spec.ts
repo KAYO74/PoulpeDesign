@@ -120,6 +120,98 @@ test('outil Nœud : sélection au cadre, ajout, retrait et lasso', async ({ page
   expect(await nodeSel()).toEqual(['0:0']);
 });
 
+test('outil Nœud : clics avec touches, [ ], menu des nœuds et actions comme dans Affinity', async ({
+  page,
+}) => {
+  const { at, drag } = await canvas(page);
+  const nodeSel = (): Promise<string[]> => page.evaluate(() => (window as any).poulpe.ui.get().nodeSelection);
+  const path = async () => (await nodes(page))[0];
+  await page.keyboard.press('p');
+  await page.mouse.click(...at(300, 300));
+  await page.mouse.click(...at(500, 300));
+  await page.mouse.click(...at(500, 450));
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('a');
+
+  // Glisser le segment le courbe ; Alt+clic dessus le redresse.
+  await drag([400, 300], [400, 250]);
+  expect((await path()).d).toMatch(/C/);
+  await page.keyboard.down('Alt');
+  await page.mouse.click(...at(400, 250));
+  await page.keyboard.up('Alt');
+  expect((await path()).d).not.toMatch(/C/);
+
+  // Double-clic : nœud lisse ; Alt+clic : de nouveau net.
+  await page.mouse.dblclick(...at(500, 300));
+  expect((await path()).d).toMatch(/C/);
+  await page.keyboard.down('Alt');
+  await page.mouse.click(...at(500, 300));
+  await page.keyboard.up('Alt');
+  expect((await path()).d).not.toMatch(/C/);
+
+  // [ et ] : nœud précédent et suivant.
+  await page.mouse.click(...at(300, 300));
+  expect(await nodeSel()).toEqual(['0:0']);
+  await page.keyboard.press(']');
+  await page.keyboard.press(']');
+  expect(await nodeSel()).toEqual(['0:2']);
+  await page.keyboard.press(']');
+  expect(await nodeSel()).toEqual(['0:0']);
+  await page.keyboard.press('[');
+  expect(await nodeSel()).toEqual(['0:2']);
+
+  // Casser la courbe au nœud du milieu, puis joindre les deux morceaux.
+  await page.mouse.click(...at(500, 300));
+  await page.getByTestId('node-break').click();
+  expect((await path()).d.match(/M/g)).toHaveLength(2);
+  await page.getByTestId('node-join').click();
+  expect((await path()).d.match(/M/g)).toHaveLength(1);
+  expect(await history(page)).toContain('history.join');
+
+  // Ctrl+clic sur un segment : il est supprimé.
+  await page.keyboard.down('Control');
+  await page.mouse.click(...at(500, 375));
+  await page.keyboard.up('Control');
+  let p = await path();
+  expect(p.d.match(/[LC]/g)).toHaveLength(1);
+  expect((await history(page)).at(-1)).toBe('history.deleteSegment');
+
+  // Scinder après le nœud : un nœud au milieu du segment.
+  await page.mouse.click(...at(300, 300));
+  await page.getByTestId('node-split').click();
+  expect((await path()).d.match(/[LC]/g)).toHaveLength(2);
+
+  // Clic droit sur un nœud : menu des nœuds, conversion en nœud intelligent.
+  await page.mouse.click(...at(400, 300), { button: 'right' });
+  const menu = page.getByTestId('canvas-menu');
+  await expect(menu).toContainText('Supprimer en gardant une courbe lisse');
+  await page.screenshot({ path: 'test-results/menu-noeud.png' });
+  await menu.getByText('Convertir', { exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Convertir en nœud intelligent' }).click();
+  p = await path();
+  expect(p.smartNodes).toHaveLength(1);
+  // Le nœud intelligent suit quand on déplace un voisin : ses poignées restent alignées.
+  await page.mouse.click(...at(300, 300));
+  await drag([300, 300], [300, 380]);
+  p = await path();
+  expect(p.smartNodes).toHaveLength(1);
+  expect(p.d).toMatch(/C/);
+
+  // Inverser : le tracé part de l'autre bout.
+  const start = p.d.split(/[LC]/)[0];
+  await page.getByTestId('node-reverse').click();
+  expect((await path()).d.split(/[LC]/)[0]).not.toBe(start);
+
+  // Cadre de transformation : tirer son bord droit étire les nœuds sélectionnés.
+  await page.getByTestId('node-transform').click();
+  await drag([250, 220], [560, 420]);
+  expect((await nodeSel()).length).toBe(3);
+  const w0 = (await path()).width;
+  await page.screenshot({ path: 'test-results/cadre-noeuds.png' });
+  await drag([510, 340], [610, 340]);
+  expect((await path()).width).toBeGreaterThan(w0 * 1.2);
+});
+
 test('bulle d’aide des outils et création au centre avec Ctrl', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.getByTestId('tool-direct').hover();
@@ -162,6 +254,48 @@ test('la souris prend la forme de l’outil sur le document', async ({ page }) =
     await page.mouse.move(...at(400, 400));
     expect(await cursor()).toContain('data:image/svg+xml');
   }
+});
+
+test('outils Remplissage, Transparence, Contour et Largeur de trait', async ({ page }) => {
+  const { drag } = await canvas(page);
+  await page.keyboard.press('u');
+  await drag([300, 300], [450, 400]);
+  // Remplissage [G] : dégradé dans la direction du glissement.
+  await page.keyboard.press('g');
+  await drag([320, 350], [430, 350]);
+  let [r] = await nodes(page);
+  expect(r.fill.type).toBe('linear');
+  expect(r.fill.angle).toBe(0);
+  // Transparence [Y] : la couleur s'efface jusqu'au transparent.
+  await page.keyboard.press('y');
+  await drag([375, 310], [375, 390]);
+  [r] = await nodes(page);
+  expect(r.fill.angle).toBe(90);
+  expect(r.fill.stops[1].color).toMatch(/00$/);
+  // Contour [O] : glisser vers la droite agrandit la forme, Alt garde l'original.
+  const before = r.width;
+  await page.keyboard.press('o');
+  await drag([375, 350], [425, 350]);
+  let list = await nodes(page);
+  expect(list).toHaveLength(1);
+  expect(list[0].type).toBe('path');
+  expect(list[0].width).toBeGreaterThan(before);
+  await page.keyboard.down('Alt');
+  await drag([375, 350], [400, 350]);
+  await page.keyboard.up('Alt');
+  list = await nodes(page);
+  expect(list).toHaveLength(2);
+
+  // Largeur de trait [W] : le trait s'épaissit à l'endroit tiré.
+  await page.keyboard.press('Control+a');
+  await page.keyboard.press('Delete');
+  await page.keyboard.press('l');
+  await drag([300, 500], [600, 500]);
+  await page.keyboard.press('w');
+  await drag([450, 500], [450, 530]);
+  const [line] = await nodes(page);
+  expect(line.stroke.profile).toHaveLength(11);
+  expect(Math.max(...line.stroke.profile)).toBeGreaterThan(1);
 });
 
 test('dessine au crayon', async ({ page }) => {

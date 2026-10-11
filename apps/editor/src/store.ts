@@ -30,6 +30,10 @@ export type ToolId =
   | 'hand'
   | 'zoom'
   | 'eyedropper'
+  | 'gradient'
+  | 'transparency'
+  | 'contour'
+  | 'strokeWidth'
   // Persona Photo
   | 'marqueeRect'
   | 'marqueeEllipse'
@@ -88,7 +92,6 @@ export type Dialog =
   | 'vectorize'
   | 'extensions'
   | 'extensionParams'
-  | 'update'
   | 'imageSize'
   | 'canvasSize'
   | 'workspace'
@@ -147,6 +150,11 @@ export interface UiState {
   cropId: string | null;
   /** Nœuds sélectionnés (« sous-tracé:nœud ») du tracé édité avec l'outil Nœud. */
   nodeSelection: string[];
+  /**
+   * Options de l'outil Nœud : cadre de transformation des nœuds, aimantation sur les autres nœuds,
+   * aimantation de construction des poignées, sens du tracé.
+   */
+  nodeOptions: { transform: boolean; alignNodes: boolean; snapHandles: boolean; orientation: boolean };
   /** Outil Coin : rayon appliqué d'un simple clic, et forme de l'angle. */
   cornerRadiusTool: number;
   cornerKind: 'round' | 'chamfer';
@@ -186,6 +194,11 @@ export interface UiState {
   /** Fichier courant : chemin (bureau) ou nom (navigateur). */
   filePath: string | null;
   dialog: Dialog;
+  /**
+   * Petite fenêtre « nouvelle version disponible » : elle s'affiche par-dessus les autres fenêtres
+   * (écran d'accueil compris), pour qu'une mise à jour trouvée au démarrage soit toujours proposée.
+   */
+  updateOpen: boolean;
   toast: string | null;
   cursor: { x: number; y: number } | null;
   /** Panneau glissé au-dessus de sa zone d'ancrage (surbrillance du point de chute). */
@@ -256,6 +269,7 @@ export const ui = new Store<UiState>({
   editingTextId: null,
   cropId: null,
   nodeSelection: [],
+  nodeOptions: { transform: false, alignNodes: true, snapHandles: true, orientation: true },
   cornerRadiusTool: 12,
   cornerKind: 'round',
   pencilSmoothing: 50,
@@ -278,6 +292,7 @@ export const ui = new Store<UiState>({
   softProof: false,
   filePath: null,
   dialog: null,
+  updateOpen: false,
   toast: null,
   cursor: null,
   panelDock: null,

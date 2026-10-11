@@ -297,6 +297,19 @@ svg.i {
   padding-inline: 10px;
   font-weight: 500;
 }
+/* Bouton à icône seule (barre de l'outil Nœud). */
+.btn.small.icon {
+  width: 26px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+/* Groupe de boutons serrés dans la barre contextuelle. */
+.ctx-group {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+}
 .btn[aria-pressed='true'] {
   background: var(--accent);
   color: var(--accent-fg);
@@ -313,6 +326,10 @@ svg.i {
   overflow-x: auto;
   scrollbar-width: none;
   white-space: nowrap;
+}
+/* La barre défile quand elle déborde : ses éléments gardent leur largeur. */
+.contextbar > * {
+  flex-shrink: 0;
 }
 .ctx-tool {
   font-weight: 700;
@@ -996,6 +1013,20 @@ h4.sub {
 }
 .modal.wide {
   width: min(760px, calc(100vw - 32px));
+}
+.modal.small {
+  width: min(400px, calc(100vw - 32px));
+}
+.modal-backdrop.top {
+  z-index: 110;
+}
+.update-details summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.update-details .update-notes {
+  max-height: 160px;
+  overflow: auto;
 }
 .modal header {
   display: flex;

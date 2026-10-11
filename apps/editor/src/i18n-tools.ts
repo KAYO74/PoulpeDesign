@@ -4,6 +4,22 @@
  */
 
 export const frTools = {
+  'tool.gradient': 'Remplissage',
+  'tool.transparency': 'Transparence',
+  'tool.contour': 'Contour',
+  'tool.strokeWidth': 'Largeur de trait',
+  'tip.gradient.desc': 'Appliquez un dégradé au remplissage des objets sélectionnés.',
+  'tip.gradient.how':
+    "**Glisser** sur l'objet pour régler la direction du dégradé, **+Maj** par pas de 45°. **Cliquer** sur un objet pour le sélectionner.",
+  'tip.transparency.desc': 'Faites disparaître progressivement le remplissage vers le transparent.',
+  'tip.transparency.how':
+    "**Glisser** sur l'objet : du côté opaque vers le côté transparent, **+Maj** par pas de 45°.",
+  'tip.contour.desc': 'Agrandissez ou rétrécissez la forme des objets en décalant leur tracé.',
+  'tip.contour.how':
+    "**Glisser** vers la droite pour agrandir, vers la gauche pour rétrécir. **+Alt** garde l'original et crée le contour à côté.",
+  'tip.strokeWidth.desc': 'Faites varier l’épaisseur du trait le long du tracé.',
+  'tip.strokeWidth.how':
+    '**Glisser** depuis un point du trait : plus loin, le trait s’épaissit à cet endroit ; plus près, il s’affine.',
   'menu.align': 'Alignement',
   'menu.transform': 'Transformer',
   'tip.more': 'En savoir plus…',
@@ -13,7 +29,7 @@ export const frTools = {
     "**Cliquer** sur un objet pour le sélectionner, **+Maj** pour l'ajouter à la sélection. **Glisser** dans le vide pour sélectionner au cadre. **Glisser**+**Alt** un objet pour le dupliquer. **Cliquer** dans le vide pour tout désélectionner.",
   'tip.direct.desc': 'Modifiez les nœuds et les courbes des tracés.',
   'tip.direct.how':
-    "**Cliquer** sur un nœud pour le sélectionner, **+Maj** pour l'ajouter. **Glisser** dans le vide : cadre de sélection, **+Alt** : lasso. **Cliquer**+**Alt** pour sélectionner en polygone. **Glisser**+**Maj** ajoute des nœuds, **Glisser**+**Clic droit** en retire, **Glisser**+**Maj**+**Clic droit** inverse la sélection. **Double-cliquer** un nœud pour le rendre lisse ou pointu.",
+    "**Cliquer** sur un nœud pour le sélectionner, **+Maj** pour l'ajouter. **Cliquer** sur le trait pour ajouter un nœud, **+Alt** pour redresser le segment, **+Ctrl** pour le supprimer. **Cliquer**+**Alt** sur un nœud le rend net. **Glisser** dans le vide : cadre de sélection, **+Alt** : lasso. **Glisser**+**Clic droit** retire des nœuds. **[** et **]** : nœud précédent ou suivant. **Clic droit** sur un nœud : ses actions.",
   'tip.artboard.desc': 'Ajoutez, déplacez et redimensionnez les plans de travail du document.',
   'tip.artboard.how':
     '**Glisser** dans le vide pour créer un plan de travail. **Glisser** un plan de travail pour le déplacer.',
@@ -72,11 +88,51 @@ export const frTools = {
   'tip.straighten.desc': 'Redressez une photo penchée.',
   'tip.straighten.how': '**Glisser** le long d’une ligne qui doit être droite.',
   'tip.perspective.desc': 'Corrigez la perspective d’une image.',
+  'node.sharp': 'Convertir en nœud net',
+  'node.smooth': 'Convertir en nœud lisse',
+  'node.smart': 'Convertir en nœud intelligent',
+  'node.split': 'Scinder la courbe après le nœud',
+  'node.break': 'Casser la courbe',
+  'node.close': 'Fermer ou ouvrir la courbe',
+  'node.smoothCurve': 'Lisser la courbe',
+  'node.join': 'Joindre les courbes',
+  'node.reverse': 'Inverser la courbe',
+  'node.delete': 'Supprimer le nœud',
+  'node.fitDelete': 'Supprimer en gardant une courbe lisse',
+  'node.prev': 'Nœud précédent',
+  'node.next': 'Nœud suivant',
+  'node.convert': 'Convertir',
+  'node.actions': 'Actions',
+  'node.snap': 'Aimanter',
+  'node.transform': 'Transformer les nœuds sélectionnés avec un cadre',
+  'node.alignNodes': 'Aligner sur les autres nœuds',
+  'node.snapHandles': 'Aimanter les poignées (alignées, à 90°)',
+  'node.orientation': 'Montrer le sens du tracé (dernier segment en rouge)',
+  'node.joinNothing': 'Rien à joindre : sélectionnez deux extrémités de courbes ouvertes.',
+  'history.deleteSegment': 'Suppression du segment',
+  'history.deleteNodes': 'Suppression de nœuds',
+  'history.join': 'Jonction des courbes',
 };
 
 export type MessageKeyTools = keyof typeof frTools;
 
 export const enTools: Record<MessageKeyTools, string> = {
+  'tool.gradient': 'Fill',
+  'tool.transparency': 'Transparency',
+  'tool.contour': 'Contour',
+  'tool.strokeWidth': 'Stroke Width',
+  'tip.gradient.desc': 'Apply a gradient to the fill of the selected objects.',
+  'tip.gradient.how':
+    '**Drag** on the object to set the gradient direction, **+Shift** in 45° steps. **Click** an object to select it.',
+  'tip.transparency.desc': 'Fade the fill out to transparent.',
+  'tip.transparency.how':
+    '**Drag** on the object from the opaque side to the transparent side, **+Shift** in 45° steps.',
+  'tip.contour.desc': 'Grow or shrink the shape of objects by offsetting their path.',
+  'tip.contour.how':
+    '**Drag** right to grow, left to shrink. **+Alt** keeps the original and adds the contour beside it.',
+  'tip.strokeWidth.desc': 'Vary the stroke width along the path.',
+  'tip.strokeWidth.how':
+    '**Drag** from a point on the stroke: farther makes the stroke thicker there, closer makes it thinner.',
   'menu.align': 'Align',
   'menu.transform': 'Transform',
   'tip.more': 'Learn more…',
@@ -86,7 +142,7 @@ export const enTools: Record<MessageKeyTools, string> = {
     '**Click** an object to select it, **+Shift** to add it to the selection. **Drag** on empty space for a marquee. **Drag**+**Alt** an object to duplicate it. **Click** on empty space to deselect.',
   'tip.direct.desc': 'Edit the nodes and curves of paths.',
   'tip.direct.how':
-    '**Click** a node to select it, **+Shift** to add it. **Drag** on empty space: marquee, **+Alt**: lasso. **Click**+**Alt** to select with a polygon. **Drag**+**Shift** adds nodes, **Drag**+**Right click** removes them, **Drag**+**Shift**+**Right click** toggles them. **Double-click** a node to make it smooth or sharp.',
+    '**Click** a node to select it, **+Shift** to add it. **Click** the path to add a node, **+Alt** to straighten the segment, **+Ctrl** to delete it. **Click**+**Alt** on a node makes it sharp. **Drag** on empty space: marquee, **+Alt**: lasso. **Drag**+**Right click** removes nodes. **[** and **]**: previous or next node. **Right click** a node: its actions.',
   'tip.artboard.desc': 'Add, move and resize the artboards of the document.',
   'tip.artboard.how': '**Drag** on empty space to create an artboard. **Drag** an artboard to move it.',
   'tip.pen.desc': 'Draw curves node by node.',
@@ -143,4 +199,28 @@ export const enTools: Record<MessageKeyTools, string> = {
   'tip.straighten.desc': 'Straighten a tilted photo.',
   'tip.straighten.how': '**Drag** along a line that should be straight.',
   'tip.perspective.desc': 'Fix the perspective of an image.',
+  'node.sharp': 'Convert to Sharp',
+  'node.smooth': 'Convert to Smooth',
+  'node.smart': 'Convert to Smart',
+  'node.split': 'Split Curve After Node',
+  'node.break': 'Break Curve',
+  'node.close': 'Close or Open Curve',
+  'node.smoothCurve': 'Smooth Curve',
+  'node.join': 'Join Curves',
+  'node.reverse': 'Reverse Curve',
+  'node.delete': 'Delete Node',
+  'node.fitDelete': 'Fit To Curve Delete Node',
+  'node.prev': 'Previous Node',
+  'node.next': 'Next Node',
+  'node.convert': 'Convert',
+  'node.actions': 'Actions',
+  'node.snap': 'Snap',
+  'node.transform': 'Transform the selected nodes with a box',
+  'node.alignNodes': 'Align to other nodes',
+  'node.snapHandles': 'Snap handles (inline, at 90°)',
+  'node.orientation': 'Show the path direction (last segment in red)',
+  'node.joinNothing': 'Nothing to join: select two ends of open curves.',
+  'history.deleteSegment': 'Delete segment',
+  'history.deleteNodes': 'Delete nodes',
+  'history.join': 'Join curves',
 };

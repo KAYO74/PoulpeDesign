@@ -52,12 +52,18 @@ export function Modal({
   onClose,
   wide,
   xl,
+  small,
+  top,
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
   wide?: boolean;
   xl?: boolean;
+  /** Petite fenêtre (message court). */
+  small?: boolean;
+  /** Au-dessus des autres fenêtres ouvertes. */
+  top?: boolean;
 }) {
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
@@ -67,10 +73,13 @@ export function Modal({
     return () => prev?.focus?.();
   }, []);
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className={`modal-backdrop${top ? ' top' : ''}`}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div
         ref={ref}
-        className={`modal${wide ? ' wide' : ''}${xl ? ' xl' : ''}`}
+        className={`modal${wide ? ' wide' : ''}${xl ? ' xl' : ''}${small ? ' small' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -1294,6 +1303,15 @@ function WorkspaceDialog() {
 }
 
 export function Dialogs() {
+  return (
+    <>
+      <MainDialog />
+      <UpdateDialog />
+    </>
+  );
+}
+
+function MainDialog() {
   const dialog = useUi((s) => s.dialog);
   if (dialog === 'new') return <NewDialog />;
   if (dialog === 'export') return <ExportDialog />;
@@ -1310,7 +1328,6 @@ export function Dialogs() {
   if (dialog === 'vectorize') return <VectorizeDialog />;
   if (dialog === 'extensions') return <ExtensionsDialog />;
   if (dialog === 'extensionParams') return <ExtensionParamsDialog />;
-  if (dialog === 'update') return <UpdateDialog />;
   if (dialog === 'imageSize') return <ImageSizeDialog />;
   if (dialog === 'canvasSize') return <CanvasSizeDialog />;
   if (dialog === 'workspace') return <WorkspaceDialog />;

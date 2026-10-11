@@ -4,6 +4,8 @@ import { useFonts } from '../fonts';
 import { useT } from '../i18n';
 import { editor, ui, useEditor, useUi, type ToolId } from '../store';
 import { getController } from './Viewport';
+import { Icon, type IconName } from './Icon';
+import type { NodeAction } from '../canvas/pathTools';
 import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vectorActions';
 import { canLinkSelection, linkSelection, toggleFrame } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
@@ -290,7 +292,8 @@ export function ContextBar() {
             />
           </>
         )}
-        {tool === 'direct' && node?.type === 'path' && !node.locked && <NodeButtons />}
+        {tool === 'direct' && node?.type === 'path' && !node.locked && <NodeButtons single />}
+        {tool === 'direct' && selection.length > 1 && <NodeButtons single={false} />}
         {tool === 'direct' &&
           node &&
           node.type !== 'path' &&
@@ -372,42 +375,155 @@ export function ContextBar() {
   );
 }
 
-/** Boutons de l'outil Nœud : type des nœuds sélectionnés, suppression, fermeture du tracé. */
-function NodeButtons() {
+/** Bouton à icône de la barre de l'outil Nœud (l'infobulle donne son nom). */
+function NodeBtn({
+  icon,
+  label,
+  onClick,
+  disabled,
+  pressed,
+  testId,
+}: {
+  icon: IconName;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  pressed?: boolean;
+  testId: string;
+}) {
+  return (
+    <button
+      className="btn small icon"
+      title={label}
+      aria-label={label}
+      aria-pressed={pressed}
+      disabled={disabled}
+      onClick={onClick}
+      data-testid={testId}
+    >
+      <Icon name={icon} />
+    </button>
+  );
+}
+
+/**
+ * Barre de l'outil Nœud, comme dans Affinity : convertir les nœuds, actions sur la courbe, cadre de
+ * transformation, aimantation et sens du tracé.
+ */
+function NodeButtons({ single }: { single: boolean }) {
   const t = useT();
   const keys = useUi((s) => s.nodeSelection);
-  const run = (kind: 'sharp' | 'smooth' | 'delete' | 'toggleClosed') =>
-    getController()?.paths.editNodes(kind);
+  const opts = useUi((s) => s.nodeOptions);
+  const run = (kind: NodeAction) => getController()?.paths.editNodes(kind);
+  const toggle = (k: keyof typeof opts) => ui.set({ nodeOptions: { ...opts, [k]: !opts[k] } });
+  const none = !single || !keys.length;
   return (
     <>
-      <span className="ctx-label">{t('ctx.nodes')}</span>
-      <button
-        className="btn small"
-        disabled={!keys.length}
-        onClick={() => run('sharp')}
-        data-testid="node-sharp"
-      >
-        {t('ctx.nodeSharp')}
-      </button>
-      <button
-        className="btn small"
-        disabled={!keys.length}
-        onClick={() => run('smooth')}
-        data-testid="node-smooth"
-      >
-        {t('ctx.nodeSmooth')}
-      </button>
-      <button
-        className="btn small"
-        disabled={!keys.length}
-        onClick={() => run('delete')}
-        data-testid="node-delete"
-      >
-        {t('ctx.nodeDelete')}
-      </button>
-      <button className="btn small" onClick={() => run('toggleClosed')} data-testid="node-close">
-        {t('ctx.nodeClose')}
-      </button>
+      <span className="ctx-label">{t('node.convert')}</span>
+      <span className="ctx-group">
+        <NodeBtn
+          icon="nodeSharp"
+          label={t('node.sharp')}
+          disabled={none}
+          onClick={() => run('sharp')}
+          testId="node-sharp"
+        />
+        <NodeBtn
+          icon="nodeSmooth"
+          label={t('node.smooth')}
+          disabled={none}
+          onClick={() => run('smooth')}
+          testId="node-smooth"
+        />
+        <NodeBtn
+          icon="nodeSmart"
+          label={t('node.smart')}
+          disabled={none}
+          onClick={() => run('smart')}
+          testId="node-smart"
+        />
+      </span>
+      <span className="ctx-label">{t('node.actions')}</span>
+      <span className="ctx-group">
+        <NodeBtn
+          icon="splitCurve"
+          label={t('node.split')}
+          disabled={none}
+          onClick={() => run('split')}
+          testId="node-split"
+        />
+        <NodeBtn
+          icon="breakCurve"
+          label={t('node.break')}
+          disabled={none}
+          onClick={() => run('break')}
+          testId="node-break"
+        />
+        <NodeBtn
+          icon="closeCurve"
+          label={t('node.close')}
+          disabled={!single}
+          onClick={() => run('toggleClosed')}
+          testId="node-close"
+        />
+        <NodeBtn
+          icon="smoothCurve"
+          label={t('node.smoothCurve')}
+          disabled={!single}
+          onClick={() => run('smoothCurve')}
+          testId="node-smooth-curve"
+        />
+        <NodeBtn icon="joinCurves" label={t('node.join')} onClick={() => run('join')} testId="node-join" />
+        <NodeBtn
+          icon="reverseCurve"
+          label={t('node.reverse')}
+          disabled={!single}
+          onClick={() => run('reverse')}
+          testId="node-reverse"
+        />
+        <NodeBtn
+          icon="trash"
+          label={t('node.delete')}
+          disabled={none}
+          onClick={() => run('delete')}
+          testId="node-delete"
+        />
+      </span>
+      <span className="ctx-group">
+        <NodeBtn
+          icon="nodeTransform"
+          label={t('node.transform')}
+          pressed={opts.transform}
+          onClick={() => toggle('transform')}
+          testId="node-transform"
+        />
+      </span>
+      <span className="ctx-label">{t('node.snap')}</span>
+      <span className="ctx-group">
+        <NodeBtn
+          icon="alignNodes"
+          label={t('node.alignNodes')}
+          pressed={opts.alignNodes}
+          onClick={() => toggle('alignNodes')}
+          testId="node-align"
+        />
+        <NodeBtn
+          icon="snapHandles"
+          label={t('node.snapHandles')}
+          pressed={opts.snapHandles}
+          onClick={() => toggle('snapHandles')}
+          testId="node-snap-handles"
+        />
+      </span>
+      <span className="ctx-group">
+        <NodeBtn
+          icon="orientation"
+          label={t('node.orientation')}
+          pressed={opts.orientation}
+          onClick={() => toggle('orientation')}
+          testId="node-orientation"
+        />
+      </span>
       <span className="ctx-dim">{t('ctx.nodeHint')}</span>
     </>
   );
