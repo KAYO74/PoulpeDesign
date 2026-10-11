@@ -43,6 +43,7 @@ import {
   softProofPixels,
 } from '@poulpe/core';
 import { ImageCache, RenderCache, cachedFlow, clearLayoutCache, measureText, nodePath } from '@poulpe/render';
+import { cpuThreads } from '../preferences';
 import { onPerformanceSettings, recordFrame, setRenderStatsSource } from '../perf';
 import { setPaint } from '../actions';
 import { t } from '../i18n';
@@ -57,6 +58,7 @@ import {
   type SnapLines,
 } from './snapping';
 import { PathTools } from './pathTools';
+import { WorkerPainter, renderWorkerCount } from './parallel';
 import {
   beginTextEdit,
   editedTextId,
@@ -197,9 +199,11 @@ export class CanvasController {
           this.cache.accelerated = s.hardwareAcceleration;
           this.cache.invalidate();
         }
+        this.setParallel(s.parallelDrawing);
         this.requestDraw();
       }),
     );
+    this.cache.onReady = () => this.requestDraw();
     setRenderStatsSource(() => this.cache.stats());
     let lastSelection = editor.selection;
     this.unsubscribe.push(
@@ -259,6 +263,7 @@ export class CanvasController {
 
   dispose(): void {
     clearTimeout(this.refreshTimer);
+    this.setParallel(false);
     setRenderStatsSource(null);
     this.paths.dispose();
     this.photo.dispose();
@@ -276,6 +281,29 @@ export class CanvasController {
     window.removeEventListener('poulpe:fit', this.zoomToFit);
     window.removeEventListener('poulpe:textselection', this.requestDraw);
     document.fonts?.removeEventListener?.('loadingdone', this.onFontsLoaded);
+  }
+
+  /** Fils de dessin pour les gros redessins (voir parallel.ts). */
+  private painter: WorkerPainter | null = null;
+
+  private setParallel(on: boolean) {
+    const count = on && typeof OffscreenCanvas !== 'undefined' ? renderWorkerCount(cpuThreads()) : 0;
+    if (count > 0 === !!this.painter) return;
+    this.painter?.dispose();
+    this.painter =
+      count > 0
+        ? new WorkerPainter(count, (w, h) => {
+            if (this.cache.accelerated) return new OffscreenCanvas(w, h);
+            return Object.assign(document.createElement('canvas'), { width: w, height: h });
+          })
+        : null;
+    this.cache.parallel = this.painter;
+    this.cache.invalidate();
+  }
+
+  /** Attend la fin des dessins en cours sur les autres cœurs (mesures et tests). */
+  renderIdle(): Promise<boolean> {
+    return this.cache.idle();
   }
 
   /** Oublie les images gardées : le prochain dessin repart de zéro. */

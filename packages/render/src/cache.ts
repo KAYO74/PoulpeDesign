@@ -45,6 +45,37 @@ export interface CacheView {
 
 type AnyCanvas = HTMLCanvasElement | OffscreenCanvas;
 
+/** Une tranche de calques à dessiner dans une image, en pixels de l'appareil. */
+export interface SegmentJob {
+  doc: PoulpeDocument;
+  ab: Artboard;
+  nodes: readonly SceneNode[];
+  /** Avec le fond et la page maître. */
+  base: boolean;
+  opts: RenderOptions;
+  /** Repère : point de l'image = point du monde × `scale` + (`ox`, `oy`) − (`x`, `y`). */
+  scale: number;
+  ox: number;
+  oy: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Dessin des grosses tranches de calques sur plusieurs cœurs du processeur (fils de dessin de
+ * l'éditeur). Le cache s'en sert là où un dessin direct figerait l'écran.
+ */
+export interface ParallelPainter {
+  /** Nombre d'objets à partir duquel les fils valent leur coût de mise en route. */
+  minNodes: number;
+  /** Les fils savent-ils dessiner cette tranche (images prêtes, pas de réglages) ? */
+  accepts(job: SegmentJob): boolean;
+  /** L'image de la tranche, ou null en cas d'échec. */
+  paint(job: SegmentJob): Promise<HTMLCanvasElement | OffscreenCanvas | null>;
+}
+
 interface Entry {
   nodes: readonly SceneNode[];
   deps: readonly unknown[];
@@ -185,11 +216,28 @@ export class RenderCache {
   private clock = 0;
   private hits = 0;
   private misses = 0;
+  /** Dessins de grosses tranches confiés aux fils de dessin (null : tout se dessine ici). */
+  parallel: ParallelPainter | null = null;
+  /** Appelé quand une image dessinée par les fils est prête : il faut redessiner l'écran. */
+  onReady: () => void = () => {};
+  private pending = new Map<string, { signature: Signature; failed: boolean }>();
+  private generation = 0;
 
   /** Oublie toutes les images (par ex. quand les réglages changent). */
   invalidate(): void {
     this.entries.clear();
     this.used = 0;
+    this.pending.clear();
+    this.generation++;
+  }
+
+  /** Attend la fin des dessins confiés aux fils (mesures, tests). */
+  /** Attend la fin des dessins en cours ailleurs ; vrai s'il y en avait. */
+  async idle(): Promise<boolean> {
+    const busy = () => [...this.pending.values()].some((p) => !p.failed);
+    const was = busy();
+    for (let i = 0; i < 1000 && busy(); i++) await new Promise((r) => setTimeout(r, 1));
+    return was;
   }
 
   stats(): RenderCacheStats {
@@ -348,39 +396,7 @@ export class RenderCache {
     opts: RenderOptions,
     base: boolean,
   ) {
-    const frame = { x: ab.x, y: ab.y, width: ab.width, height: ab.height };
-    if (base) {
-      ctx.save();
-      ctx.translate(ab.x, ab.y);
-      const bg = canvasPaint(ctx, ab.background, ab.width, ab.height, doc, opts.images);
-      if (bg) {
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, ab.width, ab.height);
-      }
-      ctx.restore();
-      const master = masterOf(doc, ab);
-      if (master) {
-        const dx = ab.x - master.x,
-          dy = ab.y - master.y;
-        ctx.save();
-        ctx.translate(dx, dy);
-        const cull = opts.cull && { ...opts.cull, x: opts.cull.x - dx, y: opts.cull.y - dy };
-        drawChildren(
-          ctx,
-          doc,
-          master.children,
-          { ...opts, cull },
-          {
-            x: master.x,
-            y: master.y,
-            width: master.width,
-            height: master.height,
-          },
-        );
-        ctx.restore();
-      }
-    }
-    drawChildren(ctx, doc, nodes, opts, frame);
+    paintSegment(ctx, doc, ab, nodes, opts, base);
   }
 
   /**
@@ -449,6 +465,61 @@ export class RenderCache {
       const rw = rx1 - rx0,
         rh = ry1 - ry0;
       if (rw <= 0 || rh <= 0) return false;
+      const signature: Signature = {
+        nodes,
+        deps,
+        revision,
+        base,
+        scale: view.scale,
+        ox: view.ox,
+        oy: view.oy,
+        rx: rx0,
+        ry: ry0,
+        rw,
+        rh,
+      };
+      // Grosse tranche : dessinée par les fils de dessin, sans figer l'écran. En attendant,
+      // l'ancienne image sert d'aperçu ; s'il n'y en a pas (ouverture du document), le plan de
+      // travail reste vide un instant. Si une autre image du même plan de travail existe
+      // (changement de sélection), on dessine ici, pour ne rien faire disparaître.
+      const otherShown = !e && [...this.entries.keys()].some((k) => k.startsWith(`${ab.id}:`));
+      if (
+        !otherShown &&
+        rw * rh * 4 <= this.budget &&
+        this.paintInParallel(
+          key,
+          {
+            doc,
+            ab,
+            nodes,
+            base,
+            opts: { ...opts, cull: this.toWorld({ x0: rx0, y0: ry0, x1: rx1, y1: ry1 }, view) },
+            scale: view.scale,
+            ox: view.ox,
+            oy: view.oy,
+            x: rx0,
+            y: ry0,
+            width: rw,
+            height: rh,
+          },
+          signature,
+        )
+      ) {
+        if (!e) return false;
+        e.used = ++this.clock;
+        const k = view.scale / e.scale;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(
+          e.canvas,
+          e.rx * k + view.ox - e.ox * k,
+          e.ry * k + view.oy - e.oy * k,
+          e.rw * k,
+          e.rh * k,
+        );
+        ctx.restore();
+        return true;
+      }
       const bytes = rw * rh * 4;
       // Une image de même taille est réutilisée : allouer une toile coûte cher.
       let reuse: AnyCanvas | null = null;
@@ -501,6 +572,48 @@ export class RenderCache {
     return stale;
   }
 
+  /**
+   * Confie une tranche aux fils de dessin. Vrai si elle est (ou sera) dessinée par eux ; faux
+   * s'il faut la dessiner ici (petite tranche, contenu qu'ils ne savent pas dessiner, échec).
+   */
+  private paintInParallel(key: string, job: SegmentJob, signature: Signature): boolean {
+    const painter = this.parallel;
+    if (!painter) return false;
+    const master = job.base ? masterOf(job.doc, job.ab) : null;
+    if (countNodes(job.nodes) + countNodes(master?.children ?? []) < painter.minNodes) return false;
+    const pending = this.pending.get(key);
+    if (pending && sameSignature(pending.signature, signature)) return !pending.failed;
+    if (!painter.accepts(job)) return false;
+    const generation = this.generation;
+    const p = { signature, failed: false };
+    this.pending.set(key, p);
+    void painter
+      .paint(job)
+      .catch(() => null)
+      .then((canvas) => {
+        if (generation !== this.generation || this.pending.get(key) !== p) return;
+        if (!canvas) {
+          // Échec : la même tranche sera dessinée ici à la prochaine image.
+          p.failed = true;
+          this.onReady();
+          return;
+        }
+        this.pending.delete(key);
+        const bytes = signature.rw * signature.rh * 4;
+        const old = this.entries.get(key);
+        if (old) {
+          this.used -= old.bytes;
+          this.entries.delete(key);
+        }
+        if (bytes > this.budget) return;
+        this.evict(bytes);
+        this.entries.set(key, { ...signature, canvas, bytes, used: ++this.clock });
+        this.used += bytes;
+        this.onReady();
+      });
+    return true;
+  }
+
   /** Libère les images les moins récemment utilisées pour faire de la place. */
   private evict(bytes: number) {
     if (this.used + bytes <= this.budget) return;
@@ -511,4 +624,73 @@ export class RenderCache {
       this.used -= e.bytes;
     }
   }
+}
+
+type Signature = Omit<Entry, 'canvas' | 'bytes' | 'used'>;
+
+function sameSignature(a: Signature, b: Signature): boolean {
+  return (
+    a.base === b.base &&
+    a.revision === b.revision &&
+    a.scale === b.scale &&
+    a.ox === b.ox &&
+    a.oy === b.oy &&
+    a.rx === b.rx &&
+    a.ry === b.ry &&
+    a.rw === b.rw &&
+    a.rh === b.rh &&
+    sameList(a.nodes, b.nodes) &&
+    sameList(a.deps, b.deps)
+  );
+}
+
+/** Nombre d'objets, enfants des groupes compris : estime le coût d'un dessin. */
+function countNodes(nodes: readonly SceneNode[]): number {
+  let n = 0;
+  for (const c of nodes) n += c.type === 'group' ? 1 + countNodes(c.children) : 1;
+  return n;
+}
+
+/** Fond, page maître et objets d'une tranche de calques, dans le repère du monde. */
+export function paintSegment(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  doc: PoulpeDocument,
+  ab: Artboard,
+  nodes: SceneNode[],
+  opts: RenderOptions,
+  base: boolean,
+): void {
+  const frame = { x: ab.x, y: ab.y, width: ab.width, height: ab.height };
+  if (base) {
+    ctx.save();
+    ctx.translate(ab.x, ab.y);
+    const bg = canvasPaint(ctx, ab.background, ab.width, ab.height, doc, opts.images);
+    if (bg) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, ab.width, ab.height);
+    }
+    ctx.restore();
+    const master = masterOf(doc, ab);
+    if (master) {
+      const dx = ab.x - master.x,
+        dy = ab.y - master.y;
+      ctx.save();
+      ctx.translate(dx, dy);
+      const cull = opts.cull && { ...opts.cull, x: opts.cull.x - dx, y: opts.cull.y - dy };
+      drawChildren(
+        ctx,
+        doc,
+        master.children,
+        { ...opts, cull },
+        {
+          x: master.x,
+          y: master.y,
+          width: master.width,
+          height: master.height,
+        },
+      );
+      ctx.restore();
+    }
+  }
+  drawChildren(ctx, doc, nodes, opts, frame);
 }

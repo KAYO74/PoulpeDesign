@@ -22,6 +22,8 @@ export interface PerformanceSettings {
   hardwareAcceleration: boolean;
   /** Fils de calcul pour les traitements lourds (détourage par IA). */
   workerThreads: number;
+  /** Gros redessins découpés en bandes dessinées en même temps sur plusieurs cœurs. */
+  parallelDrawing: boolean;
 }
 
 export const MAX_THREADS = 16;
@@ -38,6 +40,7 @@ export function defaultPerformanceSettings(): PerformanceSettings {
     previewQuality: 'balanced',
     hardwareAcceleration: true,
     workerThreads: defaultThreads(),
+    parallelDrawing: true,
   };
 }
 
@@ -62,6 +65,7 @@ function sanitize(s: PerformanceSettings): PerformanceSettings {
       : d.previewQuality,
     hardwareAcceleration: typeof s.hardwareAcceleration === 'boolean' ? s.hardwareAcceleration : true,
     workerThreads: num(s.workerThreads, d.workerThreads, 1, MAX_THREADS),
+    parallelDrawing: typeof s.parallelDrawing === 'boolean' ? s.parallelDrawing : true,
   };
 }
 

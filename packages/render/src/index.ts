@@ -62,13 +62,21 @@ import { bitmapSource, isBitmapRef, resolveData } from './bitmaps';
 export * from './bitmaps';
 export * from './cache';
 
-/** Image prête à dessiner : décodée depuis le fichier, ou toile modifiée dans l'appli. */
-export type Drawable = HTMLImageElement | HTMLCanvasElement;
+/**
+ * Image prête à dessiner : décodée depuis le fichier, toile modifiée dans l'appli, ou copie
+ * envoyée à un fil de dessin (voir `ParallelPainter`).
+ */
+export type Drawable = HTMLImageElement | HTMLCanvasElement | ImageBitmap | OffscreenCanvas;
 
 export function drawableSize(img: Drawable): { width: number; height: number } {
-  return img instanceof HTMLImageElement
+  return typeof HTMLImageElement !== 'undefined' && img instanceof HTMLImageElement
     ? { width: img.naturalWidth, height: img.naturalHeight }
     : { width: img.width, height: img.height };
+}
+
+/** Source des images du document pour le dessin (`ImageCache` dans la page). */
+export interface ImageSource {
+  get(doc: PoulpeDocument, assetId: string): Drawable | null;
 }
 
 /*
@@ -117,7 +125,7 @@ export function setLiveBitmap(assetId: string, canvas: HTMLCanvasElement | null)
 }
 
 /** Cache des images du document, décodées à partir de leurs données. */
-export class ImageCache {
+export class ImageCache implements ImageSource {
   private images = new Map<string, { data: string; img: HTMLImageElement }>();
   constructor(private onLoad: () => void = () => {}) {}
 
@@ -127,7 +135,7 @@ export class ImageCache {
     this.onLoad();
   };
 
-  get(doc: PoulpeDocument, assetId: string): Drawable | null {
+  get(doc: PoulpeDocument, assetId: string): HTMLImageElement | HTMLCanvasElement | null {
     const live = liveOverrides.get(assetId);
     if (live) return live;
     const asset = doc.assets[assetId];
@@ -278,7 +286,7 @@ export function canvasPaint(
   w: number,
   h: number,
   doc?: PoulpeDocument,
-  images?: ImageCache,
+  images?: ImageSource,
 ): string | CanvasGradient | CanvasPattern | null {
   switch (paint.type) {
     case 'none':
@@ -356,7 +364,7 @@ function conicFallback(
 }
 
 export interface RenderOptions {
-  images: ImageCache;
+  images: ImageSource;
   measure?: MeasureText;
   /** Objets à ne pas dessiner (par ex. le texte en cours d'édition). */
   hidden?: Set<string>;
