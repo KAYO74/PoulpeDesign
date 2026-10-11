@@ -197,7 +197,10 @@ test('mélange outils vectoriels et pixel dans un espace, une colonne ou deux, v
 
 test('outils alignés ou rangés en groupes, au choix', async ({ page }) => {
   const col = page.getByTestId('toolcol');
-  await expect(col.getByTestId('tool-ellipse')).toBeVisible();
+  // Alignés : un bouton par outil, les formes réunies sous le Rectangle (comme dans Affinity).
+  await expect(col.getByTestId('tool-direct')).toBeVisible();
+  await expect(col.getByTestId('tool-rect')).toBeVisible();
+  await expect(col.getByTestId('tool-ellipse')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Affichage' }).click();
   await page.getByRole('menuitem', { name: 'Colonne d’outils' }).hover();
@@ -206,6 +209,7 @@ test('outils alignés ou rangés en groupes, au choix', async ({ page }) => {
   // Un bouton par groupe : le rectangle représente les formes.
   await expect(col.getByTestId('tool-rect')).toBeVisible();
   await expect(col.getByTestId('tool-ellipse')).toHaveCount(0);
+  await expect(col.getByTestId('tool-direct')).toHaveCount(0);
 
   // Le petit triangle ouvre les autres outils du groupe.
   await page.getByTestId('toolgroup-more-rect').click();
@@ -230,6 +234,7 @@ test('outils alignés ou rangés en groupes, au choix', async ({ page }) => {
   await page.getByRole('button', { name: 'Affichage' }).click();
   await page.getByRole('menuitem', { name: 'Colonne d’outils' }).hover();
   await page.getByTestId('menu-tools-layout-all').click();
-  await expect(page.getByTestId('toolcol').getByTestId('tool-star')).toBeVisible();
-  await expect(page.getByTestId('toolcol').getByTestId('tool-rect')).toBeVisible();
+  await expect(page.getByTestId('toolcol').getByTestId('tool-direct')).toBeVisible();
+  await expect(page.getByTestId('toolcol').getByTestId('tool-ellipse')).toBeVisible();
+  await expect(page.getByTestId('toolcol').getByTestId('tool-star')).toHaveCount(0);
 });

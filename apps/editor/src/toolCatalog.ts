@@ -6,7 +6,7 @@ export const DRAW_GROUPS: ToolId[][] = [
   ['select', 'direct', 'artboard'],
   ['pen', 'pencil'],
   ['rect', 'ellipse', 'polygon', 'star', 'line'],
-  ['scissors', 'knife', 'corner', 'shapeBuilder'],
+  ['knife', 'scissors', 'corner', 'shapeBuilder'],
   ['text', 'image'],
   ['eyedropper', 'hand', 'zoom'],
 ];
@@ -20,6 +20,29 @@ export const PHOTO_GROUPS: ToolId[][] = [
   ['text'],
   ['eyedropper', 'hand', 'zoom'],
 ];
+
+/**
+ * Familles d'outils qui partagent un seul bouton (les autres s'ouvrent au petit triangle), comme
+ * dans Affinity : les formes sous le Rectangle, les ciseaux sous le Couteau.
+ */
+export const TOOL_FAMILIES: ToolId[][] = [
+  ['rect', 'ellipse', 'polygon', 'star', 'line'],
+  ['knife', 'scissors'],
+];
+
+/** Boutons d'une liste d'outils : un par outil, sauf les familles réunies sous un seul bouton. */
+export function withFamilies(tools: ToolId[]): ToolId[][] {
+  const slots: ToolId[][] = [];
+  const done = new Set<ToolId>();
+  for (const id of tools) {
+    if (done.has(id)) continue;
+    const family = TOOL_FAMILIES.find((f) => f.includes(id));
+    const slot = family ? family.filter((m) => tools.includes(m)) : [id];
+    slot.forEach((m) => done.add(m));
+    slots.push(slot);
+  }
+  return slots;
+}
 
 /** Outils d'une Persona, par groupe (pour la colonne et la boîte « Espace de travail »). */
 export function toolGroupsFor(persona: Persona): ToolId[][] {

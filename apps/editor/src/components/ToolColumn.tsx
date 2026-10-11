@@ -4,7 +4,7 @@ import { useT } from '../i18n';
 import { importImage } from '../io';
 import { setTool, ui, useEditor, useUi, type Persona, type ToolId } from '../store';
 import { activeWorkspace, useActiveWorkspace } from '../workspaces';
-import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona } from '../toolCatalog';
+import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona, withFamilies } from '../toolCatalog';
 import { setPersona } from '../photo/persona';
 import { findNode, isStyled } from '@poulpe/core';
 import { paintPreview } from './fields';
@@ -70,7 +70,7 @@ export function ToolColumn() {
   const side = useUi((s) => s.settings.toolsSide);
   const dropping = useUi((s) => s.panelDock === 'tools');
   const ref = useRef<HTMLDivElement>(null);
-  const shown = grouped ? groups.length : groups.flat().length;
+  const shown = grouped ? groups.length : withFamilies(groups.flat()).length;
   const two = columns === 'two' || (columns === 'auto' && shown > TWO_COLUMNS);
   const [menu, setMenu] = useState<{ group: ToolId[]; rect: DOMRect } | null>(null);
   const [tip, setTip] = useState<{ id: ToolId; more: boolean; rect: DOMRect } | null>(null);
@@ -91,6 +91,8 @@ export function ToolColumn() {
     // Le dernier outil choisi dans un groupe reste celui affiché par son bouton.
     const g = groups.find((gr) => gr.includes(tool));
     if (g && g.length > 1) rememberInGroup(g, tool);
+    const slot = g && withFamilies(g).find((sl) => sl.includes(tool));
+    if (slot && slot.length > 1 && slot.join() !== g.join()) rememberInGroup(slot, tool);
   }, [tool, groups]);
   const toolButton = (id: ToolId, group?: ToolId[]) => {
     const key = keyOf(id);
@@ -174,7 +176,11 @@ export function ToolColumn() {
       ) : (
         groups.map((group, gi) => (
           <div className="toolgroup" key={gi}>
-            {group.map((id) => toolButton(id))}
+            {withFamilies(group).map((slot) =>
+              slot.length > 1
+                ? toolButton(slot.includes(tool) ? tool : shownInGroup(slot), slot)
+                : toolButton(slot[0]),
+            )}
           </div>
         ))
       )}

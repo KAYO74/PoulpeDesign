@@ -39,7 +39,9 @@ test('les ciseaux ouvrent le contour d’un rectangle', async ({ page }) => {
   const { at, drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [500, 500]);
-  await page.getByTestId('tool-scissors').click();
+  // Les ciseaux sont rangés sous le cutter.
+  await page.getByTestId('toolgroup-more-knife').click();
+  await page.getByTestId('toolmenu-scissors').click();
   // Clic au milieu du bord du haut.
   await page.mouse.click(...at(400, 300));
   const [n] = await nodes(page);
