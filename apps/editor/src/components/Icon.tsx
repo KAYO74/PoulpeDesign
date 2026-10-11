@@ -1,5 +1,5 @@
 /** Icônes au trait, 16 × 16, dessinées pour Poulpe. */
-const PATHS = {
+export const ICON_PATHS = {
   select: 'M4 2.5l8.5 6-3.8.7 2.1 4.1-1.6.8-2.1-4.1L4 12.6z',
   direct: 'M5 2.5l7.5 5.5-3.4.6 1.9 3.7-1.4.7-1.9-3.7L5 11.7z M1.5 12.5h3v3h-3z',
   pen: 'M8 1.8l4.2 5.6-2.2 6.1H6l-2.2-6.1z M8 1.8v6.4 M8 9.6a1.2 1.2 0 1 0 0-.1 M5.5 15h5',
@@ -157,7 +157,7 @@ const PATHS = {
   opentype: 'M2 12.5l3-9 3 9 M3 9.5h4 M10 3.5v9 M8.5 3.5h3 M13 6.5v6 M12 9.5h2',
 } as const;
 
-export type IconName = keyof typeof PATHS;
+export type IconName = keyof typeof ICON_PATHS;
 
 export function Icon({ name, size = 16, label }: { name: IconName; size?: number; label?: string }) {
   return (
@@ -170,7 +170,7 @@ export function Icon({ name, size = 16, label }: { name: IconName; size?: number
       role={label ? 'img' : undefined}
       aria-label={label}
     >
-      <path d={PATHS[name]} />
+      <path d={ICON_PATHS[name]} />
     </svg>
   );
 }

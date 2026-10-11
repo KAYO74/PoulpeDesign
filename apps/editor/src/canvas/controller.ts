@@ -1,4 +1,5 @@
 import { openCanvasMenu } from '../components/CanvasMenu';
+import { cursorFor } from './cursors';
 import {
   artboardAt,
   boxCenter,
@@ -761,7 +762,7 @@ export class CanvasController {
     ui.set({ cursor: { x: Math.round(p.x), y: Math.round(p.y) } });
     if (!this.gesture && this.photo.pointerMove(e, p, { x: sx, y: sy })) return;
     if (!this.gesture && this.paths.pointerMove(e, p, { x: sx, y: sy })) {
-      if (this.effectiveTool() === 'direct') this.canvas.style.cursor = 'default';
+      if (this.effectiveTool() === 'direct') this.canvas.style.cursor = cursorFor('direct');
       return;
     }
     const g = this.gesture;
@@ -1433,19 +1434,7 @@ export class CanvasController {
 
   private toolCursor(tool: ToolId): string {
     if (ui.get().linkFrom) return 'copy';
-    switch (tool) {
-      case 'hand':
-        return 'grab';
-      case 'zoom':
-        return 'zoom-in';
-      case 'text':
-        return 'text';
-      case 'select':
-      case 'direct':
-        return 'default';
-      default:
-        return 'crosshair';
-    }
+    return cursorFor(tool);
   }
 
   private updateCursor() {

@@ -152,6 +152,18 @@ test('menu du clic droit sur le canevas', async ({ page }) => {
   expect(await nodes(page)).toHaveLength(2);
 });
 
+test('la souris prend la forme de l’outil sur le document', async ({ page }) => {
+  const { at } = await canvas(page);
+  const cursor = () => page.getByTestId('canvas').evaluate((c) => getComputedStyle(c).cursor);
+  await page.mouse.move(...at(400, 400));
+  for (const key of ['v', 'a', 'p', 'u', 'i']) {
+    await page.keyboard.press(key);
+    await page.mouse.move(...at(402, 401));
+    await page.mouse.move(...at(400, 400));
+    expect(await cursor()).toContain('data:image/svg+xml');
+  }
+});
+
 test('dessine au crayon', async ({ page }) => {
   const { at } = await canvas(page);
   await page.keyboard.press('n');
