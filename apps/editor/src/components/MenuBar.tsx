@@ -248,6 +248,20 @@ export function MenuBar() {
         <Item id="edit.contentAwareFill" />
       </Top>
       <Top label={t('menu.text')}>
+        <Sub label={t('text.format')}>
+          <Item id="text.bold" />
+          <Item id="text.italic" />
+          <Item id="text.underline" />
+          <Sep />
+          <Item id="text.biggerFont" />
+          <Item id="text.smallerFont" />
+          <Sep />
+          <Item id="text.alignLeft" />
+          <Item id="text.alignCenter" />
+          <Item id="text.alignRight" />
+          <Item id="text.justify" />
+        </Sub>
+        <Sep />
         <Item id="text.onPath" />
         <Item id="text.offPath" />
         <Sep />

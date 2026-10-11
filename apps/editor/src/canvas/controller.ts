@@ -3,6 +3,7 @@ import { cursorFor } from './cursors';
 import { StyleTools } from './styleTools';
 import { TOOL_MODULES } from '../tools/registry';
 import type { ToolDelegate } from '../tools/types';
+import { clickFrame } from '../tools/text/create';
 import {
   artboardAt,
   boxCenter,
@@ -1332,8 +1333,9 @@ export class CanvasController {
           if (g.tool === 'text' || g.tool === 'frameText') beginTextEdit(g.nodeId, false);
           break;
         }
-        // Simple clic : texte artistique, ou forme de taille par défaut.
-        if (g.tool === 'text' || g.tool === 'frameText') {
+        // Simple clic : cadre de texte ou texte artistique, ou forme de taille par défaut.
+        if (g.tool === 'frameText') clickFrame(g.start, g.artboardId);
+        else if (g.tool === 'text') {
           const d = ui.get().defaults;
           const node = createText(
             {

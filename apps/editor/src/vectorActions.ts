@@ -83,7 +83,7 @@ export async function convertToCurves(): Promise<void> {
     if (n.locked) return;
     if (n.type === 'group') for (const c of n.children) await collect(c);
     else if (n.type === 'text') {
-      const r = await textToCurves(n, n.name);
+      const r = await textToCurves(n, n.name, doc);
       r.missing.forEach((m) => missing.add(m));
       if (r.node) texts.set(n.id, r.node);
     }

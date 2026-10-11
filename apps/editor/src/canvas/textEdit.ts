@@ -33,6 +33,8 @@ interface Session {
   runs: TextRun[];
   /** Style choisi sans sélection : il s'applique au prochain texte tapé. */
   typing: RunStyle | null;
+  /** Objet dont le nouveau texte prend la place (texte posé sur le contour d'une forme). */
+  replace?: string;
 }
 
 let session: Session | null = null;
@@ -42,7 +44,13 @@ let lastPointerTarget: EventTarget | null = null;
 if (typeof document !== 'undefined')
   document.addEventListener('pointerdown', (e) => (lastPointerTarget = e.target), true);
 
-export function beginTextEdit(id: string, isNew: boolean, node?: TextNode, artboardId?: string): void {
+export function beginTextEdit(
+  id: string,
+  isNew: boolean,
+  node?: TextNode,
+  artboardId?: string,
+  replace?: string,
+): void {
   // Dans une chaîne de cadres liés, on édite le texte du premier cadre, qui porte tout le texte.
   if (!isNew) id = chainHead(editor.doc, id)?.id ?? id;
   if (session?.id === id) return;
@@ -59,6 +67,7 @@ export function beginTextEdit(id: string, isNew: boolean, node?: TextNode, artbo
     style: src.style,
     runs: isNew ? [] : (src.runs ?? []),
     typing: null,
+    replace,
   };
   editor.begin();
   if (isNew && node) preview();
@@ -71,7 +80,12 @@ function preview(): void {
   if (!s) return;
   editor.preview((d) => {
     let n = findNode(d, s.id)?.node;
-    if (!n && s.node && s.artboardId) {
+    const loc = !n && s.replace ? findNode(d, s.replace) : null;
+    if (loc) {
+      // Texte sur tracé : il remplace la forme, à sa place dans les calques.
+      loc.parent.children.splice(loc.index, 1, { ...s.node! });
+      n = loc.parent.children[loc.index];
+    } else if (!n && s.node && s.artboardId) {
       const ab = findArtboard(d, s.artboardId) ?? d.artboards[0];
       ab.children.push({ ...s.node });
       n = ab.children[ab.children.length - 1];

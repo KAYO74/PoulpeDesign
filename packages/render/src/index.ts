@@ -461,6 +461,21 @@ function drawText(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOpt
   if (!layout) return;
   for (const line of layout.lines) {
     const y = line.baseline;
+    // Puce ou numéro d'un paragraphe de liste, dans la couleur de son premier caractère.
+    const mk = line.marker;
+    if (mk) {
+      ctx.font = mk.font;
+      const mkFill = mk.style.color ? rgbaToCss(mk.style.color) : fill;
+      if (mkFill) {
+        ctx.fillStyle = mkFill;
+        ctx.fillText(mk.text, mk.x, y);
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = node.stroke.width;
+        ctx.strokeText(mk.text, mk.x, y);
+      }
+    }
     for (const seg of line.segments) {
       const st = seg.style;
       const segFill = st.color ? rgbaToCss(st.color) : fill;

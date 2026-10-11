@@ -1,13 +1,12 @@
 import { FORMAT_PRESETS, findArtboard, findNode, isStyled, localToWorld, type SceneNode } from '@poulpe/core';
-import { setPaint, setTextStyle, updateArtboard, updateSelected } from '../actions';
-import { useFonts } from '../fonts';
+import { setPaint, updateArtboard, updateSelected } from '../actions';
 import { useT } from '../i18n';
 import { editor, ui, useEditor, useUi, type ToolId } from '../store';
 import { getController } from './Viewport';
 import { Icon, type IconName } from './Icon';
 import type { NodeAction } from '../canvas/pathTools';
 import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vectorActions';
-import { canLinkSelection, linkSelection, toggleFrame } from '../layoutActions';
+import { canLinkSelection, linkSelection } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
 import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
@@ -70,7 +69,6 @@ export function ContextBar() {
   const smoothing = useUi((s) => s.pencilSmoothing);
   const cornerRadius = useUi((s) => s.cornerRadiusTool);
   const cornerKind = useUi((s) => s.cornerKind);
-  const fonts = useFonts();
   const node = selection.length === 1 ? (findNode(doc, selection[0])?.node ?? null) : null;
   const ab = findArtboard(doc, activeArtboardId);
 
@@ -329,39 +327,7 @@ export function ContextBar() {
             </button>
           </>
         )}
-        {kind === 'text' && (
-          <>
-            <Select
-              label={t('char.font')}
-              value={shape?.type === 'text' ? shape.style.fontFamily : defaults.text.fontFamily}
-              options={fonts.map((f) => ({ value: f, label: f }))}
-              onChange={(f) => setTextStyle({ fontFamily: f })}
-              width={160}
-            />
-            <NumberField
-              label={t('char.size')}
-              value={shape?.type === 'text' ? shape.style.fontSize : defaults.text.fontSize}
-              min={1}
-              max={2000}
-              unit="px"
-              decimals={1}
-              width={80}
-              onChange={(v) => setTextStyle({ fontSize: v })}
-            />
-            {shape?.type === 'text' && !shape.path && (
-              <label className="check" title={t('ctx.frameHint')}>
-                <input
-                  type="checkbox"
-                  data-testid="text-frame"
-                  checked={!!shape.frame || !!shape.next}
-                  disabled={!!shape.next}
-                  onChange={toggleFrame}
-                />
-                {t('ctx.frame')}
-              </label>
-            )}
-          </>
-        )}
+        {/* Police, taille et cadre d'un texte : barre du texte (tools/text), ajoutée à la fin. */}
         {canLinkSelection() && (
           <button className="btn small" data-testid="link-frames" onClick={linkSelection}>
             {t('text.link')}
