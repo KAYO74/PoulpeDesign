@@ -4,7 +4,7 @@ version = "1.1.5"
 description = "Poulpe Design, application libre de création graphique"
 authors = ["Contributeurs de Poulpe Design"]
 license = "MPL-2.0"
-repository = "https://github.com/KAYO74/Poulpe"
+repository = "https://github.com/KAYO74/PoulpeDesign"
 edition = "2021"
 rust-version = "1.77"
 

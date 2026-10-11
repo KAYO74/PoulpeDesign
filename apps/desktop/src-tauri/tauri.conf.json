@@ -68,7 +68,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYwNUQ3Mjc3N0Q0NEYyMjcKUldRbjhrUjlkM0pkWUptV1pCQlFCL3pNNkFvbWxuaUoxZFp6Yjl4Z2IyRmxTMWgxaStTNmxndVkK",
-      "endpoints": ["https://github.com/KAYO74/Poulpe/releases/latest/download/latest.json"],
+      "endpoints": ["https://github.com/KAYO74/PoulpeDesign/releases/latest/download/latest.json"],
       "windows": {
         "installMode": "passive"
       }
