@@ -30,6 +30,8 @@ export interface BenchResult {
   avgMs: number;
   p95Ms: number;
   fps: number;
+  /** Temps jusqu'à l'image finie, dessins sur les autres cœurs compris (s'il y en a eu). */
+  readyMs?: number;
 }
 
 export interface BenchReport {
@@ -45,12 +47,20 @@ export interface BenchReport {
 
 const FRAMES = 60;
 
-function stats(scenario: string, times: number[]): BenchResult {
+function stats(scenario: string, times: number[], ready: number[] = []): BenchResult {
   const sorted = [...times].sort((a, b) => a - b);
   const avg = times.reduce((s, t) => s + t, 0) / times.length;
   const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
   const r = (v: number) => Math.round(v * 100) / 100;
-  return { scenario, frames: times.length, avgMs: r(avg), p95Ms: r(p95), fps: Math.round(1000 / avg) };
+  const out: BenchResult = {
+    scenario,
+    frames: times.length,
+    avgMs: r(avg),
+    p95Ms: r(p95),
+    fps: Math.round(1000 / avg),
+  };
+  if (ready.length) out.readyMs = r(ready.reduce((s, t) => s + t, 0) / ready.length);
+  return out;
 }
 
 type Mix = 'all' | 'solid' | 'gradient' | 'text';
@@ -149,6 +159,7 @@ export async function runBenchmark(count = 1000, only?: string): Promise<BenchRe
     if (only && !scenario.includes(only)) return;
     await settle();
     const times: number[] = [];
+    const ready: number[] = [];
     for (let i = 0; i < FRAMES + 5; i++) {
       rafWork = 0;
       const t0 = performance.now();
@@ -168,8 +179,14 @@ export async function runBenchmark(count = 1000, only?: string): Promise<BenchRe
       void flush;
       const dt = sync + rafWork;
       if (i >= 5) times.push(dt);
+      // Dessin en cours sur les autres cœurs : on attend l'image finie avant le geste suivant.
+      // Le temps d'attente des images de l'écran n'est pas compté, comme pour `dt`.
+      const w0 = performance.now();
+      const waited = await c.renderIdle();
+      if (i >= 5) ready.push(waited ? dt + performance.now() - w0 : dt);
+      if (waited) await new Promise((r) => requestAnimationFrame(r));
     }
-    results.push(stats(scenario, times));
+    results.push(stats(scenario, times, ready.some((v, k) => v !== times[k]) ? ready : []));
   };
 
   const load = async (mix: Mix = 'all') => {

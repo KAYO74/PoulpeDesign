@@ -18,6 +18,7 @@ type Poulpe = {
     draw: () => void;
     invalidate: () => void;
     zoomToFit: () => void;
+    renderIdle: () => Promise<boolean>;
     canvas: HTMLCanvasElement;
   };
   perf: {
@@ -37,6 +38,8 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByTestId('canvas')).toBeVisible();
   await page.evaluate(async () => {
     const p = (window as unknown as { poulpe: Poulpe }).poulpe;
+    // Dessin dans la page : les comparaisons ci-dessous sont synchrones.
+    p.perf.setPerformanceSettings({ parallelDrawing: false });
     await p.loadBenchDocument(300);
     p.controller().zoomToFit();
   });
@@ -136,4 +139,26 @@ test('bouger la souris sur le fond ne redessine pas le document', async ({ page 
   for (let i = 0; i < 10; i++) await page.mouse.move(box.x + 4 + i, box.y + 4 + (i % 3));
   await page.waitForTimeout(100);
   expect(await page.evaluate(() => (window as unknown as { drawn: number }).drawn)).toBe(0);
+});
+
+test('le dessin sur plusieurs cœurs donne la même image', async ({ page }) => {
+  const r = await page.evaluate(async () => {
+    const p = (window as unknown as { poulpe: Poulpe }).poulpe;
+    const c = p.controller();
+    const ctx = c.canvas.getContext('2d')!;
+    const grab = () => ctx.getImageData(0, 0, c.canvas.width, c.canvas.height).data;
+    p.perf.setPerformanceSettings({ parallelDrawing: true });
+    c.draw();
+    const waited = await c.renderIdle();
+    c.draw();
+    const parallel = grab();
+    p.perf.setPerformanceSettings({ parallelDrawing: false });
+    c.draw();
+    const sync = grab();
+    let bad = 0;
+    for (let i = 0; i < sync.length; i++) if (Math.abs(sync[i] - parallel[i]) > 32) bad++;
+    return { waited, bad };
+  });
+  expect(r.waited).toBe(true);
+  expect(r.bad).toBe(0);
 });

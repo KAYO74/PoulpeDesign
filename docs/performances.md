@@ -81,6 +81,22 @@ Autres constats du même rapport :
 - WebKit masque le nom de la carte graphique (« Apple GPU ») et annonce au plus 8 cœurs : le Diagnostic affiche maintenant le modèle du processeur, ses vrais fils d'exécution et la mémoire occupée par tous les processus de l'appli, lus par l'appli de bureau.
 - WebKitGTK n'active l'isolation multi-origine (`crossOriginIsolated`, threads partagés dans la page) que pour les pages servies en HTTP, pas pour le protocole de l'appli : les calculs lourds passent donc par le moteur Rust natif, qui utilise tous les cœurs.
 
+## Dessin sur plusieurs cœurs (1.1.3)
+
+Un gros redessin (300 objets ou plus : ouverture, fin d'un zoom) est découpé en bandes dessinées en même
+temps par plusieurs fils de dessin (`apps/editor/src/canvas/parallel.ts`), avec le même code de dessin.
+L'interface ne se fige plus pendant ce temps ; l'ancienne image reste affichée jusqu'à ce que la nouvelle
+soit prête. Réglage `parallelDrawing` (activé par défaut). Mesure `?bench`, 1000 objets, machine de test
+à 4 cœurs sans carte graphique (interface bloquée / image finie) :
+
+| Scénario                        | Chromium avant | Chromium après | WebKitGTK avant | WebKitGTK après |
+| ------------------------------- | -------------- | -------------- | --------------- | --------------- |
+| Premier affichage, formes unies | 14.9 ms        | 1.6 / 11.9 ms  | 89.6 ms         | 4.5 / 78.7 ms   |
+| Premier affichage, document     | 22.4 ms        | 1.8 / 17.0 ms  | 97.5 ms         | 3.7 / 146 ms    |
+
+Avec seulement 3 fils, WebKitGTK met plus longtemps à finir l'image, mais l'interface reste fluide ; les
+processeurs à 8 cœurs ou plus utilisent jusqu'à 8 fils.
+
 ## Pistes suivantes
 
 - Calques de réglage et filtres photo calculés dans un Web Worker, hors du fil de l'interface.
