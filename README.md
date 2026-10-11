@@ -41,8 +41,8 @@
 
 Choisissez votre système, le téléchargement démarre directement.
 
-| Système                          | Télécharger                                                                                                                                                                                                                                          |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Système                          | Télécharger                                                                                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Windows** 10 et 11             | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_windows_x64-setup.exe"><img src="https://img.shields.io/badge/Windows-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour Windows"></a>                |
 | **macOS**, puces Apple (M1 à M4) | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_darwin_aarch64.dmg"><img src="https://img.shields.io/badge/macOS%20Apple-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (puces Apple)"></a> |
 | **macOS**, processeur Intel      | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_darwin_x64.dmg"><img src="https://img.shields.io/badge/macOS%20Intel-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (Intel)"></a>           |
