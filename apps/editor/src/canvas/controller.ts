@@ -1,6 +1,5 @@
 import { openCanvasMenu } from '../components/CanvasMenu';
 import { cursorFor } from './cursors';
-import { StyleTools } from './styleTools';
 import { TOOL_MODULES } from '../tools/registry';
 import { NEW_SHAPE_TOOLS, makeShapeNode } from '../tools/shapes/make';
 import type { ToolDelegate } from '../tools/types';
@@ -166,7 +165,6 @@ export class CanvasController {
   readonly images: ImageCache;
   /** Plume, crayon et outil Nœud. */
   readonly paths: PathTools;
-  readonly styleTools: StyleTools;
   /** Outils de la Persona Photo. */
   readonly photo: PhotoTools;
   /** Outils ajoutés en version 1.2 (voir tools/registry.ts), consultés avant les outils de base. */
@@ -199,7 +197,6 @@ export class CanvasController {
     this.ctx = canvas.getContext('2d')!;
     this.images = new ImageCache(() => this.requestDraw());
     this.paths = new PathTools(this);
-    this.styleTools = new StyleTools(this);
     this.photo = new PhotoTools(this);
     this.modules = TOOL_MODULES.flatMap((m) => (m.delegate ? [m.delegate(this)] : []));
     this.readColors();
@@ -529,13 +526,7 @@ export class CanvasController {
 
   /** Un geste est en cours (glisser, tracé à la plume, coup de pinceau…). */
   busy(): boolean {
-    return (
-      !!this.gesture ||
-      this.paths.busy ||
-      this.photo.busy ||
-      this.styleTools.busy ||
-      this.modules.some((m) => m.busy)
-    );
+    return !!this.gesture || this.paths.busy || this.photo.busy || this.modules.some((m) => m.busy);
   }
 
   /** Touche pressée : les outils de la version 1.2 d'abord. */
@@ -629,10 +620,6 @@ export class CanvasController {
       return;
     }
     if (this.paths.pointerDown(e, p, { x: sx, y: sy })) {
-      this.requestDraw();
-      return;
-    }
-    if (this.styleTools.pointerDown(e, p, { x: sx, y: sy })) {
       this.requestDraw();
       return;
     }
@@ -803,7 +790,6 @@ export class CanvasController {
       return;
     }
     if (!this.gesture && this.photo.pointerMove(e, p, { x: sx, y: sy })) return;
-    if (!this.gesture && this.styleTools.pointerMove(e, p, { x: sx, y: sy })) return;
     if (!this.gesture && this.paths.pointerMove(e, p, { x: sx, y: sy })) {
       if (this.effectiveTool() === 'direct') this.canvas.style.cursor = cursorFor('direct');
       return;
@@ -1267,7 +1253,6 @@ export class CanvasController {
       this.requestDraw();
       return;
     }
-    if (!g && this.styleTools.pointerUp()) return;
     if (!g && this.paths.pointerUp()) {
       this.requestDraw();
       return;
@@ -1369,7 +1354,6 @@ export class CanvasController {
 
   private onPointerCancel = () => {
     this.paths.pointerCancel();
-    this.styleTools.cancel();
     this.photo.pointerCancel();
     this.modules.forEach((m) => m.cancel?.());
     if (this.gesture && this.gesture.kind !== 'pan' && this.gesture.kind !== 'marquee') editor.cancel();
@@ -1595,7 +1579,6 @@ export class CanvasController {
     if (!editingTextId && (tool === 'select' || tool === 'direct' || SHAPE_TOOLS.includes(tool)))
       this.drawHandles();
     this.paths.draw(ctx, this.colors.sel);
-    this.styleTools.draw(ctx, this.colors.sel);
     this.photo.draw(ctx);
     for (const m of this.modules) m.draw?.(ctx, this.colors.sel);
     const g = this.gesture;

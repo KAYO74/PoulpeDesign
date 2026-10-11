@@ -1,6 +1,7 @@
 import { distanceToPolylines, flattenCommands, pointInPolylines } from './bezier';
 import { cachedSvgPath, fitCommands } from './path';
 import { applyCorners, polygonOutline, rectBase, rectCorners, shapeCommands } from './shapes';
+import { activeContour, contourCommands, contourReach } from './contour';
 import type { SceneNode, Artboard, GroupNode, Paint, Corners } from './types';
 
 export interface Vec {
@@ -201,8 +202,18 @@ export function nodeCorners(node: SceneNode): Corners | undefined {
   return undefined;
 }
 
-/** Tracé d'une forme dans ses coordonnées locales (0..width, 0..height). */
+/**
+ * Tracé d'une forme dans ses coordonnées locales (0..width, 0..height), décalé par son contour
+ * (outil Contour) s'il en a un : c'est le tracé dessiné, exporté et touché.
+ */
 export function shapePath(node: SceneNode): PathCommand[] {
+  const base = baseShapePath(node);
+  const c = activeContour(node);
+  return c ? contourCommands(base, c) : base;
+}
+
+/** Tracé d'une forme dans ses coordonnées locales (0..width, 0..height), sans son contour. */
+export function baseShapePath(node: SceneNode): PathCommand[] {
   const { width: w, height: h } = node;
   switch (node.type) {
     case 'rect':
@@ -313,9 +324,11 @@ export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
     const b = node.direction === 1 ? { x: node.width, y: node.height } : { x: node.width, y: 0 };
     return distToSegment(l, a, b) <= Math.max(tolerance, node.stroke.width / 2 + tolerance);
   }
-  const t = tolerance;
+  // Un contour (outil Contour) peut sortir de la boîte : on teste alors le tracé décalé.
+  const contoured = !!activeContour(node);
+  const t = tolerance + contourReach(node);
   if (l.x < -t || l.y < -t || l.x > node.width + t || l.y > node.height + t) return false;
-  if (node.type === 'ellipse') {
+  if (node.type === 'ellipse' && !contoured) {
     const rx = node.width / 2 + t,
       ry = node.height / 2 + t;
     const nx = (l.x - node.width / 2) / rx,
@@ -323,7 +336,13 @@ export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
     return nx * nx + ny * ny <= 1;
   }
   const roundedRect = node.type === 'rect' && (node.cornerRadius > 0 || !!node.radii);
-  if (node.type === 'path' || node.type === 'polygon' || node.type === 'star' || roundedRect) {
+  if (
+    node.type === 'path' ||
+    node.type === 'polygon' ||
+    node.type === 'star' ||
+    roundedRect ||
+    (contoured && (node.type === 'rect' || node.type === 'ellipse'))
+  ) {
     // Forme libre : on touche le remplissage ou le trait, pas la boîte entière.
     let polys = flatCache.get(node);
     if (!polys) {
@@ -337,7 +356,7 @@ export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
       pointInPolylines(polys, l, node.type === 'path' ? node.fillRule : 'nonzero')
     )
       return true;
-    const reach = (stroked ? node.stroke.width / 2 : 0) + Math.max(t, 1);
+    const reach = (stroked ? node.stroke.width / 2 : 0) + Math.max(tolerance, 1);
     return distanceToPolylines(polys, l) <= reach;
   }
   return true;

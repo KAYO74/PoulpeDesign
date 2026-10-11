@@ -2632,3 +2632,25 @@ h4.sub .link {
 .frames-dialog .text-input {
   min-width: 200px;
 }
+
+/* paint : pastille de couleur de l'arrêt choisi dans la barre contextuelle */
+.paint-swatch {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.paint-swatch::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.paint-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+.paint-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 3px;
+}

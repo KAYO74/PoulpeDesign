@@ -266,20 +266,22 @@ test('outils Remplissage, Transparence, Contour et Largeur de trait', async ({ p
   let [r] = await nodes(page);
   expect(r.fill.type).toBe('linear');
   expect(r.fill.angle).toBe(0);
-  // Transparence [Y] : la couleur s'efface jusqu'au transparent.
+  // Transparence [Y] : tout l'objet s'efface jusqu'au transparent, sans toucher au remplissage.
   await page.keyboard.press('y');
   await drag([375, 310], [375, 390]);
   [r] = await nodes(page);
-  expect(r.fill.angle).toBe(90);
-  expect(r.fill.stops[1].color).toMatch(/00$/);
-  // Contour [O] : glisser vers la droite agrandit la forme, Alt garde l'original.
+  expect(r.fill.angle).toBe(0);
+  expect(r.transparency.angle).toBe(90);
+  expect(r.transparency.stops[1].opacity).toBe(0);
+  // Contour [O] : glisser vers la droite agrandit la forme (réglage modifiable), Alt garde l'original.
   const before = r.width;
   await page.keyboard.press('o');
   await drag([375, 350], [425, 350]);
   let list = await nodes(page);
   expect(list).toHaveLength(1);
-  expect(list[0].type).toBe('path');
-  expect(list[0].width).toBeGreaterThan(before);
+  expect(list[0].type).toBe('rect');
+  expect(list[0].width).toBe(before);
+  expect(list[0].contour.radius).toBeGreaterThan(0);
   await page.keyboard.down('Alt');
   await drag([375, 350], [400, 350]);
   await page.keyboard.up('Alt');
@@ -294,7 +296,9 @@ test('outils Remplissage, Transparence, Contour et Largeur de trait', async ({ p
   await page.keyboard.press('w');
   await drag([450, 500], [450, 530]);
   const [line] = await nodes(page);
-  expect(line.stroke.profile).toHaveLength(11);
+  // Un point de largeur à l'endroit tiré (au milieu), en plus des deux bouts.
+  expect(line.stroke.profile).toHaveLength(3);
+  expect(line.stroke.profilePos[1]).toBeCloseTo(0.5, 1);
   expect(Math.max(...line.stroke.profile)).toBeGreaterThan(1);
 });
 

@@ -39,3 +39,5 @@ export * from './tables';
 export * from './pixelTools';
 export * from './shapes';
 export * from './shapeNodes';
+export * from './paintGeometry';
+export * from './contour';
