@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   colorToCmyk,
   findNode,
@@ -17,7 +16,8 @@ import { NumberField, paintPreview } from '../components/fields';
 import { Icon } from '../components/Icon';
 import { useT } from '../i18n';
 import { editingStyle, isEditingText } from '../canvas/textEdit';
-import { editor, pushRecentColor, ui, useEditor, useTextSelection, useUi } from '../store';
+import { editor, pushRecentColor, ui, useEditor, useStore, useTextSelection, useUi } from '../store';
+import { paintStore } from '../tools/paint/state';
 import { ColorPicker, type Phase } from './ColorPicker';
 
 const DEFAULT_STOPS = (c: string): GradientStop[] => [
@@ -77,7 +77,9 @@ export function ColorPanel() {
   const { paint, target, hasSelection } = useCurrentPaint();
   const recent = useUi((s) => s.recentColors);
   const { doc } = useEditor();
-  const [stopIndex, setStopIndex] = useState(0);
+  // Arrêt choisi, partagé avec les outils Remplissage et Transparence (sur le canevas).
+  const stopIndex = useStore(paintStore, (s) => s.stop);
+  const setStopIndex = (stop: number) => paintStore.set({ stop });
   const photo = useUi((s) => s.persona) === 'photo';
   // Document d'impression : le sélecteur s'ouvre en CMJN et signale les couleurs hors gamut.
   const print = doc.layout?.colorMode === 'cmyk';
@@ -165,7 +167,11 @@ export function ColorPanel() {
             max={360}
             unit="°"
             width={90}
-            onChange={(v) => applyPaint(target, { ...gradient, angle: v }, 'set')}
+            onChange={(v) => {
+              // L'angle saisi remplace le début et la fin posés avec l'outil Remplissage.
+              const { x1: _a, y1: _b, x2: _c, y2: _d, ...rest } = gradient;
+              applyPaint(target, { ...rest, angle: v }, 'set');
+            }}
           />
         </div>
       )}

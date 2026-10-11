@@ -1,4 +1,5 @@
 import { localToWorld, shapePath, type PathCommand, type Vec } from './geometry';
+import { activeContour } from './contour';
 import { commandsToCubics, flattenCommands } from './bezier';
 import { setPathCommands } from './pathEdit';
 import { cachedSvgPath, fitCommands } from './path';
@@ -172,10 +173,21 @@ export function worldOutline(node: SceneNode): PathCommand[] | null {
 
 /**
  * Convertit une forme en tracé modifiable, en gardant son identifiant, sa place et son style.
- * Renvoie null pour un texte (il faut ses polices), une image ou un groupe.
+ * Le contour (outil Contour) est appliqué au tracé. Renvoie null pour un texte (il faut ses
+ * polices), une image ou un groupe.
  */
 export function toPathNode(node: SceneNode): PathNode | null {
-  if (node.type === 'path') return cloneData(node) as PathNode;
+  if (node.type === 'path') {
+    const p = cloneData(node) as PathNode;
+    if (!node.contour) return p;
+    delete p.contour;
+    if (activeContour(node)) {
+      p.viewBox = { x: 0, y: 0, width: node.width, height: node.height };
+      delete p.smartNodes;
+      setPathCommands(p, shapePath(node));
+    }
+    return p;
+  }
   if (!isStyled(node) || node.type === 'text') return null;
   const p: PathNode = {
     id: node.id,

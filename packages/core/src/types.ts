@@ -18,20 +18,73 @@ export interface GradientStop {
 export type Paint =
   | { type: 'none' }
   | { type: 'solid'; color: Color }
-  /** `angle` en degrés : 0 = de gauche à droite, 90 = de haut en bas. */
-  | { type: 'linear'; stops: GradientStop[]; angle: number }
-  /** Centre et rayon en fractions de la boîte de l'objet. */
-  | { type: 'radial'; stops: GradientStop[]; cx: number; cy: number; r: number }
+  /**
+   * `angle` en degrés : 0 = de gauche à droite, 90 = de haut en bas. Début (`x1`, `y1`) et fin
+   * (`x2`, `y2`) exacts en fractions de la boîte (outil Remplissage) : s'ils sont là, ils priment
+   * sur `angle`, qui reste la direction approchée.
+   */
+  | {
+      type: 'linear';
+      stops: GradientStop[];
+      angle: number;
+      x1?: number;
+      y1?: number;
+      x2?: number;
+      y2?: number;
+    }
+  /**
+   * Centre et rayon en fractions de la boîte de l'objet (`r` : fraction de son plus grand côté).
+   * Dégradé elliptique : `ratio` (second rayon / premier rayon) est présent, et `angle` (degrés)
+   * donne la direction du premier rayon.
+   */
+  | {
+      type: 'radial';
+      stops: GradientStop[];
+      cx: number;
+      cy: number;
+      r: number;
+      ratio?: number;
+      angle?: number;
+    }
   /**
    * Dégradé conique (angulaire) : les couleurs tournent autour du centre. `angle` en degrés
-   * donne la direction du début du dégradé, le centre est en fractions de la boîte.
+   * donne la direction du début du dégradé, le centre est en fractions de la boîte. `r` : longueur
+   * de la poignée de l'outil Remplissage (sans effet sur le rendu).
    */
-  | { type: 'conic'; stops: GradientStop[]; angle: number; cx: number; cy: number }
-  /** Motif : une image répétée. `scale` de la tuile, `angle` en degrés. */
-  | { type: 'pattern'; assetId: string; scale: number; angle: number };
+  | { type: 'conic'; stops: GradientStop[]; angle: number; cx: number; cy: number; r?: number }
+  /**
+   * Motif : une image répétée. `scale` de la tuile, `angle` en degrés. Origine de la tuile (`x`,
+   * `y`) en fractions de la boîte : le coin haut gauche si absente.
+   */
+  | { type: 'pattern'; assetId: string; scale: number; angle: number; x?: number; y?: number };
 
 /** Peintures faites de couleurs échelonnées (dégradés). */
 export type GradientPaint = Extract<Paint, { stops: GradientStop[] }>;
+
+/** Arrêt d'un dégradé de transparence : opacité de 0 (transparent) à 1 (opaque). */
+export interface OpacityStop {
+  offset: number;
+  opacity: number;
+}
+
+type WithOpacityStops<P> = P extends { stops: GradientStop[] }
+  ? Omit<P, 'stops'> & { stops: OpacityStop[] }
+  : never;
+
+/**
+ * Transparence (outil Transparence) : un dégradé d'opacité posé sur tout l'objet (remplissage,
+ * contours et effets) sans toucher à ses couleurs. Même géométrie que les dégradés de couleur.
+ */
+export type Transparency = WithOpacityStops<GradientPaint>;
+
+/** Contour (outil Contour) : décalage non destructif du tracé d'une forme fermée. */
+export interface Contour {
+  /** Distance en pixels : positive vers l'extérieur, négative vers l'intérieur. */
+  radius: number;
+  join: StrokeJoin;
+  /** Limite des angles vifs (jonction `miter`), en multiples de la distance. */
+  miterLimit: number;
+}
 
 export type StrokeCap = 'butt' | 'round' | 'square';
 export type StrokeJoin = 'miter' | 'round' | 'bevel';
@@ -51,6 +104,11 @@ export interface Stroke {
   align?: 'center' | 'inside' | 'outside';
   /** Largeur variable (pinceau calligraphique) : absente = épaisseur constante. */
   profile?: WidthProfile;
+  /**
+   * Positions des valeurs de `profile` le long du tracé (0 à 1, croissantes), posées par l'outil
+   * Largeur de trait. Absentes (ou d'une autre longueur que `profile`) : réparties régulièrement.
+   */
+  profilePos?: number[];
   /** Extrémités des traits (`round` si absent). */
   cap?: StrokeCap;
   /** Jonctions des traits (`round` si absent). */
@@ -145,6 +203,8 @@ interface NodeBase {
   effects?: Effect[];
   /** Masque de calque : ce qui est opaque dans le masque reste visible, le reste est caché. */
   mask?: LayerMask;
+  /** Dégradé de transparence de tout l'objet (outil Transparence). */
+  transparency?: Transparency;
 }
 
 /**
@@ -161,6 +221,8 @@ interface Styled {
   stroke: Stroke;
   /** Contours supplémentaires, dessinés sous `stroke` (du plus large au plus fin, comme Illustrator). */
   strokes?: Stroke[];
+  /** Tracé décalé (outil Contour), pour les formes fermées ; « Convertir en courbes » l'applique. */
+  contour?: Contour;
 }
 
 export interface RectNode extends NodeBase, Styled {

@@ -1,6 +1,14 @@
 import { opaque, alphaOf, sampleStops, withAlpha } from './color';
 import { activeEffects, effectMargin } from './effects';
-import { linearGradientPoints, nodeBounds, pathToSvg, radialGradientRadius, shapePath } from './geometry';
+import { nodeBounds, pathToSvg, shapePath } from './geometry';
+import {
+  isElliptical,
+  linearPoints,
+  radialFrame,
+  transparencyFrame,
+  transparencyPaint,
+} from './paintGeometry';
+import { contourReach } from './contour';
 import { flowText, needsFlow, type PageFields } from './flow';
 import { masterOf, pageFields } from './pages';
 import {
@@ -77,7 +85,7 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
       return colorAttrs(attr, paint.color);
     case 'linear': {
       const id = defs.id('lg');
-      const [a, b] = linearGradientPoints(paint.angle, w, h);
+      const [a, b] = linearPoints(paint, w, h);
       defs.add(
         `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(a.x)}" y1="${n(a.y)}" x2="${n(b.x)}" y2="${n(b.y)}">${stops(paint)}</linearGradient>`,
       );
@@ -85,8 +93,13 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
     }
     case 'radial': {
       const id = defs.id('rg');
+      const f = radialFrame(paint, w, h);
+      // Dégradé elliptique : un cercle centré en 0, étiré et tourné par `gradientTransform`.
+      const ellipse = isElliptical(paint) && Math.abs(f.ratio - 1) > 1e-3;
       defs.add(
-        `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(paint.cx * w)}" cy="${n(paint.cy * h)}" r="${n(radialGradientRadius(paint, w, h))}">${stops(paint)}</radialGradient>`,
+        ellipse
+          ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="${n(f.r)}" gradientTransform="translate(${n(f.cx)} ${n(f.cy)}) rotate(${n(f.angle)}) scale(1 ${n(f.ratio)})">${stops(paint)}</radialGradient>`
+          : `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(f.cx)}" cy="${n(f.cy)}" r="${n(f.r)}">${stops(paint)}</radialGradient>`,
       );
       return `${attr}="url(#${id})"`;
     }
@@ -118,9 +131,17 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
       const id = defs.id('pat');
       const tw = Math.max(1, asset.width * paint.scale),
         th = Math.max(1, asset.height * paint.scale);
+      const ox = (paint.x ?? 0) * w,
+        oy = (paint.y ?? 0) * h;
+      const tr = [
+        ox || oy ? `translate(${n(ox)} ${n(oy)})` : '',
+        paint.angle ? `rotate(${n(paint.angle)})` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
       defs.add(
         `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(tw)}" height="${n(th)}"` +
-          (paint.angle ? ` patternTransform="rotate(${n(paint.angle)})"` : '') +
+          (tr ? ` patternTransform="${tr}"` : '') +
           `><image width="${n(tw)}" height="${n(th)}" preserveAspectRatio="none" href="${asset.data}"/></pattern>`,
       );
       return `${attr}="url(#${id})"`;
@@ -197,7 +218,13 @@ function effectsFilter(node: SceneNode, defs: Defs): string | null {
   return id;
 }
 
-function transformAttr(node: SceneNode): string {
+function transformAttr(node: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}): string {
   const t = `translate(${n(node.x)} ${n(node.y)})`;
   if (!node.rotation) return t;
   return `${t} rotate(${n(node.rotation)} ${n(node.width / 2)} ${n(node.height / 2)})`;
@@ -242,6 +269,25 @@ function nodeToSvg(node: SceneNode, ctx: Ctx): string {
     const id = ctx.defs.id('mask');
     ctx.defs.add(
       `<mask id="${id}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image transform="${transformAttr(node)}" width="${n(node.width)}" height="${n(node.height)}" preserveAspectRatio="none" href="${mask.data}"/></mask>`,
+    );
+    body = `<g mask="url(#${id})">${body}</g>`;
+  }
+  if (body && node.transparency) {
+    // Transparence (outil Transparence) : masque de luminance, du blanc plus ou moins opaque posé
+    // dans la boîte de l'objet, assez grand pour couvrir ses contours et ses effets.
+    const f = transparencyFrame(node);
+    const id = ctx.defs.id('tm');
+    const b = nodeBounds(node);
+    const strokes = 'stroke' in node ? visibleStrokes(node).map((st) => st.width * 6) : [];
+    const m =
+      effectMargin(activeEffects(node)) +
+      Math.max(0, ...strokes) +
+      contourReach(node) +
+      Math.max(f.width, f.height);
+    const fill = paintAttr('fill', transparencyPaint(node.transparency), f.width, f.height, ctx.defs);
+    ctx.defs.add(
+      `<mask id="${id}" maskUnits="userSpaceOnUse" x="${n(b.x - m)}" y="${n(b.y - m)}" width="${n(b.width + 2 * m)}" height="${n(b.height + 2 * m)}">` +
+        `<rect transform="${transformAttr(f)}" x="${n(-m)}" y="${n(-m)}" width="${n(f.width + 2 * m)}" height="${n(f.height + 2 * m)}" ${fill}/></mask>`,
     );
     body = `<g mask="url(#${id})">${body}</g>`;
   }

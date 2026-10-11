@@ -119,7 +119,10 @@ export function StrokePanel() {
           options={WIDTH_PROFILES.map((p) => ({ value: p.id, label: t(`stroke.profile.${p.id}`) }))}
           onChange={(id) => {
             const p = WIDTH_PROFILES.find((x) => x.id === id);
-            setStroke({ profile: !p || p.id === 'uniform' ? undefined : [...p.profile] });
+            setStroke({
+              profile: !p || p.id === 'uniform' ? undefined : [...p.profile],
+              profilePos: undefined,
+            });
           }}
         />
       </div>

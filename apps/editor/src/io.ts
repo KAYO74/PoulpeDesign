@@ -23,6 +23,7 @@ import {
   drawNode,
   materialize,
   measureText,
+  paintBounds,
   rasterizeArtboard,
 } from '@poulpe/render';
 import { placeImage } from './actions';
@@ -423,12 +424,13 @@ async function rasterizedParts(
   const visit = async (n: SceneNode) => {
     if (!n.visible) return;
     const fx = activeEffects(n);
-    if (!pdf || (!fx.length && !n.mask?.enabled)) {
+    // La transparence (outil Transparence) passe aussi en image : svg2pdf ne lit pas les masques.
+    if (!pdf || (!fx.length && !n.mask?.enabled && !n.transparency)) {
       if (n.type === 'group') await visitChildren(n.children, nodeBounds(n));
       return;
     }
     const m = effectMargin(fx) + 2;
-    const b = nodeBounds(n);
+    const b = n.transparency ? paintBounds(n) : nodeBounds(n);
     const x = b.x - m,
       y = b.y - m,
       w = b.width + 2 * m,
