@@ -2542,3 +2542,50 @@ h4.sub .link {
 .tool-menu button[aria-checked='true'] .tool-menu-key {
   color: inherit;
 }
+
+/* Bulle d'aide des outils (nom, raccourci, rôle, gestes), comme dans Affinity. */
+.tool-tip {
+  position: fixed;
+  z-index: 210;
+  width: 250px;
+  padding: 10px 12px 12px;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.tool-tip-title {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.tool-tip-desc {
+  margin: 0;
+}
+.tool-tip-how {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+.tool-tip-how b {
+  color: var(--fg);
+  font-weight: 600;
+}
+.tool-tip-group {
+  display: block;
+  margin-top: 6px;
+}
+.tool-tip-more {
+  display: block;
+  margin: 12px auto 0;
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--fg);
+}
+.tool-tip-more:hover {
+  background: var(--line);
+}

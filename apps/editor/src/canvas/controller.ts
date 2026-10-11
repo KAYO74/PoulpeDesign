@@ -1,3 +1,5 @@
+import { openCanvasMenu } from '../components/CanvasMenu';
+import { cursorFor } from './cursors';
 import {
   artboardAt,
   boxCenter,
@@ -253,6 +255,7 @@ export class CanvasController {
     canvas.addEventListener('pointercancel', this.onPointerCancel);
     canvas.addEventListener('pointerleave', this.onPointerLeave);
     canvas.addEventListener('dblclick', this.onDoubleClick);
+    canvas.addEventListener('contextmenu', this.onContextMenu);
     canvas.addEventListener('wheel', this.onWheel, { passive: false });
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('keyup', this.onKey);
@@ -275,6 +278,7 @@ export class CanvasController {
     c.removeEventListener('pointercancel', this.onPointerCancel);
     c.removeEventListener('pointerleave', this.onPointerLeave);
     c.removeEventListener('dblclick', this.onDoubleClick);
+    c.removeEventListener('contextmenu', this.onContextMenu);
     c.removeEventListener('wheel', this.onWheel);
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('keyup', this.onKey);
@@ -521,6 +525,18 @@ export class CanvasController {
       this.startPan(e);
       return;
     }
+    if (e.button === 2) {
+      // Clic droit : menu du canevas au relâchement s'il n'y a pas eu de glissement.
+      this.rightDown = { x: e.clientX, y: e.clientY };
+      this.canvas.setPointerCapture(e.pointerId);
+      if (this.paths.busy || this.photo.busy) return;
+      const r = this.canvas.getBoundingClientRect();
+      const s = { x: e.clientX - r.left, y: e.clientY - r.top };
+      // Outil Nœud : glisser avec le bouton droit retire des nœuds de la sélection.
+      if (this.effectiveTool() === 'direct' && this.paths.nodeSelectDown(e, this.toWorld(s.x, s.y), s))
+        this.requestDraw();
+      return;
+    }
     if (e.button !== 0) return;
     this.canvas.setPointerCapture(e.pointerId);
     const rect = this.canvas.getBoundingClientRect();
@@ -746,7 +762,7 @@ export class CanvasController {
     ui.set({ cursor: { x: Math.round(p.x), y: Math.round(p.y) } });
     if (!this.gesture && this.photo.pointerMove(e, p, { x: sx, y: sy })) return;
     if (!this.gesture && this.paths.pointerMove(e, p, { x: sx, y: sy })) {
-      if (this.effectiveTool() === 'direct') this.canvas.style.cursor = 'default';
+      if (this.effectiveTool() === 'direct') this.canvas.style.cursor = cursorFor('direct');
       return;
     }
     const g = this.gesture;
@@ -784,7 +800,8 @@ export class CanvasController {
         return;
       }
       case 'create':
-        return this.dragCreate(g, p, e.shiftKey, e.altKey, snap);
+        // Comme dans Affinity : Ctrl part du centre, Alt ignore le magnétisme.
+        return this.dragCreate(g, p, e.shiftKey, e.ctrlKey || e.metaKey, this.snapping() && !e.altKey);
       case 'cropResize':
         return this.dragCropResize(g, p);
       case 'cropPan':
@@ -1158,7 +1175,32 @@ export class CanvasController {
     }
   }
 
+  /** Position du clic droit en cours (fenêtre), pour ouvrir le menu du canevas au relâchement. */
+  private rightDown: Vec | null = null;
+
+  /** Clic droit relâché sans glisser : sélectionne l'objet visé, puis ouvre le menu du canevas. */
+  private rightUp(e: PointerEvent): void {
+    const start = this.rightDown;
+    this.rightDown = null;
+    if (!start || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 4) return;
+    if (this.gesture || this.paths.busy || this.photo.busy) return;
+    const r = this.canvas.getBoundingClientRect();
+    const tool = this.effectiveTool();
+    if (ui.get().persona !== 'photo') {
+      const hit = this.hitTest(this.toWorld(e.clientX - r.left, e.clientY - r.top), tool === 'direct');
+      if (hit && !editor.selection.includes(hit.id)) editor.select([hit.id]);
+    }
+    openCanvasMenu(e.clientX, e.clientY);
+  }
+
   private onPointerUp = (e: PointerEvent) => {
+    if (e.button === 2) {
+      if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+      if (!this.gesture) this.paths.pointerUp();
+      this.requestDraw();
+      this.rightUp(e);
+      return;
+    }
     const g = this.gesture;
     this.gesture = null;
     this.guides = [];
@@ -1283,6 +1325,11 @@ export class CanvasController {
     }
   };
 
+  /** Le clic droit ouvre le menu de l'appli (au relâchement), jamais celui du navigateur. */
+  private onContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+  };
+
   private onDoubleClick = (e: MouseEvent) => {
     const tool = ui.get().tool;
     if (tool !== 'select' && tool !== 'direct') return;
@@ -1387,19 +1434,7 @@ export class CanvasController {
 
   private toolCursor(tool: ToolId): string {
     if (ui.get().linkFrom) return 'copy';
-    switch (tool) {
-      case 'hand':
-        return 'grab';
-      case 'zoom':
-        return 'zoom-in';
-      case 'text':
-        return 'text';
-      case 'select':
-      case 'direct':
-        return 'default';
-      default:
-        return 'crosshair';
-    }
+    return cursorFor(tool);
   }
 
   private updateCursor() {

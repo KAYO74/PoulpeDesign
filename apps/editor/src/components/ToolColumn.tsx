@@ -4,7 +4,7 @@ import { useT } from '../i18n';
 import { importImage } from '../io';
 import { setTool, ui, useEditor, useUi, type Persona, type ToolId } from '../store';
 import { activeWorkspace, useActiveWorkspace } from '../workspaces';
-import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona } from '../toolCatalog';
+import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona, withFamilies } from '../toolCatalog';
 import { setPersona } from '../photo/persona';
 import { findNode, isStyled } from '@poulpe/core';
 import { paintPreview } from './fields';
@@ -70,13 +70,29 @@ export function ToolColumn() {
   const side = useUi((s) => s.settings.toolsSide);
   const dropping = useUi((s) => s.panelDock === 'tools');
   const ref = useRef<HTMLDivElement>(null);
-  const shown = grouped ? groups.length : groups.flat().length;
+  const shown = grouped ? groups.length : withFamilies(groups.flat()).length;
   const two = columns === 'two' || (columns === 'auto' && shown > TWO_COLUMNS);
   const [menu, setMenu] = useState<{ group: ToolId[]; rect: DOMRect } | null>(null);
+  const [tip, setTip] = useState<{ id: ToolId; more: boolean; rect: DOMRect } | null>(null);
+  const tipTimer = useRef(0);
+  const showTip = (id: ToolId, more: boolean, el: HTMLElement) => {
+    clearTimeout(tipTimer.current);
+    // Une bulle déjà ouverte passe tout de suite à l'outil survolé.
+    const delay = tip ? 0 : 550;
+    tipTimer.current = window.setTimeout(() => setTip({ id, more, rect: el.getBoundingClientRect() }), delay);
+  };
+  const hideTip = (now = false) => {
+    clearTimeout(tipTimer.current);
+    if (now) setTip(null);
+    else tipTimer.current = window.setTimeout(() => setTip(null), 200);
+  };
+  useEffect(() => () => clearTimeout(tipTimer.current), []);
   useEffect(() => {
     // Le dernier outil choisi dans un groupe reste celui affiché par son bouton.
     const g = groups.find((gr) => gr.includes(tool));
     if (g && g.length > 1) rememberInGroup(g, tool);
+    const slot = g && withFamilies(g).find((sl) => sl.includes(tool));
+    if (slot && slot.length > 1 && slot.join() !== g.join()) rememberInGroup(slot, tool);
   }, [tool, groups]);
   const toolButton = (id: ToolId, group?: ToolId[]) => {
     const key = keyOf(id);
@@ -90,10 +106,12 @@ export function ToolColumn() {
         className={`tool${many ? ' has-more' : ''}`}
         aria-pressed={tool === id}
         aria-haspopup={many ? 'menu' : undefined}
-        title={many ? `${label}\n${t('tool.groupMore')}` : label}
         aria-label={label}
         data-testid={`tool-${id}`}
         onClick={() => pickTool(id)}
+        onPointerEnter={(e) => showTip(id, many, e.currentTarget)}
+        onFocus={(e) => showTip(id, many, e.currentTarget)}
+        onBlur={() => hideTip()}
         onContextMenu={
           many
             ? (e) => {
@@ -102,16 +120,17 @@ export function ToolColumn() {
               }
             : undefined
         }
-        onPointerDown={
-          many
-            ? (e) => {
-                const el = e.currentTarget;
-                press = window.setTimeout(() => open(el), 450);
-              }
-            : undefined
-        }
+        onPointerDown={(e) => {
+          hideTip(true);
+          if (!many) return;
+          const el = e.currentTarget;
+          press = window.setTimeout(() => open(el), 450);
+        }}
         onPointerUp={many ? () => clearTimeout(press) : undefined}
-        onPointerLeave={many ? () => clearTimeout(press) : undefined}
+        onPointerLeave={() => {
+          clearTimeout(press);
+          hideTip();
+        }}
       >
         <Icon name={id as IconName} />
         {many && (
@@ -157,9 +176,25 @@ export function ToolColumn() {
       ) : (
         groups.map((group, gi) => (
           <div className="toolgroup" key={gi}>
-            {group.map((id) => toolButton(id))}
+            {withFamilies(group).map((slot) =>
+              slot.length > 1
+                ? toolButton(slot.includes(tool) ? tool : shownInGroup(slot), slot)
+                : toolButton(slot[0]),
+            )}
           </div>
         ))
+      )}
+      {tip && !menu && (
+        <ToolTip
+          id={tip.id}
+          shortcut={keyOf(tip.id)}
+          more={tip.more}
+          rect={tip.rect}
+          side={side}
+          onEnter={() => clearTimeout(tipTimer.current)}
+          onLeave={() => hideTip()}
+          onClose={() => hideTip(true)}
+        />
       )}
       {menu && (
         <ToolMenu
@@ -352,6 +387,72 @@ function ToolMenu({
           <span className="tool-menu-key">{keyOf(id) ?? ''}</span>
         </button>
       ))}
+    </div>,
+    document.body,
+  );
+}
+
+/** Texte d'aide avec des passages **en gras** (gestes et touches). */
+function rich(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <b key={i}>{part}</b> : part));
+}
+
+/** Bulle d'aide d'un outil, comme dans Affinity : nom et raccourci, rôle, gestes, « En savoir plus ». */
+function ToolTip({
+  id,
+  shortcut,
+  more,
+  rect,
+  side,
+  onEnter,
+  onLeave,
+  onClose,
+}: {
+  id: ToolId;
+  shortcut?: string;
+  more: boolean;
+  rect: DOMRect;
+  side: 'left' | 'right';
+  onEnter: () => void;
+  onLeave: () => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const desc = t(`tip.${id}.desc`);
+  const howKey = `tip.${id}.how`;
+  const how = t(howKey);
+  const top = Math.max(8, Math.min(rect.top - 4, window.innerHeight - 320));
+  const style =
+    side === 'left' ? { top, left: rect.right + 10 } : { top, right: window.innerWidth - rect.left + 10 };
+  return createPortal(
+    <div
+      className="tool-tip"
+      role="tooltip"
+      style={style}
+      data-testid="tool-tip"
+      onPointerEnter={onEnter}
+      onPointerLeave={onLeave}
+    >
+      <div className="tool-tip-title">
+        {t('tip.tool', { name: t(`tool.${id}`) })}
+        {shortcut ? ` [${shortcut}]` : ''}
+      </div>
+      {desc !== `tip.${id}.desc` && <p className="tool-tip-desc">{desc}</p>}
+      {(how !== howKey || more) && (
+        <p className="tool-tip-how">
+          {how !== howKey && rich(how)}
+          {more && <span className="tool-tip-group">{t('tool.groupMore')}</span>}
+        </p>
+      )}
+      <button
+        className="tool-tip-more"
+        onClick={() => {
+          onClose();
+          ui.set({ dialog: 'help', helpTab: 'start' });
+        }}
+      >
+        {t('tip.more')}
+      </button>
     </div>,
     document.body,
   );

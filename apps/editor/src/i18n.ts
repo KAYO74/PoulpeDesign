@@ -1,3 +1,4 @@
+import { enTools, frTools, type MessageKeyTools } from './i18n-tools';
 import { useSyncExternalStore } from 'react';
 import { enV1, frV1, type MessageKeyV1 } from './i18n-v1';
 import { enPrefs, frPrefs, type MessageKeyPrefs } from './i18n-prefs';
@@ -935,9 +936,13 @@ const fr = {
   'char.columnsFixed': 'Les colonnes demandent un cadre de largeur fixe.',
 } as const;
 
-export type MessageKey = keyof typeof fr | MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs;
+export type MessageKey =
+  keyof typeof fr | MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools;
 
-const en: Record<Exclude<MessageKey, MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs>, string> = {
+const en: Record<
+  Exclude<MessageKey, MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools>,
+  string
+> = {
   'app.name': 'Poulpe Design',
   'app.untitled': 'Untitled',
 
@@ -1855,8 +1860,8 @@ const en: Record<Exclude<MessageKey, MessageKeyV1 | MessageKeyLayers | MessageKe
 };
 
 const dictionaries: Record<Lang, Record<MessageKey, string>> = {
-  fr: { ...fr, ...frV1, ...frLayers, ...frPrefs },
-  en: { ...en, ...enV1, ...enLayers, ...enPrefs },
+  fr: { ...fr, ...frV1, ...frLayers, ...frPrefs, ...frTools },
+  en: { ...en, ...enV1, ...enLayers, ...enPrefs, ...frTools, ...enTools },
 };
 
 function initialLang(): Lang {

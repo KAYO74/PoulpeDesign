@@ -68,6 +68,9 @@ type NodeDrag =
       moved: boolean;
     };
 
+/** Effet d'une sélection de nœuds à la zone (comme dans Affinity). */
+type NodeSelOp = 'replace' | 'add' | 'subtract' | 'toggle';
+
 interface PenState {
   id: string;
   artboardId: string;
@@ -83,6 +86,16 @@ function drawnStroke(): Stroke {
   return s.paint.type === 'none'
     ? { paint: { type: 'solid', color: '#1a1a1d' }, width: 2 }
     : { ...s, width: Math.max(0.5, s.width) };
+}
+
+function insidePolygon(p: Vec, poly: Vec[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i],
+      b = poly[j];
+    if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
 }
 
 function constrain45(from: Vec, p: Vec): Vec {
@@ -108,17 +121,40 @@ export class PathTools {
     origin: Vec;
     radius: number;
   } | null = null;
+  /** Sélection de nœuds au cadre ou au lasso (outil Nœud), en cours de glissement. */
+  private nodeSel: {
+    id: string;
+    mode: 'rect' | 'lasso';
+    points: Vec[];
+    op: NodeSelOp;
+    base: string[];
+    startScreen: Vec;
+    moved: boolean;
+  } | null = null;
+  /** Sélection de nœuds au polygone (Alt+clic), sommet par sommet. */
+  private polygon: { id: string; points: Vec[]; hover: Vec | null; op: NodeSelOp; base: string[] } | null =
+    null;
 
   constructor(private readonly c: CanvasController) {
     window.addEventListener('poulpe:toolchange', this.finishPen);
+    window.addEventListener('poulpe:toolchange', this.cancelNodeSelect);
   }
 
   dispose(): void {
     window.removeEventListener('poulpe:toolchange', this.finishPen);
+    window.removeEventListener('poulpe:toolchange', this.cancelNodeSelect);
   }
 
   get busy(): boolean {
-    return !!(this.pen || this.pencil || this.drag || this.line || this.corner);
+    return !!(
+      this.pen ||
+      this.pencil ||
+      this.drag ||
+      this.line ||
+      this.corner ||
+      this.nodeSel ||
+      this.polygon
+    );
   }
 
   private dist(a: Vec, b: Vec): number {
@@ -345,6 +381,93 @@ export class PathTools {
     }
     return false;
   }
+
+  /**
+   * Sélection de nœuds à la zone, comme dans Affinity : Glisser = cadre, Alt = lasso, Alt+clic =
+   * polygone ; Maj ajoute, bouton droit retire, Maj + bouton droit inverse la sélection.
+   */
+  nodeSelectDown(e: PointerEvent, p: Vec, s: Vec): boolean {
+    const n = this.editablePath();
+    if (!n) return false;
+    if (this.polygon) {
+      if (e.altKey && e.button === 0) this.polygon.points.push(p);
+      else this.finishPolygon();
+      return true;
+    }
+    const right = e.button === 2;
+    const op: NodeSelOp = right ? (e.shiftKey ? 'toggle' : 'subtract') : e.shiftKey ? 'add' : 'replace';
+    this.nodeSel = {
+      id: n.id,
+      mode: e.altKey ? 'lasso' : 'rect',
+      points: [p, p],
+      op,
+      base: ui.get().nodeSelection,
+      startScreen: s,
+      moved: false,
+    };
+    return true;
+  }
+
+  private selectInside(id: string, inside: (w: Vec) => boolean, op: NodeSelOp, base: string[]): void {
+    const n = findNode(editor.doc, id)?.node;
+    if (n?.type !== 'path') return;
+    const hits: string[] = [];
+    this.subpathsOf(n).forEach((sp, si) =>
+      sp.anchors.forEach((a, ai) => {
+        if (inside(pathToWorld(n, a))) hits.push(anchorKey(si, ai));
+      }),
+    );
+    const had = new Set(base);
+    const hit = new Set(hits);
+    let sel: string[];
+    if (op === 'replace') sel = hits;
+    else if (op === 'add') sel = [...base, ...hits.filter((k) => !had.has(k))];
+    else if (op === 'subtract') sel = base.filter((k) => !hit.has(k));
+    else sel = [...base.filter((k) => !hit.has(k)), ...hits.filter((k) => !had.has(k))];
+    ui.set({ nodeSelection: sel });
+  }
+
+  private applyNodeSel(): void {
+    const g = this.nodeSel;
+    if (!g) return;
+    if (g.mode === 'lasso') this.selectInside(g.id, (w) => insidePolygon(w, g.points), g.op, g.base);
+    else {
+      const [a, b] = [g.points[0], g.points[g.points.length - 1]];
+      const x0 = Math.min(a.x, b.x),
+        x1 = Math.max(a.x, b.x),
+        y0 = Math.min(a.y, b.y),
+        y1 = Math.max(a.y, b.y);
+      this.selectInside(g.id, (w) => w.x >= x0 && w.x <= x1 && w.y >= y0 && w.y <= y1, g.op, g.base);
+    }
+  }
+
+  private nodeSelectUp(): void {
+    const g = this.nodeSel;
+    this.nodeSel = null;
+    if (!g) return;
+    if (g.moved) return this.applyNodeSel();
+    if (g.mode === 'lasso') {
+      // Alt+clic sans glisser : premier sommet d'une sélection au polygone.
+      this.polygon = { id: g.id, points: [g.points[0]], hover: null, op: g.op, base: g.base };
+      return;
+    }
+    if (g.op !== 'replace') return;
+    // Simple clic dans le vide : on désélectionne les nœuds, puis l'objet.
+    if (ui.get().nodeSelection.length) ui.set({ nodeSelection: [] });
+    else editor.select([]);
+  }
+
+  private finishPolygon(): void {
+    const g = this.polygon;
+    this.polygon = null;
+    if (g && g.points.length >= 3) this.selectInside(g.id, (w) => insidePolygon(w, g.points), g.op, g.base);
+    this.c.requestDraw();
+  }
+
+  private cancelNodeSelect = (): void => {
+    this.nodeSel = null;
+    this.polygon = null;
+  };
 
   private previewNodes(id: string, sps: SubPath[]): void {
     editor.preview((d) => {
@@ -625,10 +748,13 @@ export class PathTools {
       return true;
     }
     const n = this.editablePath();
+    if (n && this.polygon) return this.nodeSelectDown(e, p, s);
     if (n && this.nodeDown(e, p, s, n)) {
       this.gestureBase = { id: n.id, node: n };
       return true;
     }
+    // Dans le vide (ni le tracé ni un autre objet) : sélection de nœuds à la zone.
+    if (n && (e.altKey || !this.c.hitTest(p, true))) return this.nodeSelectDown(e, p, s);
     return false;
   }
 
@@ -659,6 +785,21 @@ export class PathTools {
       this.nodeMove(e, p, s);
       return true;
     }
+    const g = this.nodeSel;
+    if (g) {
+      if (!g.moved && Math.hypot(s.x - g.startScreen.x, s.y - g.startScreen.y) < 3) return true;
+      g.moved = true;
+      if (g.mode === 'lasso') g.points.push(p);
+      else g.points[1] = p;
+      this.applyNodeSel();
+      this.c.requestDraw();
+      return true;
+    }
+    if (this.polygon) {
+      this.polygon.hover = p;
+      this.c.requestDraw();
+      return true;
+    }
     return false;
   }
 
@@ -687,6 +828,10 @@ export class PathTools {
       this.nodeUp();
       return true;
     }
+    if (this.nodeSel) {
+      this.nodeSelectUp();
+      return true;
+    }
     return false;
   }
 
@@ -696,9 +841,14 @@ export class PathTools {
     this.corner = null;
     this.line = null;
     this.pencil = null;
+    this.nodeSel = null;
   }
 
   doubleClick(p: Vec, s: Vec): boolean {
+    if (this.polygon) {
+      this.finishPolygon();
+      return true;
+    }
     const n = this.editablePath();
     if (!n) return false;
     const hit = this.hitAnchor(n, this.subpathsOf(n), s);
@@ -713,6 +863,12 @@ export class PathTools {
 
   /** Clavier : Entrée / Échap terminent la plume, Retour arrière retire le dernier nœud, Suppr supprime les nœuds. */
   key(e: KeyboardEvent): boolean {
+    if (this.polygon && (e.key === 'Enter' || e.key === 'Escape')) {
+      if (e.key === 'Enter') this.finishPolygon();
+      else this.cancelNodeSelect();
+      this.c.requestDraw();
+      return true;
+    }
     if (this.pen) {
       if (e.key === 'Enter' || e.key === 'Escape') {
         this.finishPen();
@@ -814,6 +970,32 @@ export class PathTools {
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const zone = this.nodeSel?.moved ? this.nodeSel : null;
+    const poly = this.polygon;
+    if (zone || poly) {
+      const pts = zone
+        ? zone.mode === 'lasso'
+          ? zone.points
+          : [
+              zone.points[0],
+              { x: zone.points[1].x, y: zone.points[0].y },
+              zone.points[1],
+              { x: zone.points[0].x, y: zone.points[1].y },
+            ]
+        : [...poly!.points, ...(poly!.hover ? [poly!.hover] : [])];
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      pts.forEach((w, i) => {
+        const q = this.c.toScreen(w);
+        if (i) ctx.lineTo(q.x, q.y);
+        else ctx.moveTo(q.x, q.y);
+      });
+      if (zone) ctx.closePath();
       ctx.stroke();
       ctx.restore();
     }

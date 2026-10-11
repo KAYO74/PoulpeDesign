@@ -82,6 +82,88 @@ test('termine un tracé ouvert avec Entrée et modifie ses nœuds', async ({ pag
   expect(p.d).toMatch(/C/);
 });
 
+test('outil Nœud : sélection au cadre, ajout, retrait et lasso', async ({ page }) => {
+  const { at, drag } = await canvas(page);
+  const nodeSel = (): Promise<string[]> => page.evaluate(() => (window as any).poulpe.ui.get().nodeSelection);
+  await page.keyboard.press('p');
+  await page.mouse.click(...at(300, 300));
+  await page.mouse.click(...at(500, 300));
+  await page.mouse.click(...at(500, 450));
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('a');
+  // Glisser dans le vide : cadre de sélection des nœuds.
+  await drag([450, 250], [560, 480]);
+  expect(await nodeSel()).toHaveLength(2);
+  // Maj + glisser : ajoute.
+  await page.keyboard.down('Shift');
+  await drag([250, 250], [350, 350]);
+  await page.keyboard.up('Shift');
+  expect(await nodeSel()).toHaveLength(3);
+  // Glisser avec le bouton droit : retire.
+  await page.mouse.move(...at(450, 400));
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(...at(560, 480), { steps: 8 });
+  await page.mouse.up({ button: 'right' });
+  expect(await nodeSel()).toHaveLength(2);
+  // Alt + glisser : lasso.
+  await page.keyboard.down('Alt');
+  await page.mouse.move(...at(250, 250));
+  await page.mouse.down();
+  for (const [x, y] of [
+    [350, 250],
+    [350, 350],
+    [250, 350],
+  ])
+    await page.mouse.move(...at(x, y), { steps: 4 });
+  await page.mouse.up();
+  await page.keyboard.up('Alt');
+  expect(await nodeSel()).toEqual(['0:0']);
+});
+
+test('bulle d’aide des outils et création au centre avec Ctrl', async ({ page }) => {
+  const { drag } = await canvas(page);
+  await page.getByTestId('tool-direct').hover();
+  const tip = page.getByTestId('tool-tip');
+  await expect(tip).toContainText('Outil Nœud [A]');
+  await expect(tip).toContainText('Glisser');
+  await page.screenshot({ path: 'test-results/bulle-outil-noeud.png' });
+  await page.mouse.move(10, 10);
+  await expect(tip).toBeHidden();
+  // Ctrl : le rectangle part du centre.
+  await page.keyboard.press('u');
+  await page.keyboard.down('Control');
+  await drag([400, 300], [450, 340]);
+  await page.keyboard.up('Control');
+  const [r] = await nodes(page);
+  expect(r.width).toBeGreaterThan(80);
+});
+
+test('menu du clic droit sur le canevas', async ({ page }) => {
+  const { at, drag } = await canvas(page);
+  await page.keyboard.press('u');
+  await drag([300, 300], [450, 400]);
+  await page.keyboard.press('v');
+  await page.keyboard.press('Escape');
+  await page.mouse.click(...at(380, 350), { button: 'right' });
+  const menu = page.getByTestId('canvas-menu');
+  await expect(menu).toBeVisible();
+  await page.screenshot({ path: 'test-results/menu-clic-droit.png' });
+  await menu.getByRole('menuitem', { name: /Dupliquer/ }).click();
+  expect(await nodes(page)).toHaveLength(2);
+});
+
+test('la souris prend la forme de l’outil sur le document', async ({ page }) => {
+  const { at } = await canvas(page);
+  const cursor = () => page.getByTestId('canvas').evaluate((c) => getComputedStyle(c).cursor);
+  await page.mouse.move(...at(400, 400));
+  for (const key of ['v', 'a', 'p', 'u', 'i']) {
+    await page.keyboard.press(key);
+    await page.mouse.move(...at(402, 401));
+    await page.mouse.move(...at(400, 400));
+    expect(await cursor()).toContain('data:image/svg+xml');
+  }
+});
+
 test('dessine au crayon', async ({ page }) => {
   const { at } = await canvas(page);
   await page.keyboard.press('n');
@@ -98,7 +180,7 @@ test('dessine au crayon', async ({ page }) => {
 
 test('réunit, soustrait et divise des formes', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 200], [500, 400]);
   await page.keyboard.press('e');
   await drag([420, 320], [620, 520]);
@@ -122,7 +204,7 @@ test('réunit, soustrait et divise des formes', async ({ page }) => {
 
 test('convertit une forme en courbes et décale son contour', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('s');
+  await page.keyboard.press('u');
   await drag([300, 200], [500, 400]);
   await page.keyboard.press('Control+Enter');
   let list = await nodes(page);

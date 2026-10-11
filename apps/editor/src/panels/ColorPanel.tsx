@@ -50,7 +50,8 @@ export function useCurrentPaint(): { paint: Paint; target: 'fill' | 'stroke'; ha
 /** Applique une peinture ; pendant un glissement, un seul pas d'historique pour tout le geste. */
 export function applyPaint(target: 'fill' | 'stroke', paint: Paint, phase: Phase): void {
   if (ui.get().persona === 'photo') {
-    if (paint.type === 'solid') ui.set({ brushColor: paint.color });
+    if (paint.type === 'solid')
+      ui.set({ brushColor: paint.color, defaults: { ...ui.get().defaults, fill: paint } });
     if (paint.type === 'solid' && (phase === 'end' || phase === 'set')) pushRecentColor(paint.color);
     return;
   }

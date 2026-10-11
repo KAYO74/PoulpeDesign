@@ -17,6 +17,7 @@ import { placeSvg } from '../vectorActions';
 import { addElement, type ElementKind } from '../libraryActions';
 import { ELEMENT_MIME } from '../panels/Library';
 import { editor, ui, useEditor, useUi } from '../store';
+import { CanvasMenu } from './CanvasMenu';
 
 let controller: CanvasController | null = null;
 export const getController = () => controller;
@@ -122,6 +123,7 @@ export function Viewport() {
         <canvas ref={canvasRef} className="main-canvas" data-testid="canvas" tabIndex={-1} />
         <TextEditor />
       </div>
+      <CanvasMenu />
     </div>
   );
 }

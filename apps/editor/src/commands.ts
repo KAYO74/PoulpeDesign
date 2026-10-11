@@ -541,23 +541,19 @@ export const PHOTO_TOOL_KEYS: Record<string, ToolId> = {
   z: 'zoom',
 };
 
-/** Raccourcis d'outils, sans modificateur, comme dans Affinity. */
+/** Raccourcis d'outils, sans modificateur, ceux d'Affinity Designer. */
 export const TOOL_KEYS: Record<string, ToolId> = {
   v: 'select',
   a: 'direct',
-  b: 'artboard',
+  c: 'corner',
   p: 'pen',
   n: 'pencil',
-  m: 'rect',
-  e: 'ellipse',
-  g: 'polygon',
-  s: 'star',
-  l: 'line',
-  t: 'text',
-  c: 'scissors',
   k: 'knife',
-  x: 'corner',
-  u: 'shapeBuilder',
+  u: 'rect',
+  e: 'ellipse',
+  l: 'line',
+  s: 'shapeBuilder',
+  t: 'text',
   i: 'eyedropper',
   h: 'hand',
   z: 'zoom',

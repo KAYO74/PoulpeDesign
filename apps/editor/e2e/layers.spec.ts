@@ -9,7 +9,7 @@ const names = (page: Page) =>
 /** Crée des rectangles nommés (le premier est tout en dessous). */
 async function makeLayers(page: Page, list: string[]) {
   const box = (await page.getByTestId('canvas').boundingBox())!;
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await page.mouse.move(box.x + 300, box.y + 300);
   await page.mouse.down();
   await page.mouse.move(box.x + 380, box.y + 380, { steps: 4 });

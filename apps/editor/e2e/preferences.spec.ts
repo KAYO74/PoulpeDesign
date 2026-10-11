@@ -78,6 +78,8 @@ test('le diagnostic montre la carte graphique et le rapport se copie', async ({ 
 });
 
 test('le test de vitesse remet le document et son historique', async ({ page }) => {
+  // Le test de vitesse dure environ 25 s sur une machine sans carte graphique (CI).
+  test.setTimeout(90_000);
   await page.evaluate(() => {
     (window as any).poulpe.editor.apply('history.rename', (d: any) => {
       d.name = 'Mon affiche';
@@ -86,7 +88,7 @@ test('le test de vitesse remet le document et son historique', async ({ page }) 
   await page.keyboard.press('Control+,');
   await page.getByTestId('prefs-tab-diagnostic').click();
   await page.getByTestId('diag-bench').click();
-  await expect(page.getByTestId('diag-bench-result')).toBeVisible({ timeout: 25_000 });
+  await expect(page.getByTestId('diag-bench-result')).toBeVisible({ timeout: 75_000 });
   const state = await page.evaluate(() => {
     const ed = (window as any).poulpe.editor;
     return { name: ed.doc.name, canUndo: ed.getState().canUndo };

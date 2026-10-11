@@ -37,9 +37,11 @@ test.beforeEach(async ({ page }) => {
 
 test('les ciseaux ouvrent le contour d’un rectangle', async ({ page }) => {
   const { at, drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [500, 500]);
-  await page.getByTestId('tool-scissors').click();
+  // Les ciseaux sont rangés sous le cutter.
+  await page.getByTestId('toolgroup-more-knife').click();
+  await page.getByTestId('toolmenu-scissors').click();
   // Clic au milieu du bord du haut.
   await page.mouse.click(...at(400, 300));
   const [n] = await nodes(page);
@@ -51,7 +53,7 @@ test('les ciseaux ouvrent le contour d’un rectangle', async ({ page }) => {
 
 test('le cutter coupe une forme en deux', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [500, 500]);
   await page.getByTestId('tool-knife').click();
   await drag([250, 400], [550, 400]);
@@ -67,7 +69,7 @@ test('le cutter coupe une forme en deux', async ({ page }) => {
 
 test('le constructeur de formes réunit les formes traversées', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
   await page.keyboard.press('e');
   await drag([400, 350], [550, 500]);
@@ -82,7 +84,7 @@ test('le constructeur de formes réunit les formes traversées', async ({ page }
 
 test('l’outil Coin arrondit un angle', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [500, 500]);
   await page.getByTestId('tool-corner').click();
   // Glisser depuis le coin en haut à gauche vers l'intérieur.
@@ -95,7 +97,7 @@ test('l’outil Coin arrondit un angle', async ({ page }) => {
 
 test('crée un symbole, en pose une seconde instance, puis le détache', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
   await page.getByTestId('lib-tab-styles').click();
   await page.getByTestId('create-symbol').click();
@@ -122,7 +124,7 @@ test('crée un symbole, en pose une seconde instance, puis le détache', async (
 
 test('enregistre un style et l’applique à un autre objet', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
   await page.getByTestId('paint-linear').click();
   await page.getByTestId('lib-tab-styles').click();
@@ -157,7 +159,7 @@ test('ajoute un contour en plus et un profil de largeur', async ({ page }) => {
 
 test('applique un biseau et un dégradé conique', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 300], [550, 550]);
   await page.getByTestId('paint-conic').click();
   await page.getByTestId('tab-effects').click();
