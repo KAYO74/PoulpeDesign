@@ -377,6 +377,12 @@ const BRUSH_DEFAULTS: Partial<Record<ToolId, BrushSettings>> = {
   heal: { size: 40, hardness: 50, opacity: 100, flow: 100 },
   smudge: { size: 40, hardness: 40, opacity: 60, flow: 100 },
   liquify: { size: 120, hardness: 0, opacity: 50, flow: 100 },
+  // Version 1.2 (tools/pixel)
+  sponge: { size: 60, hardness: 20, opacity: 50, flow: 40 },
+  backgroundEraser: { size: 60, hardness: 80, opacity: 100, flow: 100 },
+  colorReplace: { size: 40, hardness: 60, opacity: 100, flow: 100 },
+  blemish: { size: 24, hardness: 50, opacity: 100, flow: 100 },
+  redEye: { size: 40, hardness: 100, opacity: 100, flow: 100 },
 };
 
 /** Réglages du pinceau de l'outil (ceux du pinceau par défaut pour les autres outils). */

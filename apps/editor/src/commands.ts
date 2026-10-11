@@ -28,6 +28,7 @@ import { openPhoto } from './photo/persona';
 import { canCutout, removeBackground, selectSubject } from './smart/cutout';
 import { canVectorize } from './smart/vectorize';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
+import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { openPersona } from './workspaces';
 import { selectAdjacentLayer } from './layers';
@@ -164,6 +165,12 @@ export const COMMANDS = {
     label: 'select.shrink',
     run: () => ui.set({ dialog: 'selectionModify', selectionModify: 'shrink' }),
     enabled: photoSel,
+  },
+  'select.quickMask': {
+    label: 'select.quickMask' as MessageKey,
+    shortcut: 'Q',
+    persona: 'photo',
+    run: toggleQuickMask,
   },
   'select.fromLayer': {
     label: 'select.fromLayer',
