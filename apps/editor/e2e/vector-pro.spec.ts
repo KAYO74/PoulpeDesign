@@ -179,6 +179,8 @@ test('applique un biseau et un dégradé conique', async ({ page }) => {
 
 test('met un texte en colonnes avec des petites capitales', async ({ page }) => {
   const { drag } = await canvas(page);
+  // T puis T : outil Cadre de texte (glisser avec le Texte artistique choisit la taille de la police).
+  await page.keyboard.press('t');
   await page.keyboard.press('t');
   await drag([300, 300], [700, 500]);
   await page.keyboard.type('Le poulpe dessine en colonnes et en petites capitales sans effort du tout');

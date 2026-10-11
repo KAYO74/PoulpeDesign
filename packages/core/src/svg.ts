@@ -327,6 +327,10 @@ function nodeContentToSvg(node: SceneNode, ctx: Ctx): string {
     }
     let spans = '';
     for (const line of layout!.lines) {
+      // Puce ou numéro de liste, jamais souligné ni barré.
+      const mk = line.marker;
+      if (mk)
+        spans += `<tspan x="${n(mk.x)}" y="${n(line.baseline)}"${fontAttrs({ ...mk.style, underline: false, strike: false }, st)}>${esc(mk.text)}</tspan>`;
       for (const seg of line.segments) {
         // Texte justifié : chaque mot est placé ; sinon un morceau par style.
         const re = line.gap ? /\s+|\S+/g : /[\s\S]+/g;

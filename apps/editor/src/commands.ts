@@ -21,6 +21,7 @@ import { checkForUpdates } from './updater';
 import * as V from './vectorActions';
 import * as L from './layoutActions';
 import * as S from './symbolActions';
+import * as TX from './tools/text/actions';
 import { editor, isBrushTool, setBrush, setSettings, setTool, ui, type Persona, type ToolId } from './store';
 import * as P from './photo/photoActions';
 import { clearSelection, invertSelection, selectAll, selectFromLayer } from './photo/selection';
@@ -339,6 +340,61 @@ export const COMMANDS = {
   'text.frame': { label: 'text.frame', run: L.toggleFrame, enabled: L.canToggleFrame },
   'text.link': { label: 'text.link', run: L.linkSelection, enabled: L.canLinkSelection },
   'text.unlink': { label: 'text.unlink', run: L.unlinkSelected, enabled: L.canUnlink },
+  // Mise en forme du texte (tools/text) : aussi pendant l'édition, sur la sélection dans le texte.
+  'text.bold': {
+    label: 'text.bold' as MessageKey,
+    shortcut: 'Mod+B',
+    run: TX.toggleBold,
+    enabled: TX.canFormatText,
+  },
+  'text.italic': {
+    label: 'text.italic' as MessageKey,
+    shortcut: 'Mod+I',
+    run: TX.toggleItalic,
+    enabled: TX.canFormatText,
+  },
+  'text.underline': {
+    label: 'text.underline' as MessageKey,
+    shortcut: 'Mod+U',
+    run: TX.toggleUnderline,
+    enabled: TX.canFormatText,
+  },
+  'text.biggerFont': {
+    label: 'text.biggerFont' as MessageKey,
+    shortcut: 'Mod+Shift+>',
+    run: () => TX.stepFontSize(1),
+    enabled: TX.canFormatText,
+  },
+  'text.smallerFont': {
+    label: 'text.smallerFont' as MessageKey,
+    shortcut: 'Mod+Shift+<',
+    run: () => TX.stepFontSize(-1),
+    enabled: TX.canFormatText,
+  },
+  'text.alignLeft': {
+    label: 'text.alignLeft' as MessageKey,
+    shortcut: 'Mod+Alt+L',
+    run: () => TX.setAlign('left'),
+    enabled: TX.canFormatText,
+  },
+  'text.alignCenter': {
+    label: 'text.alignCenter' as MessageKey,
+    shortcut: 'Mod+Alt+C',
+    run: () => TX.setAlign('center'),
+    enabled: TX.canFormatText,
+  },
+  'text.alignRight': {
+    label: 'text.alignRight' as MessageKey,
+    shortcut: 'Mod+Alt+R',
+    run: () => TX.setAlign('right'),
+    enabled: TX.canFormatText,
+  },
+  'text.justify': {
+    label: 'text.justify' as MessageKey,
+    shortcut: 'Mod+Alt+J',
+    run: () => TX.setAlign('justify'),
+    enabled: TX.canFormatText,
+  },
 
   'arrange.front': {
     label: 'arrange.front',
@@ -606,7 +662,7 @@ export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
   k: ['clone'],
   s: ['smudge'],
   o: ['dodge', 'burn', 'sponge'],
-  t: ['text'],
+  t: ['text', 'frameText'],
   i: ['eyedropper'],
   h: ['hand'],
   z: ['zoom'],
@@ -683,7 +739,7 @@ export function formatShortcut(s: string): string {
     .replace(/(Ctrl|Maj|Alt)(?=[^+])/g, '$1+');
 }
 
-function matches(e: KeyboardEvent, shortcut: string): boolean {
+export function matches(e: KeyboardEvent, shortcut: string): boolean {
   const parts = shortcut.split('+');
   const key = parts.pop()!;
   const mod = parts.includes('Mod');
@@ -702,7 +758,9 @@ function matches(e: KeyboardEvent, shortcut: string): boolean {
     (key === '0' && (e.code === 'Digit0' || e.code === 'Numpad0')) ||
     (key === '1' && (e.code === 'Digit1' || e.code === 'Numpad1')) ||
     (key === 'Enter' && e.key === 'Enter');
-  if (shift !== e.shiftKey && !(key === '=' && e.key === '+')) return false;
+  // `<` et `>` : touche distincte ou ponctuation avec Maj selon le clavier, Maj n'est pas exigée.
+  if (shift !== e.shiftKey && !(key === '=' && e.key === '+') && !('<>'.includes(key) && e.key === key))
+    return false;
   return codeMatch || k.toLowerCase() === key.toLowerCase();
 }
 

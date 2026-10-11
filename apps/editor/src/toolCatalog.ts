@@ -37,7 +37,7 @@ export const PHOTO_GROUPS: ToolId[][] = [
   ['brush', 'colorReplace', 'eraser', 'backgroundEraser', 'floodEraser', 'fill', 'pixelGradient'],
   ['magicEraser', 'heal', 'patch', 'blemish', 'redEye', 'clone'],
   ['dodge', 'burn', 'sponge', 'blurBrush', 'sharpenBrush', 'smudge', 'liquify'],
-  ['text'],
+  ['text', 'frameText'],
   ['eyedropper', 'hand', 'zoom'],
 ];
 

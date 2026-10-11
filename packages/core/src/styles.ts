@@ -21,6 +21,8 @@ const TEXT_KEYS: (keyof TextStyle)[] = [
   'strike',
   'uppercase',
   'features',
+  'lastLine',
+  'list',
 ];
 
 /** Enregistre l'apparence d'un objet. Un texte garde aussi ses réglages de caractère. */

@@ -1,6 +1,6 @@
 import { adjustRuns, layoutText, type MeasureText, type TextLayout, type TextLine } from './text';
 import { walkDocument } from './tree';
-import type { PoulpeDocument, TextNode, TextRun } from './types';
+import type { PoulpeDocument, TextNode, TextRun, TextStyle } from './types';
 
 /*
  * Textes de mise en page : champs (numéro de page, nombre de pages) et cadres de texte liés.
@@ -138,6 +138,48 @@ function shiftLine(line: TextLine, o: number): TextLine {
   };
 }
 
+/**
+ * Liste qui continue dans un cadre lié : nombre de paragraphes numérotés avant `offset`, et le
+ * cadre commence-t-il au milieu d'un paragraphe (dont la puce est dans le cadre précédent) ?
+ */
+function listFrom(
+  text: string,
+  offset: number,
+  list: boolean,
+): { listStart?: number; listContinued?: boolean } {
+  if (!list || !offset) return {};
+  let count = 0;
+  let pos = 0;
+  for (const para of text.split('\n')) {
+    if (pos >= offset) break;
+    if (para.trim()) count++;
+    pos += para.length + 1;
+  }
+  return { listStart: count, listContinued: text[offset - 1] !== '\n' };
+}
+
+/**
+ * Alignement vertical dans un cadre de hauteur fixe : les lignes de chaque colonne descendent
+ * au milieu ou en bas du cadre.
+ */
+export function alignVertically(
+  lines: TextLine[],
+  height: number,
+  align: TextStyle['verticalAlign'],
+): TextLine[] {
+  if (!align || align === 'top' || !lines.length) return lines;
+  const k = align === 'center' ? 0.5 : 1;
+  const bottoms = new Map<number, number>();
+  for (const l of lines) {
+    const c = l.column ?? 0;
+    bottoms.set(c, Math.max(bottoms.get(c) ?? 0, l.top + l.height));
+  }
+  return lines.map((l) => {
+    const shift = Math.max(0, (height - bottoms.get(l.column ?? 0)!) * k);
+    return shift ? { ...l, top: l.top + shift, baseline: l.baseline + shift } : l;
+  });
+}
+
 function sliceRuns(runs: TextRun[] | undefined, from: number): TextRun[] | undefined {
   if (!runs?.length || !from) return runs;
   const out = runs
@@ -171,6 +213,9 @@ export function flowText(
       runs: sliceRuns(src.runs, offset),
       autoWidth: chain.length > 1 || frame.frame ? false : head.autoWidth,
       width: frame.width,
+      // La hauteur du cadre répartit les lignes entre ses colonnes.
+      height: frame.height,
+      ...listFrom(text, offset, !!src.style.list),
     };
     const full = layoutText(sub, measure);
     const fixed = frame.frame || chain.length > 1;
@@ -186,8 +231,15 @@ export function flowText(
     let lines = full.lines.slice(0, count).map((l) => shiftLine(l, offset));
     // Texte artistique dont les champs ont changé la longueur : l'alignement suit sa boîte.
     const k = src.style.align === 'center' ? 0.5 : src.style.align === 'right' ? 1 : 0;
-    if (sub.autoWidth && k && frame.width !== full.width)
-      lines = lines.map((l) => ({ ...l, offset: l.offset + (frame.width - full.width) * k }));
+    if (sub.autoWidth && k && frame.width !== full.width) {
+      const dx = (frame.width - full.width) * k;
+      lines = lines.map((l) => ({
+        ...l,
+        offset: l.offset + dx,
+        marker: l.marker && { ...l.marker, x: l.marker.x + dx },
+      }));
+    }
+    if (fixed) lines = alignVertically(lines, frame.height, src.style.verticalAlign);
     const rest = full.lines[count];
     const end = rest ? offset + rest.start : text.length;
     parts.push({

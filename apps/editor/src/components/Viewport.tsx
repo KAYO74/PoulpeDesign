@@ -18,6 +18,7 @@ import { addElement, type ElementKind } from '../libraryActions';
 import { ELEMENT_MIME } from '../panels/Library';
 import { editor, ui, useEditor, useUi } from '../store';
 import { CanvasMenu } from './CanvasMenu';
+import { textEditKey } from '../tools/text/keys';
 
 let controller: CanvasController | null = null;
 export const getController = () => controller;
@@ -336,6 +337,11 @@ function EditingText({ editingId }: { editingId: string }) {
       }}
       onKeyDown={(e) => {
         e.stopPropagation();
+        // Gras, italique, taille, alignement, interlettrage : appliqués à la sélection dans le texte.
+        if (textEditKey(e.nativeEvent)) {
+          e.preventDefault();
+          return;
+        }
         const el = e.currentTarget;
         if (e.key === 'Escape') {
           e.preventDefault();

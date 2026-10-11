@@ -11,10 +11,11 @@ import {
   type Paint,
   type PathCommand,
   type PathNode,
+  type PoulpeDocument,
   type SceneNode,
   type TextNode,
 } from '@poulpe/core';
-import { cachedLayout, measureText } from '@poulpe/render';
+import { cachedLayout, measureText, textLayoutIn } from '@poulpe/render';
 import type { Font } from 'opentype.js';
 import { fontFaceBytes } from './pdfFonts';
 
@@ -113,6 +114,7 @@ function rect(x: number, y: number, w: number, h: number): PathCommand[] {
  */
 async function textOutlines(
   node: TextNode,
+  doc?: PoulpeDocument,
 ): Promise<{ parts: { paint: Paint; cmds: PathCommand[] }[]; missing: string[] }> {
   const parts = new Map<string, { paint: Paint; cmds: PathCommand[] }>();
   const missing = new Set<string>();
@@ -135,8 +137,15 @@ async function textOutlines(
       add(g.style, glyphCommands(font, g.char, g.style.fontSize, g.x + dx, g.y + dy, g.angle));
     }
   } else {
-    const layout = cachedLayout(node, measureText);
-    for (const line of layout.lines) {
+    // Un cadre de texte prend sa part du texte, avec son alignement vertical.
+    const layout = doc ? textLayoutIn(doc, node) : cachedLayout(node, measureText);
+    for (const line of layout?.lines ?? []) {
+      const mk = line.marker;
+      if (mk) {
+        const font = await loadFont(mk.style);
+        if (font) add(mk.style, glyphCommands(font, mk.text, mk.style.fontSize, mk.x, line.baseline));
+        else missing.add(mk.style.fontFamily);
+      }
       for (const seg of line.segments) {
         const st = seg.style;
         const font = await loadFont(st);
@@ -173,8 +182,9 @@ async function textOutlines(
 export async function textToCurves(
   node: TextNode,
   name: string,
+  doc?: PoulpeDocument,
 ): Promise<{ node: SceneNode | null; missing: string[] }> {
-  const { parts, missing } = await textOutlines(node);
+  const { parts, missing } = await textOutlines(node, doc);
   if (missing.length) return { node: null, missing };
   const paths: PathNode[] = [];
   for (const part of parts) {

@@ -243,6 +243,15 @@ export interface TextStyle {
   features?: string[];
   /** Colonnes du bloc de texte. Absent ou `count` à 1 : une seule colonne. */
   columns?: TextColumns;
+  /**
+   * Dernière ligne de chaque paragraphe d'un texte justifié : à gauche (absent), centrée, à droite
+   * ou justifiée elle aussi (`justify`).
+   */
+  lastLine?: 'left' | 'center' | 'right' | 'justify';
+  /** Position du texte dans la hauteur d'un cadre de texte. Absent : en haut. */
+  verticalAlign?: 'top' | 'center' | 'bottom';
+  /** Liste : une puce ou un numéro devant chaque paragraphe non vide. Absent : pas de liste. */
+  list?: 'bullet' | 'number';
 }
 
 /** Réglages de caractère qui peuvent varier à l'intérieur d'un même texte. */

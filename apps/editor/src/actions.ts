@@ -1,6 +1,7 @@
 import {
   alignNodes,
   boxCenter,
+  chainHead,
   clearRunKeys,
   cloneWithNewIds,
   createArtboard,
@@ -308,7 +309,14 @@ export function setPaint(target: 'fill' | 'stroke', paint: Paint, gesture = fals
 export function setTextStyle(patch: Partial<TextStyle>): void {
   if (applyEditingStyle(patch)) return;
   const ids = sel();
-  const texts = ids.filter((id) => findNode(editor.doc, id)?.node.type === 'text');
+  // Un cadre lié affiche le texte du premier cadre de sa chaîne : c'est lui qui porte le style.
+  const texts = [
+    ...new Set(
+      ids
+        .filter((id) => findNode(editor.doc, id)?.node.type === 'text')
+        .map((id) => chainHead(editor.doc, id)?.id ?? id),
+    ),
+  ];
   if (!texts.length) {
     const d = ui.get().defaults;
     ui.set({ defaults: { ...d, text: { ...d.text, ...patch } } });
