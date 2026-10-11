@@ -1,6 +1,7 @@
 import { distanceToPolylines, flattenCommands, pointInPolylines } from './bezier';
 import { cachedSvgPath, fitCommands } from './path';
-import type { SceneNode, Artboard, Paint } from './types';
+import { applyCorners, polygonOutline, rectBase, rectCorners, shapeCommands } from './shapes';
+import type { SceneNode, Artboard, Paint, Corners } from './types';
 
 export interface Vec {
   x: number;
@@ -160,18 +161,51 @@ export function roundRectPath(x: number, y: number, w: number, h: number, radius
   ];
 }
 
+/**
+ * Contour d'une forme avant ses coins non destructifs (outil Coin), dans son repère local. Null
+ * pour les objets sans coins (ellipse, ligne, texte…).
+ */
+export function baseOutline(node: SceneNode): PathCommand[] | null {
+  const { width: w, height: h } = node;
+  switch (node.type) {
+    case 'rect':
+      return rectBase(w, h);
+    case 'polygon':
+      return node.curve
+        ? polygonOutline(node.sides, node.curve, w, h)
+        : polyline(regularPoints(Math.max(3, Math.round(node.sides)), w, h));
+    case 'star':
+      return polyline(regularPoints(Math.max(3, Math.round(node.points)), w, h, node.innerRatio));
+    case 'path':
+      return node.shape
+        ? shapeCommands(node.shape, w, h)
+        : fitCommands(cachedSvgPath(node.d), node.viewBox, { x: 0, y: 0, width: w, height: h });
+    default:
+      return null;
+  }
+}
+
+/** Coins non destructifs d'une forme (ceux d'un rectangle viennent de ses rayons). */
+export function nodeCorners(node: SceneNode): Corners | undefined {
+  if (node.type === 'rect') return rectCorners(node);
+  if (node.type === 'polygon' || node.type === 'star' || node.type === 'path') return node.corners;
+  return undefined;
+}
+
 /** Tracé d'une forme dans ses coordonnées locales (0..width, 0..height). */
 export function shapePath(node: SceneNode): PathCommand[] {
   const { width: w, height: h } = node;
   switch (node.type) {
     case 'rect':
-      return roundRectPath(0, 0, w, h, node.cornerRadius);
+      // Rectangle aux coins arrondis tous pareils : le tracé historique, inchangé.
+      return node.radii || (node.cornerType && node.cornerType !== 'round')
+        ? applyCorners(rectBase(w, h), rectCorners(node))
+        : roundRectPath(0, 0, w, h, node.cornerRadius);
     case 'ellipse':
       return ellipsePath(0, 0, w, h);
     case 'polygon':
-      return polyline(regularPoints(Math.max(3, Math.round(node.sides)), w, h));
     case 'star':
-      return polyline(regularPoints(Math.max(3, Math.round(node.points)), w, h, node.innerRatio));
+      return applyCorners(baseOutline(node)!, node.corners);
     case 'line':
       return node.direction === 1
         ? polyline(
@@ -189,7 +223,7 @@ export function shapePath(node: SceneNode): PathCommand[] {
             false,
           );
     case 'path':
-      return fitCommands(cachedSvgPath(node.d), node.viewBox, { x: 0, y: 0, width: w, height: h });
+      return applyCorners(baseOutline(node)!, node.corners);
     case 'text':
     case 'image':
     case 'group':
@@ -269,7 +303,8 @@ export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
       ny = (l.y - node.height / 2) / ry;
     return nx * nx + ny * ny <= 1;
   }
-  if (node.type === 'path' || node.type === 'polygon' || node.type === 'star') {
+  const roundedRect = node.type === 'rect' && (node.cornerRadius > 0 || !!node.radii);
+  if (node.type === 'path' || node.type === 'polygon' || node.type === 'star' || roundedRect) {
     // Forme libre : on touche le remplissage ou le trait, pas la boîte entière.
     let polys = flatCache.get(node);
     if (!polys) {
@@ -277,8 +312,9 @@ export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
       if (Object.isFrozen(node)) flatCache.set(node, polys);
     }
     const stroked = node.stroke.paint.type !== 'none' && node.stroke.width > 0;
+    // Un rectangle se saisit partout à l'intérieur, même sans remplissage (comme sans arrondi).
     if (
-      node.fill.type !== 'none' &&
+      (node.fill.type !== 'none' || roundedRect) &&
       pointInPolylines(polys, l, node.type === 'path' ? node.fillRule : 'nonzero')
     )
       return true;

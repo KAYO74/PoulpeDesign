@@ -4,6 +4,7 @@ import {
   applyBoolean,
   applyKnife,
   artboardAt,
+  basePathCommands,
   bendSegment,
   breakAtAnchors,
   cachedSvgPath,
@@ -399,7 +400,7 @@ export class PathTools {
   // ————— Outil Nœud —————
 
   private subpathsOf(n: PathNode): SubPath[] {
-    return markSmart(toSubpaths(cachedSvgPath(n.d)), n.smartNodes);
+    return markSmart(toSubpaths(basePathCommands(n)), n.smartNodes);
   }
 
   /** Nœud ou poignée sous le point écran. */

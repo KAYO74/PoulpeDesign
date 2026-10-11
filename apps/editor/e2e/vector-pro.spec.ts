@@ -87,11 +87,11 @@ test('l’outil Coin arrondit un angle', async ({ page }) => {
   await page.keyboard.press('u');
   await drag([300, 300], [500, 500]);
   await page.getByTestId('tool-corner').click();
-  // Glisser depuis le coin en haut à gauche vers l'intérieur.
+  // Glisser depuis le coin en haut à gauche vers l'intérieur : le rectangle reste un rectangle.
   await drag([300, 300], [340, 300]);
   const [n] = await nodes(page);
-  expect(n.type).toBe('path');
-  expect(n.d).toMatch(/C/);
+  expect(n.type).toBe('rect');
+  expect(n.radii[0]).toBeGreaterThan(40);
   expect(await history(page)).toContain('history.corner');
 });
 
