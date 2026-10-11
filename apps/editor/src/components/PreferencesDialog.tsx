@@ -18,6 +18,7 @@ import {
   importPreferences,
   memoryBudgetMb,
   needsRestart,
+  cpuThreads,
   readSystemMemory,
   resetAllPreferences,
   resetPerf,
@@ -259,7 +260,7 @@ function PerformancePane() {
   const engineReady = useEngineReady();
   const mem = useMemory();
   const desktop = isDesktop();
-  const cores = navigator.hardwareConcurrency || 1;
+  const cores = cpuThreads();
   const budget = memoryBudgetMb(perf);
   const gb = [1, 2, 4, 8, 16, 32, 64].map((g) => g * 1024).filter((m) => !mem.total || m < mem.total);
   const budgetOptions = [
@@ -444,7 +445,9 @@ function PerformancePane() {
           onChange={(v) => setPerf({ threads: v })}
         />
         <p className="note small">
-          {self.crossOriginIsolated ? t('prefs.threadsNote', { cores }) : t('prefs.threadsUnavailable')}
+          {self.crossOriginIsolated
+            ? t('prefs.threadsNote', { cores })
+            : t(isDesktop() ? 'prefs.threadsNative' : 'prefs.threadsUnavailable', { cores })}
         </p>
       </Section>
 
@@ -636,7 +639,9 @@ function GpuLine({ label, gpu }: { label: string; gpu: GpuInfo | null }) {
       <dt>{label}</dt>
       <dd>
         {gpu
-          ? `${gpu.renderer}${gpu.vendor && !gpu.renderer?.includes(gpu.vendor) ? ` (${gpu.vendor})` : ''}`
+          ? gpu.masked
+            ? t('diag.gpuMasked')
+            : `${gpu.renderer}${gpu.vendor && !gpu.renderer?.includes(gpu.vendor) ? ` (${gpu.vendor})` : ''}`
           : t('diag.none')}
       </dd>
     </>
@@ -795,6 +800,7 @@ function DiagnosticPane() {
               <dd>{report.platform}</dd>
               <dt>{t('diag.cpu')}</dt>
               <dd>
+                {report.cpu && `${report.cpu} · `}
                 {t('diag.cores', { n: report.cores })} · {t('prefs.threads')} : {report.threads}
               </dd>
               <dt>{t('diag.memory')}</dt>

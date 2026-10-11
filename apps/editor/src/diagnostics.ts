@@ -1,5 +1,13 @@
 import { isDesktop } from './io';
-import { getPerf, memoryBudgetMb, readSystemMemory, threadCount, usedMemoryMb } from './preferences';
+import {
+  cpuName,
+  cpuThreads,
+  getPerf,
+  memoryBudgetMb,
+  readSystemMemory,
+  threadCount,
+  usedMemoryMb,
+} from './preferences';
 
 /*
  * Diagnostic (Préférences > Diagnostic, Aide > Diagnostic) : carte graphique vue par le moteur web,
@@ -16,6 +24,11 @@ export interface GpuInfo {
   maxTextureSize: number | null;
   /** Rendu logiciel (sans carte graphique) détecté. */
   software: boolean;
+  /**
+   * Nom inventé par le moteur web pour ne pas révéler la carte : WebKit (Linux, macOS) répond
+   * toujours « Apple GPU ». La vraie carte est alors celle que liste le moteur Rust.
+   */
+  masked: boolean;
 }
 
 export interface DiagnosticReport {
@@ -29,6 +42,8 @@ export interface DiagnosticReport {
   gpuHighPerformance: GpuInfo | null;
   gpuLowPower: GpuInfo | null;
   webgpu: string | null;
+  /** Modèle du processeur (appli de bureau), ou null. */
+  cpu: string | null;
   cores: number;
   threads: number;
   multithreading: boolean;
@@ -39,6 +54,7 @@ export interface DiagnosticReport {
   screen: string;
 }
 
+const MASKED = /^Apple GPU$/;
 const SOFTWARE = /swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i;
 
 function gpuInfo(kind: 'webgl2' | 'webgl', powerPreference: WebGLPowerPreference): GpuInfo | null {
@@ -60,6 +76,7 @@ function gpuInfo(kind: 'webgl2' | 'webgl', powerPreference: WebGLPowerPreference
     version: `${gl.getParameter(gl.VERSION)} · ${gl.getParameter(gl.SHADING_LANGUAGE_VERSION)}`,
     maxTextureSize: Number(gl.getParameter(gl.MAX_TEXTURE_SIZE)) || null,
     software: SOFTWARE.test(renderer),
+    masked: MASKED.test(renderer) && !/Mac OS X/.test(navigator.userAgent),
   };
   gl.getExtension('WEBGL_lose_context')?.loseContext();
   return info;
@@ -105,7 +122,8 @@ export async function runDiagnostic(): Promise<DiagnosticReport> {
     gpuHighPerformance: gpuInfo(kind, 'high-performance'),
     gpuLowPower: gpuInfo(kind, 'low-power'),
     webgpu: await webgpuInfo(),
-    cores: navigator.hardwareConcurrency || 1,
+    cpu: cpuName(),
+    cores: cpuThreads(),
     threads: self.crossOriginIsolated ? threadCount(p) : 1,
     multithreading: self.crossOriginIsolated,
     systemMemoryMb: mem.totalMb,
@@ -132,7 +150,7 @@ export function formatMb(v: number | null): string {
 export function reportText(r: DiagnosticReport): string {
   const g = (x: GpuInfo | null) =>
     x
-      ? `${x.renderer} (${x.vendor}) · ${x.version} · textures ${x.maxTextureSize}${x.software ? ' · LOGICIEL' : ''}`
+      ? `${x.renderer} (${x.vendor}${x.masked ? ', nom masqué par le moteur web' : ''}) · ${x.version} · textures ${x.maxTextureSize}${x.software ? ' · LOGICIEL' : ''}`
       : '—';
   return [
     r.app,
@@ -143,7 +161,7 @@ export function reportText(r: DiagnosticReport): string {
     `Carte graphique (défaut) : ${g(r.gpu)}`,
     `Carte graphique (performances) : ${g(r.gpuHighPerformance)}`,
     `Carte graphique (économie) : ${g(r.gpuLowPower)}`,
-    `Processeur : ${r.cores} cœurs · threads de calcul : ${r.threads}${r.multithreading ? '' : ' (multi-thread indisponible)'}`,
+    `Processeur : ${r.cpu ? `${r.cpu} · ` : ''}${r.cores} cœurs · threads de calcul : ${r.threads}${r.multithreading ? '' : isDesktop() ? ' dans la page (le moteur Rust utilise tous les cœurs)' : ' (multi-thread indisponible)'}`,
     `Mémoire : ordinateur ${mb(r.systemMemoryMb)}, libre ${mb(r.availableMemoryMb)}, utilisée par Poulpe Design ${mb(r.usedMemoryMb)}, budget ${mb(r.memoryBudgetMb)}`,
   ].join('\n');
 }

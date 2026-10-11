@@ -136,11 +136,103 @@ pub fn apply(identifier: &str) {
     }
 }
 
-/// Mémoire de l'ordinateur, en Mo : totale et disponible (quand le système la donne).
-#[derive(Debug, Serialize)]
+/// Mémoire de l'ordinateur, en Mo : totale et disponible (quand le système la donne). Avec le
+/// processeur : le moteur web cache son modèle et plafonne le nombre de cœurs annoncés (8 sous
+/// WebKit), l'appli les lit donc ici.
+#[derive(Debug, Default, Serialize)]
 pub struct SystemMemory {
     pub total_mb: Option<u64>,
     pub available_mb: Option<u64>,
+    /// Mémoire occupée par l'appli et ses processus du moteur web, en Mo (Linux).
+    pub used_mb: Option<u64>,
+    /// Modèle du processeur (« 11th Gen Intel(R) Core(TM) i7-11700 @ 2.50GHz »).
+    pub cpu_name: Option<String>,
+    /// Fils d'exécution matériels du processeur.
+    pub cpu_threads: usize,
+}
+
+/// Ajoute le modèle du processeur et son nombre de fils d'exécution.
+pub fn with_cpu(mut m: SystemMemory) -> SystemMemory {
+    m.cpu_name = cpu_name()
+        .map(|n| n.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|n| !n.is_empty());
+    m.cpu_threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1);
+    m
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn command_text(program: &str, args: &[&str]) -> Option<String> {
+    let mut cmd = std::process::Command::new(program);
+    cmd.args(args);
+    // Sans fenêtre de console qui clignote.
+    #[cfg(target_os = "windows")]
+    std::os::windows::process::CommandExt::creation_flags(&mut cmd, 0x0800_0000);
+    let out = cmd.output().ok()?;
+    out.status.success().then(|| String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+#[cfg(target_os = "linux")]
+fn cpu_name() -> Option<String> {
+    cpuinfo_model(&std::fs::read_to_string("/proc/cpuinfo").ok()?)
+}
+
+/// Ligne « model name » (x86) ou « Model » (ARM) de /proc/cpuinfo.
+#[cfg(any(target_os = "linux", test))]
+fn cpuinfo_model(info: &str) -> Option<String> {
+    info.lines()
+        .filter_map(|l| l.split_once(':'))
+        .find(|(k, _)| matches!(k.trim(), "model name" | "Model" | "Hardware"))
+        .map(|(_, v)| v.trim().to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn cpu_name() -> Option<String> {
+    command_text("sysctl", &["-n", "machdep.cpu.brand_string"])
+}
+
+#[cfg(target_os = "windows")]
+fn cpu_name() -> Option<String> {
+    let key = r"HKLM\HARDWARE\DESCRIPTION\System\CentralProcessor\0";
+    let out = command_text("reg", &["query", key, "/v", "ProcessorNameString"])?;
+    out.lines().find_map(|l| l.split_once("REG_SZ")).map(|(_, v)| v.trim().to_string())
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+fn cpu_name() -> Option<String> {
+    None
+}
+
+/// Mémoire vive occupée par l'appli et tous ses processus enfants (WebKitGTK dessine et exécute
+/// la page dans des processus séparés), en Mo.
+#[cfg(target_os = "linux")]
+fn used_mb() -> Option<u64> {
+    let me = std::process::id();
+    let mut parents = std::collections::HashMap::new();
+    let mut rss = std::collections::HashMap::new();
+    for entry in std::fs::read_dir("/proc").ok()?.flatten() {
+        let Ok(pid) = entry.file_name().to_string_lossy().parse::<u32>() else { continue };
+        let Ok(stat) = std::fs::read_to_string(entry.path().join("stat")) else { continue };
+        // Le nom du programme est entre parenthèses et peut contenir des espaces.
+        let Some((_, rest)) = stat.rsplit_once(')') else { continue };
+        let f: Vec<&str> = rest.split_whitespace().collect();
+        let (Some(ppid), Some(pages)) = (f.get(1), f.get(21)) else { continue };
+        parents.insert(pid, ppid.parse::<u32>().unwrap_or(0));
+        rss.insert(pid, pages.parse::<u64>().unwrap_or(0));
+    }
+    let in_tree = |mut pid: u32| {
+        for _ in 0..16 {
+            if pid == me {
+                return true;
+            }
+            match parents.get(&pid) {
+                Some(&p) if p > 1 => pid = p,
+                _ => return false,
+            }
+        }
+        false
+    };
+    let pages: u64 = rss.iter().filter(|(pid, _)| in_tree(**pid)).map(|(_, p)| p).sum();
+    Some(pages * 4096 / 1_048_576)
 }
 
 #[cfg(target_os = "linux")]
@@ -153,7 +245,12 @@ pub fn system_memory() -> SystemMemory {
             .and_then(|v| v.parse::<u64>().ok())
             .map(|kb| kb / 1024)
     };
-    SystemMemory { total_mb: field("MemTotal:"), available_mb: field("MemAvailable:") }
+    SystemMemory {
+        total_mb: field("MemTotal:"),
+        available_mb: field("MemAvailable:"),
+        used_mb: used_mb(),
+        ..Default::default()
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -165,7 +262,7 @@ pub fn system_memory() -> SystemMemory {
         .and_then(|o| String::from_utf8(o.stdout).ok())
         .and_then(|s| s.trim().parse::<u64>().ok())
         .map(|b| b / 1_048_576);
-    SystemMemory { total_mb: total, available_mb: None }
+    SystemMemory { total_mb: total, ..Default::default() }
 }
 
 #[cfg(target_os = "windows")]
@@ -202,12 +299,13 @@ pub fn system_memory() -> SystemMemory {
     SystemMemory {
         total_mb: ok.then_some(status.total_phys / 1_048_576),
         available_mb: ok.then_some(status.avail_phys / 1_048_576),
+        ..Default::default()
     }
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 pub fn system_memory() -> SystemMemory {
-    SystemMemory { total_mb: None, available_mb: None }
+    SystemMemory::default()
 }
 
 #[cfg(test)]
@@ -232,6 +330,17 @@ mod tests {
         let off = LaunchPrefs { hardware_acceleration: Some(false), ..p };
         assert_eq!(off.engine_settings().device, GpuChoice::Cpu);
         assert_eq!(LaunchPrefs::default().engine_settings().device, GpuChoice::Auto);
+    }
+
+    #[test]
+    fn lit_le_processeur() {
+        let info = "processor\t: 0\nmodel name\t: 11th Gen Intel(R) Core(TM) i7-11700 @ 2.50GHz\n";
+        assert_eq!(cpuinfo_model(info).as_deref(), Some("11th Gen Intel(R) Core(TM) i7-11700 @ 2.50GHz"));
+        assert_eq!(cpuinfo_model("processor : 0\n"), None);
+        let m = with_cpu(system_memory());
+        assert!(m.cpu_threads >= 1);
+        #[cfg(target_os = "linux")]
+        assert!(m.used_mb.is_some_and(|mb| mb > 0) && m.cpu_name.is_some());
     }
 
     #[test]

@@ -143,6 +143,11 @@ export function resetPerf(): void {
 interface SystemMemory {
   totalMb: number | null;
   availableMb: number | null;
+  /** Mémoire occupée par l'appli et les processus du moteur web (appli de bureau sous Linux). */
+  usedMb?: number | null;
+  /** Modèle du processeur et fils d'exécution, lus par l'appli de bureau (le moteur web les cache). */
+  cpuName?: string | null;
+  cpuThreads?: number | null;
 }
 
 let systemMemory: SystemMemory | null = null;
@@ -152,8 +157,20 @@ export async function readSystemMemory(): Promise<SystemMemory> {
   if (isDesktop()) {
     try {
       const { invoke } = await import('@tauri-apps/api/core');
-      const m = await invoke<{ total_mb: number | null; available_mb: number | null }>('system_memory');
-      systemMemory = { totalMb: m.total_mb, availableMb: m.available_mb };
+      const m = await invoke<{
+        total_mb: number | null;
+        available_mb: number | null;
+        used_mb?: number | null;
+        cpu_name?: string | null;
+        cpu_threads?: number;
+      }>('system_memory');
+      systemMemory = {
+        totalMb: m.total_mb,
+        availableMb: m.available_mb,
+        usedMb: m.used_mb ?? null,
+        cpuName: m.cpu_name ?? null,
+        cpuThreads: m.cpu_threads || null,
+      };
       return systemMemory;
     } catch {
       /* ancienne appli de bureau ou commande indisponible */
@@ -164,8 +181,22 @@ export async function readSystemMemory(): Promise<SystemMemory> {
   return systemMemory;
 }
 
-/** Mémoire JavaScript utilisée par l'appli, en Mo (Windows, Chrome et Edge seulement). */
+/** Fils d'exécution du processeur : lus par l'appli de bureau, sinon annoncés par le navigateur. */
+export function cpuThreads(): number {
+  return systemMemory?.cpuThreads || navigator.hardwareConcurrency || 1;
+}
+
+/** Modèle du processeur (appli de bureau), ou null. */
+export function cpuName(): string | null {
+  return systemMemory?.cpuName ?? null;
+}
+
+/**
+ * Mémoire utilisée par l'appli, en Mo : tous ses processus (appli de bureau sous Linux), sinon
+ * la mémoire JavaScript (Windows, Chrome et Edge seulement).
+ */
 export function usedMemoryMb(): number | null {
+  if (systemMemory?.usedMb != null) return systemMemory.usedMb;
   const m = (performance as { memory?: { usedJSHeapSize: number } }).memory;
   return m ? m.usedJSHeapSize / 1048576 : null;
 }
@@ -275,7 +306,7 @@ export function startPreferences(): void {
 
 /** Nombre de threads de calcul effectif. */
 export function threadCount(p: PerfPrefs = perf): number {
-  const cores = navigator.hardwareConcurrency || 1;
+  const cores = cpuThreads();
   return p.threads > 0 ? Math.min(p.threads, cores) : Math.max(1, Math.min(4, cores - 1));
 }
 

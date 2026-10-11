@@ -62,6 +62,25 @@ Ils sont appliqués par `apps/editor/src/perf.ts` ; la fenêtre Préférences > 
 
 `renderStats()` donne les chiffres de la fenêtre Diagnostic : mémoire occupée par le cache, nombre d'images gardées, durée moyenne et maximale des 60 dernières images, mémoire JavaScript (Chromium).
 
+## Linux : ombre des plans de travail (1.1.2)
+
+Premier retour sur un vrai poste Linux (i7, RTX 4060, écran 2560 × 1440) : 45 ms par image dans l'appli de bureau. Quand WebKitGTK dessine le canevas sans carte graphique (cas fréquent avec certains pilotes), le flou de l'ombre portée des plans de travail (`shadowBlur`) coûtait à lui seul 22 ms par image. L'ombre est maintenant floutée une seule fois sur un petit carré, puis ses coins sont recopiés et ses bords étirés (`drawArtboardShadow`) : même rendu à 1 niveau de couleur près.
+
+Mesure dans WebKitGTK 2.52 sans accélération du canevas, 1 000 objets, fenêtre 2560 × 1440, en ms par image :
+
+| Scénario                         | Avant | Après |
+| -------------------------------- | ----: | ----: |
+| Survol à la souris               |  18,7 |   5,2 |
+| Défilement                       |  28,7 |   6,1 |
+| Zoom                             |  34,7 |  16,4 |
+| Réglage de la couleur d'un objet |  44,4 |  23,2 |
+| Déplacement de 50 objets         |  51,5 |  33,1 |
+
+Autres constats du même rapport :
+
+- WebKit masque le nom de la carte graphique (« Apple GPU ») et annonce au plus 8 cœurs : le Diagnostic affiche maintenant le modèle du processeur, ses vrais fils d'exécution et la mémoire occupée par tous les processus de l'appli, lus par l'appli de bureau.
+- WebKitGTK n'active l'isolation multi-origine (`crossOriginIsolated`, threads partagés dans la page) que pour les pages servies en HTTP, pas pour le protocole de l'appli : les calculs lourds passent donc par le moteur Rust natif, qui utilise tous les cœurs.
+
 ## Pistes suivantes
 
 - Calques de réglage et filtres photo calculés dans un Web Worker, hors du fil de l'interface.

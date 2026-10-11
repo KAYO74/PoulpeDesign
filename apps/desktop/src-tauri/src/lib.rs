@@ -95,10 +95,10 @@ fn bench_report(app: tauri::AppHandle, report: String) {
     }
 }
 
-/// Mémoire de l'ordinateur (Préférences > Performances, Diagnostic).
+/// Mémoire de l'ordinateur et processeur (Préférences > Performances, Diagnostic).
 #[tauri::command]
 fn system_memory() -> launch::SystemMemory {
-    launch::system_memory()
+    launch::with_cpu(launch::system_memory())
 }
 
 /// Enregistre l'accélération matérielle et la carte graphique préférée, appliquées au prochain lancement.

@@ -39,6 +39,8 @@ export interface BenchReport {
   results: BenchResult[];
   /** Mémoire JavaScript occupée à la fin, en Mo (Chromium seulement). */
   heapMb?: number;
+  /** Isolation multi-origine (threads de calcul partagés) disponible. */
+  isolated: boolean;
 }
 
 const FRAMES = 60;
@@ -263,6 +265,7 @@ export async function runBenchmark(count = 1000, only?: string): Promise<BenchRe
     objects: count,
     results,
     heapMb: memory ? Math.round(memory.usedJSHeapSize / 1048576) : undefined,
+    isolated: self.crossOriginIsolated,
   };
 }
 

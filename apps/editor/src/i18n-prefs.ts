@@ -72,6 +72,8 @@ export const frPrefs = {
   'prefs.cpu': 'Processeur',
   'prefs.threads': 'Threads de calcul',
   'prefs.threadsNote': 'Utilisés par le détourage automatique ({cores} cœurs sur cet ordinateur).',
+  'prefs.threadsNative':
+    'Les filtres et réglages lourds passent par le moteur Rust, qui utilise les {cores} cœurs. Le reste se calcule sur un seul thread.',
   'prefs.threadsUnavailable':
     'Le calcul sur plusieurs cœurs n’est pas disponible ici : un seul thread est utilisé.',
   'prefs.autosave': 'Sauvegarde automatique des brouillons',
@@ -119,6 +121,7 @@ export const frPrefs = {
   'diag.webgl': 'WebGL',
   'diag.webgpu': 'WebGPU',
   'diag.none': 'non disponible',
+  'diag.gpuMasked': 'nom masqué par le moteur web (voir le moteur Rust ci-dessous)',
   'diag.cpu': 'Processeur',
   'diag.cores': '{n} cœurs',
   'diag.memory': 'Mémoire',
@@ -248,6 +251,8 @@ export const enPrefs: Record<MessageKeyPrefs, string> = {
   'prefs.cpu': 'Processor',
   'prefs.threads': 'Computing threads',
   'prefs.threadsNote': 'Used by automatic background removal ({cores} cores on this computer).',
+  'prefs.threadsNative':
+    'Heavy filters and adjustments go through the Rust engine, which uses all {cores} cores. Everything else runs on a single thread.',
   'prefs.threadsUnavailable': 'Multi-core computing is not available here: a single thread is used.',
   'prefs.autosave': 'Automatic draft saving',
   'prefs.autosaveDelay': 'Delay after a change',
@@ -294,6 +299,7 @@ export const enPrefs: Record<MessageKeyPrefs, string> = {
   'diag.webgl': 'WebGL',
   'diag.webgpu': 'WebGPU',
   'diag.none': 'not available',
+  'diag.gpuMasked': 'name hidden by the web engine (see the Rust engine below)',
   'diag.cpu': 'Processor',
   'diag.cores': '{n} cores',
   'diag.memory': 'Memory',

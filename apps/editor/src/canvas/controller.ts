@@ -177,6 +177,8 @@ export class CanvasController {
   private viewChangedAt = 0;
   private refreshTimer: ReturnType<typeof setTimeout> | undefined;
   private checker: CanvasPattern | null = null;
+  /** Ombre des plans de travail, floutée une fois puis étirée (voir drawArtboardShadow). */
+  private shadowSprite: { canvas: HTMLCanvasElement; dpr: number; e: number } | null = null;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -1416,13 +1418,9 @@ export class CanvasController {
         sy + ab.height * view.zoom < -40
       )
         continue;
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowBlur = 18 * dpr;
-      ctx.shadowOffsetY = 4 * dpr;
+      this.drawArtboardShadow(sx * dpr, sy * dpr, ab.width * view.zoom * dpr, ab.height * view.zoom * dpr);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(ab.x, ab.y, ab.width, ab.height);
-      ctx.restore();
       if (ab.background.type === 'none') this.drawChecker(ab);
       stale =
         this.cache.drawArtboard(
@@ -1518,6 +1516,67 @@ export class CanvasController {
   }
 
   /** Damier de transparence : un motif de 16 px d'écran, au lieu de milliers de petits carrés. */
+  /**
+   * Ombre portée d'un plan de travail, en pixels du canevas. Un flou d'ombre (`shadowBlur`) sur un
+   * grand rectangle coûte plus de 20 ms par image quand le moteur web dessine sans carte graphique
+   * (WebKitGTK avec certains pilotes) : l'ombre d'un carré est floutée une seule fois, puis ses
+   * coins sont recopiés et ses bords étirés, pour le même rendu.
+   */
+  private drawArtboardShadow(x: number, y: number, w: number, h: number) {
+    const ctx = this.ctx;
+    const dpr = this.dpr;
+    const blur = 18 * dpr;
+    const offsetY = 4 * dpr;
+    // Étendue du flou (trois écarts types) ; le carré floué fait 2e de côté, l'image 4e.
+    const e = Math.ceil(1.5 * blur);
+    if (w < 2 * e || h < 2 * e) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = blur;
+      ctx.shadowOffsetY = offsetY;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y, w, h);
+      ctx.restore();
+      return;
+    }
+    if (this.shadowSprite?.dpr !== dpr) {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 4 * e;
+      const c = canvas.getContext('2d')!;
+      // Le carré est dessiné hors de l'image : seule son ombre y tombe.
+      c.shadowColor = 'rgba(0,0,0,0.35)';
+      c.shadowBlur = blur;
+      c.shadowOffsetX = 8 * e;
+      c.fillStyle = '#000';
+      c.fillRect(e - 8 * e, e, 2 * e, 2 * e);
+      this.shadowSprite = { canvas, dpr, e };
+    }
+    const img = this.shadowSprite.canvas;
+    const s = 2 * e; // taille d'un coin dans l'image
+    y += offsetY;
+    const [x0, x1, y0, y1] = [x - e, x + w - e, y - e, y + h - e];
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // Coins.
+    ctx.drawImage(img, 0, 0, s, s, x0, y0, s, s);
+    ctx.drawImage(img, s, 0, s, s, x1, y0, s, s);
+    ctx.drawImage(img, 0, s, s, s, x0, y1, s, s);
+    ctx.drawImage(img, s, s, s, s, x1, y1, s, s);
+    // Bords : une colonne (ou une ligne) du milieu de l'image, étirée.
+    const mw = x1 - x0 - s;
+    const mh = y1 - y0 - s;
+    if (mw > 0) {
+      ctx.drawImage(img, s - 1, 0, 1, s, x0 + s, y0, mw, s);
+      ctx.drawImage(img, s - 1, s, 1, s, x0 + s, y1, mw, s);
+    }
+    if (mh > 0) {
+      ctx.drawImage(img, 0, s - 1, s, 1, x0, y0 + s, s, mh);
+      ctx.drawImage(img, s, s - 1, s, 1, x1, y0 + s, s, mh);
+    }
+    ctx.restore();
+  }
+
   private drawChecker(ab: Artboard) {
     const ctx = this.ctx;
     if (!this.checker) {
