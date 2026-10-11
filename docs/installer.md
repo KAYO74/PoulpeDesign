@@ -1,6 +1,6 @@
 # Installer Poulpe Design
 
-Poulpe Design s'installe comme n'importe quelle application. Téléchargez le fichier de votre système depuis la [page d'accueil du projet](../README.md#installer-poulpe-design) ou la page [Versions](https://github.com/KAYO74/Poulpe/releases), puis suivez les étapes ci-dessous.
+Poulpe Design s'installe comme n'importe quelle application. Téléchargez le fichier de votre système depuis la [page d'accueil du projet](../README.md#installer-poulpe-design) ou la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases), puis suivez les étapes ci-dessous.
 
 Le téléchargement est libre et gratuit, sans compte GitHub.
 

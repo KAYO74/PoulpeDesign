@@ -9,7 +9,7 @@ Ce qui est prêt dans Poulpe Design, et ce qu'il reste à faire de votre côté,
 **À faire :**
 
 1. Ajouter le secret `TAURI_SIGNING_PRIVATE_KEY` avec la clé privée créée sur son ordinateur par `npx @tauri-apps/cli signer generate -w ~/Documents/poulpe-maj.key --ci` (la clé publique correspondante est dans `tauri.conf.json` ; la clé privée ne doit jamais être publiée ni perdue : sans elle, plus aucune mise à jour ne peut être signée pour les applis déjà installées). Pas de mot de passe : `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` n'est pas nécessaire.
-2. Rendre les versions téléchargeables publiquement : l'appli lit `https://github.com/KAYO74/Poulpe/releases/latest/download/latest.json`, qu'un dépôt privé ne sert pas. Tant que le dépôt est privé, l'appli ne trouve simplement pas de mise à jour.
+2. Rendre les versions téléchargeables publiquement : l'appli lit `https://github.com/KAYO74/PoulpeDesign/releases/latest/download/latest.json`, qu'un dépôt privé ne sert pas. Tant que le dépôt est privé, l'appli ne trouve simplement pas de mise à jour.
 3. Publier une version comme d'habitude (onglet Actions, « Installeurs de bureau ») : le fichier `latest.json` et les fichiers de mise à jour signés s'ajoutent tout seuls aux installeurs.
 
 Sous Linux, la mise à jour automatique concerne l'AppImage ; les paquets `.deb` et Flathub se mettent à jour par le gestionnaire de paquets.

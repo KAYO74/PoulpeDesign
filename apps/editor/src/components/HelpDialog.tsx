@@ -5,7 +5,7 @@ import { Modal } from './Dialogs';
 
 const close = () => ui.set({ dialog: null });
 
-const DOCS_URL = 'https://github.com/KAYO74/Poulpe/tree/main/docs';
+const DOCS_URL = 'https://github.com/KAYO74/PoulpeDesign/tree/main/docs';
 const FAQ = [1, 2, 3, 4, 5, 6];
 
 /**
