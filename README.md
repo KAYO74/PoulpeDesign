@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/Poulpe/releases/latest"><img src="https://img.shields.io/badge/version-1.1-FF5F86" alt="Version 1.1"></a>
-  <a href="https://github.com/KAYO74/Poulpe/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/Poulpe/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.1-FF5F86" alt="Version 1.1"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
   <img src="https://img.shields.io/badge/langues-fran%C3%A7ais%20%C2%B7%20English-4DA3FF" alt="Français et anglais">
@@ -14,6 +14,10 @@
   <b>Poulpe Design</b> est une application libre et gratuite de création graphique.<br>
   La puissance d'Affinity, Illustrator et Photoshop, la simplicité de Canva.
 </p>
+
+# Poulpe Design — création graphique libre (alternative Canva, Photoshop, Illustrator, Affinity)
+
+> **Free and open-source graphic design app** (vector drawing, photo editing, page layout) for Windows, macOS and Linux, in French and English. Alternative libre à Canva, Photoshop, Illustrator et Affinity : dessin vectoriel, retouche photo, mise en page CMJN et PDF/X.
 
 <p align="center">
   <a href="#installer-poulpe-design"><b>Installer</b></a> ·
@@ -39,13 +43,13 @@ Choisissez votre système, le téléchargement démarre directement.
 
 | Système                          | Télécharger                                                                                                                                                                                                                                          |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Windows** 10 et 11             | <a href="https://github.com/KAYO74/Poulpe/releases/latest/download/Poulpe_windows_x64-setup.exe"><img src="https://img.shields.io/badge/Windows-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour Windows"></a>                |
-| **macOS**, puces Apple (M1 à M4) | <a href="https://github.com/KAYO74/Poulpe/releases/latest/download/Poulpe_darwin_aarch64.dmg"><img src="https://img.shields.io/badge/macOS%20Apple-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (puces Apple)"></a> |
-| **macOS**, processeur Intel      | <a href="https://github.com/KAYO74/Poulpe/releases/latest/download/Poulpe_darwin_x64.dmg"><img src="https://img.shields.io/badge/macOS%20Intel-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (Intel)"></a>           |
-| **Linux**, Ubuntu et Debian      | <a href="https://github.com/KAYO74/Poulpe/releases/latest/download/Poulpe_linux_amd64.deb"><img src="https://img.shields.io/badge/Linux%20.deb-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour Ubuntu et Debian"></a>        |
-| **Linux**, autres distributions  | <a href="https://github.com/KAYO74/Poulpe/releases/latest/download/Poulpe_linux_amd64.AppImage"><img src="https://img.shields.io/badge/Linux%20AppImage-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger l'AppImage"></a>          |
+| **Windows** 10 et 11             | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_windows_x64-setup.exe"><img src="https://img.shields.io/badge/Windows-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour Windows"></a>                |
+| **macOS**, puces Apple (M1 à M4) | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_darwin_aarch64.dmg"><img src="https://img.shields.io/badge/macOS%20Apple-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (puces Apple)"></a> |
+| **macOS**, processeur Intel      | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_darwin_x64.dmg"><img src="https://img.shields.io/badge/macOS%20Intel-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (Intel)"></a>           |
+| **Linux**, Ubuntu et Debian      | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_linux_amd64.deb"><img src="https://img.shields.io/badge/Linux%20.deb-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour Ubuntu et Debian"></a>        |
+| **Linux**, autres distributions  | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_linux_amd64.AppImage"><img src="https://img.shields.io/badge/Linux%20AppImage-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger l'AppImage"></a>          |
 
-Toutes les versions et l'installeur Windows `.msi` sont sur la page [Versions](https://github.com/KAYO74/Poulpe/releases).
+Toutes les versions et l'installeur Windows `.msi` sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
 Le français ou l'anglais se choisit au moment de l'installation sur Windows, et au premier lancement sur macOS et Linux. On peut changer d'avis ensuite dans **Édition > Préférences**, où se règle aussi le thème sombre ou clair.
 

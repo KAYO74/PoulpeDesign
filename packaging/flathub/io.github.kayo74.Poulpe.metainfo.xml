@@ -35,8 +35,8 @@
     </ul>
   </description>
   <launchable type="desktop-id">io.github.kayo74.Poulpe.desktop</launchable>
-  <url type="homepage">https://github.com/KAYO74/Poulpe</url>
-  <url type="bugtracker">https://github.com/KAYO74/Poulpe/issues</url>
+  <url type="homepage">https://github.com/KAYO74/PoulpeDesign</url>
+  <url type="bugtracker">https://github.com/KAYO74/PoulpeDesign/issues</url>
   <categories>
     <category>Graphics</category>
     <category>VectorGraphics</category>
@@ -50,7 +50,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>Draw workspace</caption>
-      <image>https://raw.githubusercontent.com/KAYO74/Poulpe/main/docs/images/editeur-sombre.png</image>
+      <image>https://raw.githubusercontent.com/KAYO74/PoulpeDesign/main/docs/images/dessin-modele.png</image>
     </screenshot>
   </screenshots>
   <releases>
