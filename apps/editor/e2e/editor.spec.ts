@@ -67,7 +67,7 @@ test('interface en français avec les outils à droite', async ({ page }) => {
 
 test('dessine des formes, les déplace, les redimensionne et les fait tourner', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   let s = await snapshot(page);
   expect(s.nodes).toHaveLength(1);
@@ -198,7 +198,7 @@ test('tire un repère depuis la règle, s’y aligne et le retire', async ({ pag
   expect(Math.abs(gx - 400)).toBeLessThan(8);
 
   // Un rectangle dessiné près du repère s'y colle.
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await page.mouse.move(box.x + gx + 3, box.y + 200);
   await page.mouse.down();
   await page.mouse.move(box.x + gx + 150, box.y + 320, { steps: 6 });
@@ -218,7 +218,7 @@ test('tire un repère depuis la règle, s’y aligne et le retire', async ({ pag
 
 test('rouvre le brouillon après une fermeture sans enregistrer', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   const before = (await snapshot(page)).nodes;
   // Le brouillon est écrit peu après la modification.
@@ -249,7 +249,7 @@ test('applique un dégradé et groupe des objets', async ({ page }) => {
   await page.keyboard.press('e');
   await drag([300, 300], [450, 450]);
   await page.getByTestId('paint-linear').click();
-  await page.keyboard.press('s');
+  await page.keyboard.press('u');
   await drag([500, 300], [650, 450]);
   await page.getByTestId('paint-radial').click();
   let s = await snapshot(page);
@@ -263,7 +263,7 @@ test('applique un dégradé et groupe des objets', async ({ page }) => {
 
 test('exporte en PNG, JPEG, SVG et PDF, puis enregistre et rouvre un .poulpe', async ({ page }, info) => {
   const { drag, at } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   await page.keyboard.press('t');
   await page.mouse.click(...at(400, 450));

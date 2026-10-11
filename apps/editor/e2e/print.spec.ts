@@ -191,7 +191,7 @@ test('ouvre un fichier Photoshop avec ses calques, puis l’exporte en PSD', asy
 
 test('exporte un PDF/X-4 en CMJN avec les valeurs saisies en CMJN', async ({ page }, info) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   // Document d'impression : couleurs CMJN.
   await page.evaluate(() => (window as any).poulpe.ui.set({ dialog: 'document' }));
@@ -243,7 +243,7 @@ test('exporte un PDF/X-4 en CMJN avec les valeurs saisies en CMJN', async ({ pag
 
 test('l’épreuvage CMJN montre les couleurs vives plus ternes', async ({ page }) => {
   const { drag, at } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   await page.getByTestId('hex-input').fill('00FF00');
   await page.getByTestId('hex-input').press('Enter');
@@ -269,7 +269,7 @@ test('l’épreuvage CMJN montre les couleurs vives plus ternes', async ({ page 
 
 test('exporte par lots plusieurs formats et tailles dans un ZIP', async ({ page }, info) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   await page.evaluate(() => (window as any).poulpe.ui.set({ dialog: 'batch' }));
   await page.getByTestId('batch-svg').check();

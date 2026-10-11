@@ -275,14 +275,14 @@ export function setPaint(target: 'fill' | 'stroke', paint: Paint, gesture = fals
     if (target === 'fill' && paint.type === 'solid' && applyEditingStyle({ color: paint.color })) return;
     endTextEdit();
   }
+  // La couleur choisie reste celle des prochains objets, même après un changement d'outil (comme Affinity).
+  const d = ui.get().defaults;
+  ui.set({
+    defaults: target === 'fill' ? { ...d, fill: paint } : { ...d, stroke: { ...d.stroke, paint } },
+    ...(target === 'fill' && paint.type === 'solid' ? { brushColor: paint.color } : {}),
+  });
   const ids = sel();
-  if (!ids.length) {
-    const d = ui.get().defaults;
-    ui.set({
-      defaults: target === 'fill' ? { ...d, fill: paint } : { ...d, stroke: { ...d.stroke, paint } },
-    });
-    return;
-  }
+  if (!ids.length) return;
   const recipe = (doc: PoulpeDocument) => {
     for (const id of ids) {
       const visit = (m: SceneNode) => {

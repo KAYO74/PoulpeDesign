@@ -253,6 +253,7 @@ export class CanvasController {
     canvas.addEventListener('pointercancel', this.onPointerCancel);
     canvas.addEventListener('pointerleave', this.onPointerLeave);
     canvas.addEventListener('dblclick', this.onDoubleClick);
+    canvas.addEventListener('contextmenu', this.onContextMenu);
     canvas.addEventListener('wheel', this.onWheel, { passive: false });
     window.addEventListener('keydown', this.onKey);
     window.addEventListener('keyup', this.onKey);
@@ -275,6 +276,7 @@ export class CanvasController {
     c.removeEventListener('pointercancel', this.onPointerCancel);
     c.removeEventListener('pointerleave', this.onPointerLeave);
     c.removeEventListener('dblclick', this.onDoubleClick);
+    c.removeEventListener('contextmenu', this.onContextMenu);
     c.removeEventListener('wheel', this.onWheel);
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('keyup', this.onKey);
@@ -519,6 +521,16 @@ export class CanvasController {
   private onPointerDown = (e: PointerEvent) => {
     if (e.button === 1 || (e.button === 0 && this.effectiveTool() === 'hand')) {
       this.startPan(e);
+      return;
+    }
+    if (e.button === 2 && this.effectiveTool() === 'direct') {
+      // Outil Nœud : glisser avec le bouton droit retire des nœuds de la sélection.
+      const r = this.canvas.getBoundingClientRect();
+      const s = { x: e.clientX - r.left, y: e.clientY - r.top };
+      if (this.paths.nodeSelectDown(e, this.toWorld(s.x, s.y), s)) {
+        this.canvas.setPointerCapture(e.pointerId);
+        this.requestDraw();
+      }
       return;
     }
     if (e.button !== 0) return;
@@ -1281,6 +1293,11 @@ export class CanvasController {
       this.hoverId = null;
       this.requestDraw();
     }
+  };
+
+  /** Le bouton droit sert à l'outil Nœud : pas de menu du navigateur sur le canevas. */
+  private onContextMenu = (e: MouseEvent) => {
+    if (this.effectiveTool() === 'direct') e.preventDefault();
   };
 
   private onDoubleClick = (e: MouseEvent) => {

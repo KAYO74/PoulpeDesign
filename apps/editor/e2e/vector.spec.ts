@@ -82,6 +82,44 @@ test('termine un tracé ouvert avec Entrée et modifie ses nœuds', async ({ pag
   expect(p.d).toMatch(/C/);
 });
 
+test('outil Nœud : sélection au cadre, ajout, retrait et lasso', async ({ page }) => {
+  const { at, drag } = await canvas(page);
+  const nodeSel = (): Promise<string[]> => page.evaluate(() => (window as any).poulpe.ui.get().nodeSelection);
+  await page.keyboard.press('p');
+  await page.mouse.click(...at(300, 300));
+  await page.mouse.click(...at(500, 300));
+  await page.mouse.click(...at(500, 450));
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('a');
+  // Glisser dans le vide : cadre de sélection des nœuds.
+  await drag([450, 250], [560, 480]);
+  expect(await nodeSel()).toHaveLength(2);
+  // Maj + glisser : ajoute.
+  await page.keyboard.down('Shift');
+  await drag([250, 250], [350, 350]);
+  await page.keyboard.up('Shift');
+  expect(await nodeSel()).toHaveLength(3);
+  // Glisser avec le bouton droit : retire.
+  await page.mouse.move(...at(450, 400));
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(...at(560, 480), { steps: 8 });
+  await page.mouse.up({ button: 'right' });
+  expect(await nodeSel()).toHaveLength(2);
+  // Alt + glisser : lasso.
+  await page.keyboard.down('Alt');
+  await page.mouse.move(...at(250, 250));
+  await page.mouse.down();
+  for (const [x, y] of [
+    [350, 250],
+    [350, 350],
+    [250, 350],
+  ])
+    await page.mouse.move(...at(x, y), { steps: 4 });
+  await page.mouse.up();
+  await page.keyboard.up('Alt');
+  expect(await nodeSel()).toEqual(['0:0']);
+});
+
 test('dessine au crayon', async ({ page }) => {
   const { at } = await canvas(page);
   await page.keyboard.press('n');
@@ -98,7 +136,7 @@ test('dessine au crayon', async ({ page }) => {
 
 test('réunit, soustrait et divise des formes', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await drag([300, 200], [500, 400]);
   await page.keyboard.press('e');
   await drag([420, 320], [620, 520]);
@@ -122,7 +160,7 @@ test('réunit, soustrait et divise des formes', async ({ page }) => {
 
 test('convertit une forme en courbes et décale son contour', async ({ page }) => {
   const { drag } = await canvas(page);
-  await page.keyboard.press('s');
+  await page.keyboard.press('u');
   await drag([300, 200], [500, 400]);
   await page.keyboard.press('Control+Enter');
   let list = await nodes(page);

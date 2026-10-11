@@ -9,7 +9,7 @@ const nodes = (page: Page): Promise<AnyNode[]> =>
 
 async function drawRect(page: Page, x: number, y: number) {
   const box = (await page.getByTestId('canvas').boundingBox())!;
-  await page.keyboard.press('m');
+  await page.keyboard.press('u');
   await page.mouse.move(box.x + x, box.y + y);
   await page.mouse.down();
   await page.mouse.move(box.x + x + 80, box.y + y + 50, { steps: 6 });
