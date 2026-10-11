@@ -120,6 +120,24 @@ test('outil Nœud : sélection au cadre, ajout, retrait et lasso', async ({ page
   expect(await nodeSel()).toEqual(['0:0']);
 });
 
+test('bulle d’aide des outils et création au centre avec Ctrl', async ({ page }) => {
+  const { drag } = await canvas(page);
+  await page.getByTestId('tool-direct').hover();
+  const tip = page.getByTestId('tool-tip');
+  await expect(tip).toContainText('Outil Nœud [A]');
+  await expect(tip).toContainText('Glisser');
+  await page.screenshot({ path: 'test-results/bulle-outil-noeud.png' });
+  await page.mouse.move(10, 10);
+  await expect(tip).toBeHidden();
+  // Ctrl : le rectangle part du centre.
+  await page.keyboard.press('u');
+  await page.keyboard.down('Control');
+  await drag([400, 300], [450, 340]);
+  await page.keyboard.up('Control');
+  const [r] = await nodes(page);
+  expect(r.width).toBeGreaterThan(80);
+});
+
 test('dessine au crayon', async ({ page }) => {
   const { at } = await canvas(page);
   await page.keyboard.press('n');

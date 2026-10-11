@@ -796,7 +796,8 @@ export class CanvasController {
         return;
       }
       case 'create':
-        return this.dragCreate(g, p, e.shiftKey, e.altKey, snap);
+        // Comme dans Affinity : Ctrl part du centre, Alt ignore le magnétisme.
+        return this.dragCreate(g, p, e.shiftKey, e.ctrlKey || e.metaKey, this.snapping() && !e.altKey);
       case 'cropResize':
         return this.dragCropResize(g, p);
       case 'cropPan':
