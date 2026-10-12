@@ -4,6 +4,11 @@ export const ICON_PATHS = {
   direct: 'M5 2.5l7.5 5.5-3.4.6 1.9 3.7-1.4.7-1.9-3.7L5 11.7z M1.5 12.5h3v3h-3z',
   pen: 'M8 1.8l4.2 5.6-2.2 6.1H6l-2.2-6.1z M8 1.8v6.4 M8 9.6a1.2 1.2 0 1 0 0-.1 M5.5 15h5',
   pencil: 'M2.5 13.5l.7-3L11 2.7l2.3 2.3-7.8 7.8z M9.5 4.2l2.3 2.3 M2.5 13.5l3-.7',
+  // Modes de la plume (Intelligent, Polygone, Ligne).
+  penSmart:
+    'M2.5 12C4 5.5 12 5.5 13.5 12 M2.5 10.6a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z M8 5.7a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z M13.5 10.6a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z',
+  penPolygon: 'M3 12.5L6 4l5 6.5L13 4 M2 11.5h2v2H2z M5 3h2v2H5z M10 9.5h2v2h-2z M12 3h2v2h-2z',
+  penLine: 'M4.5 11.5l7-7 M2 11h3v3H2z M11 2h3v3h-3z',
   unite: 'M2.5 2.5h7v3.5h3.5v7.5h-7.5v-3.5H2.5z',
   subtract: 'M2.5 2.5h7v3.5H6v4H2.5z M7.5 7.5h6v6h-6z',
   intersect: 'M2.5 2.5h7v7h-7z M6.5 6.5h7v7h-7z M6.5 6.5h3v3h-3z',

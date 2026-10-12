@@ -67,19 +67,21 @@ test('le cutter coupe une forme en deux', async ({ page }) => {
   expect(await nodes(page)).toHaveLength(1);
 });
 
-test('le constructeur de formes réunit les formes traversées', async ({ page }) => {
+test('le constructeur de formes réunit les zones traversées', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
   await page.keyboard.press('e');
   await drag([400, 350], [550, 500]);
   expect(await nodes(page)).toHaveLength(2);
+  // Comme dans Affinity, il travaille sur les formes sélectionnées.
+  await page.keyboard.press('Control+a');
   await page.getByTestId('tool-shapeBuilder').click();
   await drag([320, 320], [520, 470]);
   const list = await nodes(page);
   expect(list).toHaveLength(1);
   expect(list[0].type).toBe('path');
-  expect(await history(page)).toContain('history.unite');
+  expect(await history(page)).toContain('history.shapeBuilder');
 });
 
 test('l’outil Coin arrondit un angle', async ({ page }) => {

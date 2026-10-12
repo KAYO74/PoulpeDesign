@@ -1,21 +1,16 @@
 import {
   anchorKey,
   anchorsOf,
-  applyBoolean,
-  applyKnife,
-  artboardAt,
   basePathCommands,
   bendSegment,
   breakAtAnchors,
   cachedSvgPath,
   cloneSubpaths,
   cornerKeys,
-  createPath,
   cutPathAtPoint,
   deleteAnchors,
   deleteSegment,
   exactBounds,
-  findArtboard,
   findNode,
   fitDeleteAnchors,
   fromSubpaths,
@@ -29,9 +24,7 @@ import {
   moveHandle,
   nearestEnds,
   nearestSegment,
-  newId,
   parseAnchorKey,
-  pathToSvg,
   pathToWorld,
   refreshSmart,
   removeNodes,
@@ -41,7 +34,6 @@ import {
   segmentCubic,
   setAnchorKind,
   setPathCommands,
-  simplifyPoints,
   smartMarks,
   smoothSubpaths,
   splitAfterAnchors,
@@ -51,11 +43,8 @@ import {
   topLevelIds,
   toSubpaths,
   worldToPath,
-  type Anchor,
   type PathCommand,
   type PathNode,
-  type Paint,
-  type Stroke,
   type SubPath,
   type Vec,
 } from '@poulpe/core';
@@ -65,9 +54,9 @@ import type { CanvasController } from './controller';
 import { collectSnapLines, snapPoint, type SnapLines } from './snapping';
 
 /*
- * Outils de tracé : plume (courbes de Bézier nœud par nœud), crayon (main levée, lissé) et
- * outil Nœud (modifier les nœuds et poignées d'un tracé). Tous passent par les gestes de
- * l'éditeur : chaque tracé, chaque modification de nœuds s'annule en une fois.
+ * Outils de tracé : outil Nœud (modifier les nœuds et poignées d'un tracé), ciseaux et outil Coin.
+ * Tous passent par les gestes de l'éditeur : chaque modification de nœuds s'annule en une fois. La
+ * plume, le crayon, le cutter et le constructeur de formes sont dans `tools/paths`.
  */
 
 const HIT = 7;
@@ -159,23 +148,6 @@ const unit = (v: Vec): Vec | null => {
 /** Effet d'une sélection de nœuds à la zone (comme dans Affinity). */
 type NodeSelOp = 'replace' | 'add' | 'subtract' | 'toggle';
 
-interface PenState {
-  id: string;
-  artboardId: string;
-  anchors: Anchor[];
-  closed: boolean;
-  /** Nœud dont on tire les poignées (bouton enfoncé). */
-  dragIndex: number | null;
-}
-
-/** Contour visible pour les tracés dessinés : celui des réglages, ou un trait sombre de 2 px. */
-function drawnStroke(): Stroke {
-  const s = ui.get().defaults.stroke;
-  return s.paint.type === 'none'
-    ? { paint: { type: 'solid', color: '#1a1a1d' }, width: 2 }
-    : { ...s, width: Math.max(0.5, s.width) };
-}
-
 function insidePolygon(p: Vec, poly: Vec[]): boolean {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -195,12 +167,7 @@ function constrain45(from: Vec, p: Vec): Vec {
 }
 
 export class PathTools {
-  private pen: PenState | null = null;
-  private hover: Vec | null = null;
-  private pencil: { points: Vec[]; artboardId: string } | null = null;
   private drag: NodeDrag | null = null;
-  /** Ligne en cours de tracé (cutter, Shape Builder). */
-  private line: { tool: 'knife' | 'shapeBuilder'; a: Vec; b: Vec; alt: boolean } | null = null;
   /** Arrondi en cours (outil Coin). */
   private corner: {
     node: PathNode;
@@ -228,25 +195,15 @@ export class PathTools {
   private snapGuides: { a: Vec; b: Vec }[] = [];
 
   constructor(private readonly c: CanvasController) {
-    window.addEventListener('poulpe:toolchange', this.finishPen);
     window.addEventListener('poulpe:toolchange', this.cancelNodeSelect);
   }
 
   dispose(): void {
-    window.removeEventListener('poulpe:toolchange', this.finishPen);
     window.removeEventListener('poulpe:toolchange', this.cancelNodeSelect);
   }
 
   get busy(): boolean {
-    return !!(
-      this.pen ||
-      this.pencil ||
-      this.drag ||
-      this.line ||
-      this.corner ||
-      this.nodeSel ||
-      this.polygon
-    );
+    return !!(this.drag || this.corner || this.nodeSel || this.polygon);
   }
 
   private dist(a: Vec, b: Vec): number {
@@ -262,139 +219,6 @@ export class PathTools {
     if (sel.length !== 1) return null;
     const n = findNode(editor.doc, sel[0])?.node;
     return n?.type === 'path' && !n.locked && n.visible ? n : null;
-  }
-
-  // ————— Plume —————
-
-  private snapPen(p: Vec, shift: boolean, ctrl: boolean): Vec {
-    const pen = this.pen;
-    const last = pen?.anchors[pen.anchors.length - 1];
-    if (shift && last) return constrain45(last, p);
-    if (!this.c.snapping() || ctrl) return p;
-    const lines = collectSnapLines(editor.doc, new Set(pen ? [pen.id] : []));
-    return snapPoint(p, lines, this.c.snapThreshold(), this.c.gridStep());
-  }
-
-  private updatePen(): void {
-    const pen = this.pen;
-    if (!pen) return;
-    const cmds = fromSubpaths([{ anchors: pen.anchors, closed: pen.closed }]);
-    const b = exactBounds(cmds) ?? { x: pen.anchors[0].x, y: pen.anchors[0].y, width: 0, height: 0 };
-    const d = pathToSvg(cmds);
-    const fill: Paint = pen.closed ? ui.get().defaults.fill : { type: 'none' };
-    editor.preview((doc) => {
-      let n = findNode(doc, pen.id)?.node;
-      if (!n) {
-        const ab = findArtboard(doc, pen.artboardId) ?? doc.artboards[0];
-        const created = createPath(
-          { ...b, d, viewBox: b, name: t('name.curve') },
-          { ...ui.get().defaults, stroke: drawnStroke() },
-        );
-        created.id = pen.id;
-        ab.children.push(created);
-        n = ab.children[ab.children.length - 1];
-      }
-      if (n.type !== 'path') return;
-      Object.assign(n, { x: b.x, y: b.y, width: b.width, height: b.height, d, viewBox: { ...b } });
-      n.fill = fill;
-      return [pen.id];
-    });
-  }
-
-  /** Termine le tracé en cours à la plume (Entrée, Échap, changement d'outil). */
-  finishPen = (): void => {
-    const pen = this.pen;
-    if (!pen) return;
-    this.pen = null;
-    this.hover = null;
-    if (pen.anchors.length < 2) editor.cancel();
-    else {
-      editor.commit('history.pen');
-      editor.select([pen.id]);
-    }
-    this.c.requestDraw();
-  };
-
-  private penDown(e: PointerEvent, p: Vec): void {
-    const doc = editor.doc;
-    if (!this.pen) {
-      const ab = artboardAt(doc, p) ?? findArtboard(doc, editor.getState().activeArtboardId);
-      if (!ab) return;
-      editor.setActiveArtboard(ab.id);
-      this.pen = { id: newId(), artboardId: ab.id, anchors: [], closed: false, dragIndex: null };
-    }
-    const pen = this.pen;
-    const a = pen.anchors;
-    if (a.length >= 2 && this.dist(a[0], p) <= HIT + 1) {
-      // Clic sur le premier nœud : le tracé se ferme (et prend le remplissage courant).
-      pen.closed = true;
-      pen.dragIndex = 0;
-      this.updatePen();
-      return;
-    }
-    if (a.length && this.dist(a[a.length - 1], p) <= 3) {
-      // Second clic au même endroit (double-clic) : fin du tracé ouvert.
-      this.finishPen();
-      return;
-    }
-    const q = this.snapPen(p, e.shiftKey, e.ctrlKey);
-    a.push({ x: q.x, y: q.y, in: null, out: null });
-    pen.dragIndex = a.length - 1;
-    this.updatePen();
-  }
-
-  private penMove(e: PointerEvent, p: Vec): void {
-    const pen = this.pen;
-    if (!pen) return;
-    if (pen.dragIndex === null) {
-      this.hover = this.snapPen(p, e.shiftKey, e.ctrlKey);
-      this.c.requestDraw();
-      return;
-    }
-    const a = pen.anchors[pen.dragIndex];
-    if (this.dist(a, p) < 3 && !a.out) return;
-    const q = e.shiftKey ? constrain45(a, p) : p;
-    // On tire la poignée de sortie ; Alt casse la symétrie (nœud anguleux).
-    if (pen.closed && pen.dragIndex === 0) {
-      // En refermant, on règle la poignée d'arrivée sur le premier nœud.
-      const mirrored = { x: 2 * a.x - q.x, y: 2 * a.y - q.y };
-      moveHandle(a, 'in', mirrored, e.altKey ? false : 'symmetric');
-    } else moveHandle(a, 'out', q, e.altKey ? false : 'symmetric');
-    this.updatePen();
-  }
-
-  private penUp(): void {
-    const pen = this.pen;
-    if (!pen) return;
-    pen.dragIndex = null;
-    if (pen.closed) this.finishPen();
-  }
-
-  // ————— Crayon —————
-
-  private pencilUp(): void {
-    const pc = this.pencil;
-    this.pencil = null;
-    if (!pc || pc.points.length < 2) {
-      this.c.requestDraw();
-      return;
-    }
-    const pts = pc.points;
-    const zoom = this.c.view.zoom;
-    const closed = pts.length > 8 && this.dist(pts[0], pts[pts.length - 1]) < 10;
-    const smoothing = ui.get().pencilSmoothing / 100;
-    const cmds = simplifyPoints(pts, (0.3 + smoothing * 8) / zoom, closed);
-    const b = exactBounds(cmds);
-    if (!b) return;
-    const node = createPath(
-      { ...b, d: pathToSvg(cmds), viewBox: b, name: t('name.curve') },
-      { ...ui.get().defaults, stroke: drawnStroke() },
-    );
-    node.fill = { type: 'none' };
-    editor.apply('history.pencil', (d) => {
-      (findArtboard(d, pc.artboardId) ?? d.artboards[0]).children.push(node);
-      return [node.id];
-    });
   }
 
   // ————— Outil Nœud —————
@@ -1044,7 +868,7 @@ export class PathTools {
     });
   }
 
-  // ————— Ciseaux, cutter, outil Coin et Shape Builder —————
+  // ————— Ciseaux et outil Coin —————
 
   /** Objet découpable sous le point : une forme ou un tracé, pas un texte ni une image. */
   private cuttable(p: Vec): PathNode | null {
@@ -1079,55 +903,6 @@ export class PathTools {
       return;
     }
     this.replaceWithPath(this.cutNode(pn, cut), 'history.scissors');
-  }
-
-  /** Cutter : la ligne tracée coupe en deux les objets qu'elle traverse. */
-  private knife(a: Vec, b: Vec): void {
-    const doc = editor.doc;
-    // Sans sélection, le cutter coupe ce que la ligne traverse.
-    const ids = editor.selection.length ? topLevelIds(doc, editor.selection) : this.alongLine(a, b);
-    if (!ids.length) {
-      toast(t('vector.cutNothing'));
-      return;
-    }
-    let made: string[] | null = null;
-    editor.apply('history.knife', (d) => {
-      made = applyKnife(d, ids, a, b, t('name.curve'));
-      return made ?? undefined;
-    });
-    if (!made) toast(t('vector.cutNothing'));
-  }
-
-  /** Objets rencontrés le long d'une ligne, du premier au dernier, sans doublon. */
-  private alongLine(a: Vec, b: Vec): string[] {
-    const doc = editor.doc;
-    const steps = Math.max(8, Math.ceil(this.dist(a, b) / 3));
-    const seen = new Set<string>();
-    for (let i = 0; i <= steps; i++) {
-      const q = { x: a.x + ((b.x - a.x) * i) / steps, y: a.y + ((b.y - a.y) * i) / steps };
-      const hit = this.c.hitTest(q, false);
-      if (hit && !hit.locked) seen.add(hit.id);
-    }
-    return topLevelIds(doc, [...seen]);
-  }
-
-  /** Shape Builder : la ligne réunit les formes qu'elle traverse (Alt : elle les soustrait). */
-  private shapeBuilder(a: Vec, b: Vec, alt: boolean): void {
-    const ids = this.alongLine(a, b);
-    if (ids.length < 2) {
-      toast(t('vector.shapeBuilderNeedsTwo'));
-      return;
-    }
-    let ok = true;
-    editor.apply(alt ? 'history.subtract' : 'history.unite', (d) => {
-      const out = applyBoolean(d, ids, alt ? 'subtract' : 'unite', t('name.curve'));
-      if (!out) {
-        ok = false;
-        return;
-      }
-      return out;
-    });
-    if (!ok) toast(t('vector.booleanUnsupported'));
   }
 
   /** Outil Coin : le nœud anguleux le plus proche du point, dans les coordonnées du tracé. */
@@ -1207,23 +982,7 @@ export class PathTools {
       this.scissors(p);
       return true;
     }
-    if (tool === 'knife' || tool === 'shapeBuilder') {
-      this.line = { tool, a: p, b: p, alt: e.altKey };
-      return true;
-    }
     if (tool === 'corner') return this.cornerDown(e, p);
-    if (tool === 'pen') {
-      this.penDown(e, p);
-      return true;
-    }
-    if (tool === 'pencil') {
-      const doc = editor.doc;
-      const ab = artboardAt(doc, p) ?? findArtboard(doc, editor.getState().activeArtboardId);
-      if (!ab) return true;
-      editor.setActiveArtboard(ab.id);
-      this.pencil = { points: [p], artboardId: ab.id };
-      return true;
-    }
     const n = this.editablePath();
     this.segHover = null;
     if (n && this.polygon) return this.nodeSelectDown(e, p, s);
@@ -1238,25 +997,8 @@ export class PathTools {
 
   pointerMove(e: PointerEvent, p: Vec, s: Vec): boolean {
     const tool = ui.get().tool;
-    if (this.line) {
-      this.line.b = e.shiftKey ? constrain45(this.line.a, p) : p;
-      this.c.requestDraw();
-      return true;
-    }
     if (this.corner) {
       this.cornerMove(p);
-      return true;
-    }
-    if (tool === 'pen') {
-      this.penMove(e, p);
-      return true;
-    }
-    if (this.pencil) {
-      const last = this.pencil.points[this.pencil.points.length - 1];
-      if (this.dist(last, p) >= 1.5) {
-        this.pencil.points.push(p);
-        this.c.requestDraw();
-      }
       return true;
     }
     if (this.drag) {
@@ -1283,24 +1025,8 @@ export class PathTools {
   }
 
   pointerUp(): boolean {
-    const line = this.line;
-    if (line) {
-      this.line = null;
-      if (this.dist(line.a, line.b) < 4) toast(t('vector.drawLine'));
-      else if (line.tool === 'knife') this.knife(line.a, line.b);
-      else this.shapeBuilder(line.a, line.b, line.alt);
-      return true;
-    }
     if (this.corner) {
       this.cornerUp();
-      return true;
-    }
-    if (ui.get().tool === 'pen' && this.pen) {
-      this.penUp();
-      return true;
-    }
-    if (this.pencil) {
-      this.pencilUp();
       return true;
     }
     if (this.drag) {
@@ -1319,8 +1045,6 @@ export class PathTools {
     if (this.drag || this.corner) editor.cancel();
     this.drag = null;
     this.corner = null;
-    this.line = null;
-    this.pencil = null;
     this.nodeSel = null;
   }
 
@@ -1341,28 +1065,13 @@ export class PathTools {
     return true;
   }
 
-  /** Clavier : Entrée / Échap terminent la plume, Retour arrière retire le dernier nœud, Suppr supprime les nœuds. */
+  /** Clavier : Suppr supprime les nœuds, [ et ] passent d'un nœud à l'autre. */
   key(e: KeyboardEvent): boolean {
     if (this.polygon && (e.key === 'Enter' || e.key === 'Escape')) {
       if (e.key === 'Enter') this.finishPolygon();
       else this.cancelNodeSelect();
       this.c.requestDraw();
       return true;
-    }
-    if (this.pen) {
-      if (e.key === 'Enter' || e.key === 'Escape') {
-        this.finishPen();
-        return true;
-      }
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        this.pen.anchors.pop();
-        if (!this.pen.anchors.length) {
-          this.pen = null;
-          editor.cancel();
-        } else this.updatePen();
-        this.c.requestDraw();
-        return true;
-      }
     }
     if (
       (e.key === 'Delete' || e.key === 'Backspace') &&
@@ -1454,54 +1163,6 @@ export class PathTools {
       ctx.stroke();
     };
 
-    const pen = this.pen;
-    if (pen && pen.anchors.length) {
-      const a = pen.anchors;
-      const last = a[a.length - 1];
-      if (this.hover && pen.dragIndex === null && !pen.closed) {
-        // Segment élastique jusqu'au pointeur.
-        const s0 = this.c.toScreen(last),
-          c1 = this.c.toScreen(last.out ?? last),
-          s1 = this.c.toScreen(this.hover);
-        ctx.beginPath();
-        ctx.moveTo(s0.x, s0.y);
-        ctx.bezierCurveTo(c1.x, c1.y, s1.x, s1.y, s1.x, s1.y);
-        ctx.stroke();
-        if (a.length >= 2 && this.dist(a[0], this.hover) <= HIT + 1) {
-          const q = this.c.toScreen(a[0]);
-          ctx.beginPath();
-          ctx.arc(q.x, q.y, 7, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-      const active = pen.dragIndex !== null ? a[pen.dragIndex] : last;
-      handle(active, active.in);
-      handle(active, active.out);
-      a.forEach((p) => square(p, p === active, 6));
-    }
-
-    if (this.pencil) {
-      const pts = this.pencil.points.map((p) => this.c.toScreen(p));
-      ctx.beginPath();
-      pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)));
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    const line = this.line;
-    if (line) {
-      const a = this.c.toScreen(line.a),
-        b = this.c.toScreen(line.b);
-      ctx.save();
-      ctx.setLineDash(line.tool === 'knife' ? [] : [5, 4]);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-      ctx.restore();
-    }
-
     const zone = this.nodeSel?.moved ? this.nodeSel : null;
     const poly = this.polygon;
     if (zone || poly) {
@@ -1541,7 +1202,7 @@ export class PathTools {
     }
 
     const n = this.editablePath();
-    if (n && !this.pen) this.drawNodes(ctx, color, n, handle);
+    if (n) this.drawNodes(ctx, color, n, handle);
     ctx.restore();
   }
 
