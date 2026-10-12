@@ -7,6 +7,7 @@ import {
   insertAnchor,
   joinEnds,
   markSmart,
+  nearestSegment,
   refreshSmart,
   reverseSubpaths,
   segmentCubic,
@@ -136,5 +137,18 @@ describe('outil Nœud', () => {
     expect(sp.anchors).toHaveLength(3);
     const p = cubicPoint(segmentCubic(sp, 2), 0.5);
     expect(p.y).toBeLessThan(-60);
+  });
+});
+
+describe('ajout d’un nœud sur un segment droit', () => {
+  it('le nœud se pose sous le pointeur, pas plus loin sur le segment', () => {
+    for (const x of [5, 10, 25, 50, 80, 97]) {
+      const sps = open();
+      const seg = nearestSegment(sps, { x, y: 3 })!;
+      const key = insertAnchor(sps, seg.si, seg.seg, seg.t);
+      const ai = Number(key.split(':')[1]);
+      expect(sps[0].anchors[ai].x).toBeCloseTo(x, 1);
+      expect(sps[0].anchors[ai].y).toBeCloseTo(0, 5);
+    }
   });
 });

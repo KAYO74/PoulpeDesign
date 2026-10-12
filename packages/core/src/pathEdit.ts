@@ -167,7 +167,10 @@ export function insertAnchor(sps: SubPath[], si: number, seg: number, t: number)
     b = sp.anchors[bIndex];
   let node: Anchor;
   if (!a.out && !b.in) {
-    node = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, in: null, out: null };
+    // `t` est le paramètre de la courbe du segment (`segmentCubic`), pas une fraction de sa
+    // longueur : le nœud se pose au point de la courbe, là où le clic l'a trouvé.
+    const q = cubicPoint(segmentCubic(sp, seg), t);
+    node = { x: q.x, y: q.y, in: null, out: null };
   } else {
     const [l, r] = splitCubic(segmentCubic(sp, seg), t);
     a.out = l[1];

@@ -153,3 +153,54 @@ jobs:
             apps/desktop/src-tauri/target/**/release/bundle/**/*.exe
             apps/desktop/src-tauri/target/**/release/bundle/**/*.dmg
           retention-days: 14
+
+  # Chaque installeur ajoute sa plateforme à latest.json : deux qui finissent en même temps peuvent
+  # effacer l'ajout de l'autre (la v1.2.0 a perdu macOS Apple). Une fois tout publié, le fichier est
+  # refait d'après les fichiers .sig de la version.
+  updater-json:
+    name: Fichier des mises à jour
+    needs: build
+    if: ${{ !cancelled() && (startsWith(github.ref, 'refs/tags/') || inputs.tag) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Refaire latest.json
+        run: |
+          if ! gh release view "$TAG" --json assets -q '.assets[].name' | grep -qx latest.json; then
+            echo "Pas de latest.json (mises à jour automatiques non configurées)."
+            exit 0
+          fi
+          mkdir updater && cd updater
+          gh release download "$TAG" -p latest.json -p '*.sig'
+          node - <<'EOF'
+          const fs = require('fs');
+          // Plateforme des mises à jour → fichier publié (voir assetNamePattern ; Windows : le .exe).
+          const files = {
+            'darwin-aarch64': 'Poulpe_darwin_aarch64.app.tar.gz',
+            'darwin-aarch64-app': 'Poulpe_darwin_aarch64.app.tar.gz',
+            'darwin-x86_64': 'Poulpe_darwin_x64.app.tar.gz',
+            'darwin-x86_64-app': 'Poulpe_darwin_x64.app.tar.gz',
+            'linux-x86_64': 'Poulpe_linux_amd64.AppImage',
+            'linux-x86_64-appimage': 'Poulpe_linux_amd64.AppImage',
+            'linux-x86_64-deb': 'Poulpe_linux_amd64.deb',
+            'windows-x86_64': 'Poulpe_windows_x64-setup.exe',
+            'windows-x86_64-nsis': 'Poulpe_windows_x64-setup.exe',
+            'windows-x86_64-msi': 'Poulpe_windows_x64.msi',
+          };
+          const json = JSON.parse(fs.readFileSync('latest.json', 'utf8'));
+          json.platforms = {};
+          for (const [key, file] of Object.entries(files)) {
+            if (!fs.existsSync(`${file}.sig`)) continue;
+            json.platforms[key] = {
+              signature: fs.readFileSync(`${file}.sig`, 'utf8'),
+              url: `https://github.com/${process.env.GH_REPO}/releases/download/${process.env.TAG}/${file}`,
+            };
+          }
+          fs.writeFileSync('latest.json', JSON.stringify(json, null, 2));
+          console.log('Plateformes :', Object.keys(json.platforms).join(', '));
+          EOF
+          gh release upload "$TAG" latest.json --clobber
