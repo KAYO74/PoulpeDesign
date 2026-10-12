@@ -120,6 +120,29 @@ test('outil Nœud : sélection au cadre, ajout, retrait et lasso', async ({ page
   expect(await nodeSel()).toEqual(['0:0']);
 });
 
+test('outil Nœud : un clic sur un segment droit pose le nœud sous la souris', async ({ page }) => {
+  const { at } = await canvas(page);
+  await page.keyboard.press('p');
+  await page.mouse.click(...at(200, 300));
+  await page.mouse.click(...at(600, 300));
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('a');
+  // Clic à 10 % du segment : avant, le nœud tombait près de 20 %.
+  await page.mouse.click(...at(240, 301));
+  const placed = await page.evaluate(() => {
+    const { editor, ui } = (window as any).poulpe;
+    const n = editor.doc.artboards[0].children[0];
+    const v = ui.get().view;
+    const nums = (n.d.match(/-?[\d.]+(?:e-?\d+)?/g) ?? []).map(Number);
+    const xs = nums.filter((_: number, i: number) => i % 2 === 0);
+    const vb = n.viewBox ?? { x: 0, y: 0, width: n.width, height: n.height };
+    const sx = (n.width || 1) / (vb.width || 1);
+    // Abscisses écran des nœuds du tracé (la ligne est horizontale, sans rotation).
+    return xs.map((x: number) => (n.x + (x - vb.x) * sx) * v.zoom + v.panX);
+  });
+  expect(placed.some((x: number) => Math.abs(x - 240) < 2)).toBe(true);
+});
+
 test('outil Nœud : clics avec touches, [ ], menu des nœuds et actions comme dans Affinity', async ({
   page,
 }) => {
