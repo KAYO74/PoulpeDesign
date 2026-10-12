@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/dessin-modele.png" alt="L'éditeur Poulpe Design en thème sombre : un modèle « Soldes d'été » ouvert, avec la bibliothèque de modèles à gauche" width="100%">
+  <img src="docs/images/dessin-modele.png" alt="L'éditeur Poulpe Design en thème sombre : un modèle « Soldes d'été » ouvert, avec la bibliothèque de modèles à gauche et la barre de l'outil Déplacer en haut" width="100%">
 </p>
 
 > [!NOTE]
@@ -59,20 +59,28 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
 
 <table>
   <tr>
+    <td width="50%"><img src="docs/images/formes.png" alt="Neuf des nouvelles formes de la version 1.2 sur un plan de travail ; l'engrenage sélectionné montre ses poignées rouges"></td>
+    <td width="50%"><img src="docs/images/habillage.png" alt="La Persona Mise en page : un texte sur deux colonnes contourne un cadre d'image en ellipse"></td>
+  </tr>
+  <tr>
+    <td align="center">Une vingtaine de formes, réglables sur la toile</td>
+    <td align="center">Le texte contourne les images</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/recadrage.png" alt="La Persona Photo : l'outil Recadrage avec sa grille des tiers et le bouton Redresser"></td>
     <td width="50%"><img src="docs/images/bienvenue-modeles.png" alt="L'écran d'accueil avec les modèles prêts à l'emploi, filtrables par format"></td>
-    <td width="50%"><img src="docs/images/photo-reglages.png" alt="La Persona Photo : une photo de coucher de soleil avec un calque de réglage Courbes et son histogramme"></td>
   </tr>
   <tr>
+    <td align="center">Recadrage avec redressement et grilles</td>
     <td align="center">Modèles prêts à l'emploi, façon Canva</td>
-    <td align="center">Retouche photo avec calques de réglage</td>
   </tr>
   <tr>
+    <td width="50%"><img src="docs/images/photo-reglages.png" alt="La Persona Photo : une photo de coucher de soleil avec un calque de réglage Courbes et son histogramme"></td>
     <td width="50%"><img src="docs/images/mise-en-page.png" alt="La Persona Mise en page : panneau Pages avec pages maîtres et miniatures"></td>
-    <td width="50%"><img src="docs/images/choix-langue.png" alt="La fenêtre du premier lancement qui demande la langue : Français ou English"></td>
   </tr>
   <tr>
+    <td align="center">Retouche photo avec calques de réglage</td>
     <td align="center">Mise en page sur plusieurs pages</td>
-    <td align="center">Français ou anglais, choisi à l'installation</td>
   </tr>
   <tr>
     <td width="50%"><img src="docs/images/vectoriser.png" alt="La fenêtre « Vectoriser l'image » : une illustration de poulpe et son aperçu en tracés de six couleurs"></td>
