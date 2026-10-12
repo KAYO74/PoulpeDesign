@@ -199,6 +199,23 @@ test('outil Déplacer : sélection auto, alignement, groupes, point d’origine,
   expect(turned.y + turned.height / 2).toBeCloseTo(r.y + r.width / 2, 0);
 });
 
+test('double-clic dans un groupe : l’objet, puis l’outil Nœud', async ({ page }) => {
+  await addRect(page, 'a', 100, 100, 100, 100);
+  await addRect(page, 'b', 300, 150, 100, 100);
+  await page.keyboard.press('Control+a');
+  await page.getByTestId('move-group').click();
+  await page.keyboard.press('Escape');
+  const groupId = (await kids(page))[0].id;
+  // Sélection auto Calque : le clic prend le groupe, le double-clic l'objet dedans.
+  await page.mouse.dblclick(...(await screen(page, 150, 150)));
+  expect(await selection(page)).toEqual(['r_a']);
+  expect(await tool(page)).toBe('select');
+  await page.mouse.dblclick(...(await screen(page, 150, 150)));
+  expect(await tool(page)).toBe('direct');
+  expect(await selection(page)).toEqual(['r_a']);
+  expect((await kids(page))[0].id).toBe(groupId);
+});
+
 test('duplication intelligente : Ctrl+J répète le déplacement de la copie', async ({ page }) => {
   await addRect(page, 'r', 100, 100, 100, 100);
   await page.keyboard.press('Control+j');
@@ -222,6 +239,34 @@ test('duplication intelligente : Ctrl+J répète le déplacement de la copie', a
   await page.keyboard.press('Control+j');
   list = await kids(page);
   expect(list[1].x).toBeCloseTo(120, 0);
+
+  // Copie tournée autour du point d'origine : les copies suivantes restent sur le même cercle.
+  await addRect(page, 's', 300, 500, 100, 100);
+  await page.keyboard.press('Control+j');
+  await page.getByTestId('move-origin').click();
+  await drag(page, [370, 570], [322, 618]);
+  const zoom = await page.evaluate(() => (window as any).poulpe.ui.get().view.zoom);
+  const off = 22 / zoom;
+  await page.keyboard.down('Shift');
+  await drag(page, [370, 520 - off], [420 + off, 670]);
+  await page.keyboard.up('Shift');
+  const center = async () => {
+    const id = (await selection(page))[0];
+    const n = (await kids(page)).find((k) => k.id === id)!;
+    return { x: n.x + n.width / 2, y: n.y + n.height / 2, rotation: n.rotation };
+  };
+  let c = await center();
+  expect(Math.round(c.rotation)).toBe(90);
+  expect(Math.hypot(c.x - 320, c.y - 620)).toBeCloseTo(Math.hypot(50, 50), 0);
+  for (const [x, y] of [
+    [270, 670],
+    [270, 570],
+  ]) {
+    await page.keyboard.press('Control+j');
+    c = await center();
+    expect(c.x).toBeCloseTo(x, 0);
+    expect(c.y).toBeCloseTo(y, 0);
+  }
 });
 
 test('outil Plan de travail : poignées du plan de travail actif', async ({ page }) => {
@@ -318,4 +363,77 @@ test('Pipette de style : prendre, appliquer selon les options, décharger', asyn
   await expect(page.getByTestId('sp-loaded')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('sp-loaded')).toBeHidden();
+});
+
+test('Recadrage vectoriel : pipette sur le vide, dissocier, objet d’un cadre d’image', async ({ page }) => {
+  await addRect(page, 'img', 100, 100, 400, 400, { fill: { type: 'solid', color: '#ff0000' } });
+  await addRect(page, 'dst', 700, 100, 100, 100);
+  await page.evaluate(() => (window as any).poulpe.editor.select(['r_img']));
+  await setTool(page, 'vectorCrop');
+  await drag(page, [500, 300], [400, 300]);
+  // Le contenu glisse à droite : le cadre a une bande vide à gauche (100 à 200).
+  await drag(page, [250, 300], [350, 300]);
+  let g = (await kids(page))[0];
+  expect(g.children[1].x).toBeCloseTo(200, 0);
+
+  // Pipette de style : le cadre invisible n'est ni pris ni modifié.
+  await setTool(page, 'stylePicker');
+  await click(page, 150, 300);
+  await expect(page.getByTestId('sp-loaded')).toBeHidden();
+  await click(page, 750, 150);
+  await expect(page.getByTestId('sp-loaded')).toBeVisible();
+  await click(page, 150, 300);
+  g = (await kids(page))[0];
+  expect(g.children[0].fill.type).toBe('none');
+  expect(g.children[1].fill.color).toBe('#ff0000');
+
+  // Dissocier : le cadre invisible disparaît avec le recadrage.
+  await setTool(page, 'select');
+  await page.evaluate((id) => (window as any).poulpe.editor.select([id]), g.id);
+  await page.getByTestId('move-ungroup').click();
+  const list = await kids(page);
+  expect(list.map((n) => n.id)).toEqual(['r_img', 'r_dst']);
+  expect(await selection(page)).toEqual(['r_img']);
+
+  // L'objet d'un cadre d'image : on recadre le cadre entier, qui reste un cadre d'image.
+  await page.evaluate(() => {
+    const { editor } = (window as any).poulpe;
+    const common = (id: string) => ({
+      id,
+      name: id,
+      x: 100,
+      y: 600,
+      width: 300,
+      height: 200,
+      rotation: 0,
+      opacity: 1,
+      blendMode: 'normal',
+      visible: true,
+      locked: false,
+    });
+    const rect = (id: string, color: string) => ({
+      ...common(id),
+      type: 'rect',
+      fill: { type: 'solid', color },
+      stroke: { paint: { type: 'none' }, width: 0 },
+      cornerRadius: 0,
+    });
+    editor.apply('history.add', (d: any) => {
+      d.artboards[0].children.push({
+        ...common('pf'),
+        type: 'group',
+        clip: true,
+        picture: { fit: 'fill' },
+        children: [rect('pf_frame', '#eeeeee'), rect('pf_img', '#3366ff')],
+      });
+      return ['pf_img'];
+    });
+  });
+  await setTool(page, 'vectorCrop');
+  await drag(page, [400, 700], [350, 700]);
+  const crop = (await kids(page)).at(-1)!;
+  expect(crop.vectorCrop).toBe(true);
+  expect(crop.children[0].width).toBeCloseTo(250, 0);
+  expect(crop.children[1]).toMatchObject({ id: 'pf', picture: { fit: 'fill' } });
+  expect(crop.children[1].children.map((n: AnyNode) => n.id)).toEqual(['pf_frame', 'pf_img']);
 });

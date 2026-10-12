@@ -30,6 +30,8 @@ import {
   type TextStyle,
   type ZOrder,
   isStyled,
+  isVectorCrop,
+  removeVectorCrop,
 } from '@poulpe/core';
 import { t } from './i18n';
 import { applyEditingStyle, endTextEdit, isEditingText } from './canvas/textEdit';
@@ -141,7 +143,8 @@ export function ungroupSelection(): void {
     const out: string[] = [];
     for (const id of ids) {
       const n = findNode(d, id)?.node;
-      if (n?.type === 'group') out.push(...ungroupNode(d, id));
+      // Un recadrage vectoriel perd aussi son cadre invisible : le contenu revient entier.
+      if (n?.type === 'group') out.push(...(isVectorCrop(n) ? removeVectorCrop(d, id) : ungroupNode(d, id)));
       else out.push(id);
     }
     return out;

@@ -156,6 +156,34 @@ describe('duplication intelligente', () => {
     expect(powerDuplicate(editor.doc, ['nope'], copies)).toBeNull();
   });
 
+  it('copie décalée puis tournée : seule la rotation se répète, autour du même point', () => {
+    const a = createRect({ x: 300, y: 300, width: 100, height: 100, name: 'a' });
+    const copy = structuredClone(a);
+    copy.id = 'c1';
+    translateNode(copy, 20, 20);
+    const base = structuredClone(copy);
+    const pivot = { x: 320, y: 420 };
+    rotateNode(copy, 75, pivot);
+    const doc = docWith(a, copy);
+    const editor = new Editor(doc);
+    const dist = (n: SceneNode) => Math.hypot(n.x + n.width / 2 - pivot.x, n.y + n.height / 2 - pivot.y);
+    const out: { ids: string[] | null } = { ids: null };
+    editor.apply(
+      'history.duplicate',
+      (d) => (out.ids = powerDuplicate(d, [a.id], ['c1'], base)) ?? undefined,
+    );
+    const c2 = findNode(editor.doc, out.ids![0])!.node;
+    expect(dist(c2)).toBeCloseTo(Math.hypot(50, 50));
+    expect(c2.rotation).toBeCloseTo(150);
+    // Un simple déplacement de la copie garde l'écart avec l'original (décalage compris).
+    const moved = structuredClone(base);
+    translateNode(moved, 80, 0);
+    const doc2 = docWith(structuredClone(a), moved);
+    const e2 = new Editor(doc2);
+    e2.apply('history.duplicate', (d) => (out.ids = powerDuplicate(d, [a.id], ['c1'], base)) ?? undefined);
+    expect(findNode(e2.doc, out.ids![0])!.node.x).toBeCloseTo(500);
+  });
+
   it('applique une transformation à un groupe, objet par objet', () => {
     const g = createGroup([
       createRect({ x: 0, y: 0, width: 10, height: 10 }),

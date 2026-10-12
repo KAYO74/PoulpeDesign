@@ -1,4 +1,4 @@
-import type { AutoSelect, SavedStyle, StyleParts } from '@poulpe/core';
+import type { AutoSelect, SavedStyle, SceneNode, StyleParts } from '@poulpe/core';
 import { Store, editor } from '../../store';
 
 /* Réglages et état de l'outil Déplacer, du Recadrage vectoriel et de la Pipette de style. */
@@ -17,9 +17,10 @@ export interface MoveState {
   separately: boolean;
   /**
    * Dernière duplication (Ctrl+J ou Alt + glisser) : originaux et copies du premier niveau. Le
-   * Ctrl+J suivant répète sur une nouvelle copie la transformation faite entre-temps.
+   * Ctrl+J suivant répète sur une nouvelle copie la transformation faite entre-temps. `base` : la
+   * première copie décalée par Ctrl+J, telle qu'elle était à sa création.
    */
-  lastDup: { sources: string[]; copies: string[] } | null;
+  lastDup: { sources: string[]; copies: string[]; base?: SceneNode } | null;
   /** Style pris par la Pipette de style, et ce qu'elle applique. */
   picked: SavedStyle | null;
   parts: StyleParts;

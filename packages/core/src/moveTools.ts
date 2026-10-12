@@ -201,17 +201,35 @@ export function repeatTransform(src: SceneNode, copy: SceneNode, t: Affine): Sce
   return next;
 }
 
+/** La transformation n'est-elle qu'un déplacement ? */
+function isTranslation(t: Affine): boolean {
+  const eps = 1e-6;
+  return Math.abs(t.a - 1) < eps && Math.abs(t.b) < eps && Math.abs(t.c) < eps && Math.abs(t.d - 1) < eps;
+}
+
 /**
  * Duplique `copies` en répétant la transformation qui mène de `sources` à `copies` (listes
  * parallèles d'objets du premier niveau). Chaque nouvelle copie est placée juste au-dessus de
  * son modèle. Renvoie les ids des nouvelles copies, ou null si la répétition n'a pas de sens.
+ *
+ * `base` : la première copie telle qu'elle était à sa création, quand elle a été décalée (Ctrl+J).
+ * Si l'on a ensuite tourné ou mis à l'échelle la copie, seul ce geste se répète, sans le décalage
+ * de départ : Affinity duplique sur place, et les copies tournent ainsi autour du point d'origine.
+ * Un simple déplacement garde l'écart entre l'original et la copie.
  */
-export function powerDuplicate(doc: PoulpeDocument, sources: string[], copies: string[]): string[] | null {
+export function powerDuplicate(
+  doc: PoulpeDocument,
+  sources: string[],
+  copies: string[],
+  base?: SceneNode,
+): string[] | null {
   if (!copies.length || sources.length !== copies.length) return null;
   const src = sources.map((id) => findNode(doc, id)?.node);
   const first = findNode(doc, copies[0])?.node;
   if (src.some((n) => !n) || !first || copies.some((id) => !findNode(doc, id))) return null;
-  const t = transformBetween(src[0]!, first);
+  let t = transformBetween(src[0]!, first);
+  const done = base && transformBetween(base, first);
+  if (done && !isTranslation(done)) t = done;
   if (!t) return null;
   const created: string[] = [];
   copies.forEach((id, i) => {

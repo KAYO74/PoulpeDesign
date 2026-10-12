@@ -26,7 +26,7 @@ export function duplicateWithRepeat(): void {
   if (dup) {
     const out: { ids: string[] | null } = { ids: null };
     editor.apply('history.duplicate', (d) => {
-      out.ids = powerDuplicate(d, dup.sources, dup.copies);
+      out.ids = powerDuplicate(d, dup.sources, dup.copies, dup.base);
       return out.ids ?? undefined;
     });
     if (out.ids) {
@@ -36,8 +36,10 @@ export function duplicateWithRepeat(): void {
   }
   const sources = topLevelIds(editor.doc, ids);
   duplicateSelection();
-  if (editor.selection.length === sources.length)
-    moveState.set({ lastDup: { sources, copies: editor.selection } });
+  const copies = editor.selection;
+  // La copie est décalée : on garde son état de départ, pour ne répéter ensuite que ce qu'on lui fait.
+  if (copies.length === sources.length)
+    moveState.set({ lastDup: { sources, copies, base: findNode(editor.doc, copies[0])?.node } });
 }
 
 /** Recadrage vectoriel sélectionné, s'il y en a un seul. */

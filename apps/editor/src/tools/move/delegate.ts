@@ -1,8 +1,11 @@
 import {
+  ancestors,
   dragBoxHandle,
   findArtboard,
   findNode,
+  hitNode,
   isPictureFrame,
+  isSolidGroup,
   isStyled,
   isTable,
   isVectorCrop,
@@ -74,6 +77,12 @@ function localMatrix(n: Frame): DOMMatrix {
 
 const cropNames = () => ({ group: t('vcrop.name'), mask: t('vcrop.mask') });
 
+/** Cadre invisible d'un recadrage vectoriel (son premier enfant) : jamais visé par un clic. */
+function isCropFrame(id: string): boolean {
+  const parent = findNode(editor.doc, id)?.parent as SceneNode | undefined;
+  return isVectorCrop(parent) && parent.children[0].id === id;
+}
+
 export function moveDelegate(c: CanvasController): ToolDelegate {
   let gesture: Gesture | null = null;
   /** Survol : poignée (plan de travail, recadrage), intérieur du cadre, point d'origine, objet visé. */
@@ -123,7 +132,9 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
     const doc = editor.doc;
     const sel = editor.selection;
     if (cropCache?.doc === doc && cropCache.sel === sel) return cropCache.value;
-    const ids = topLevelIds(doc, sel).filter((id) => !findNode(doc, id)?.node.locked);
+    // Un objet d'un groupe pris d'un bloc (cadre d'image, tableau, recadrage) : on recadre le groupe.
+    const outer = sel.map((id) => ancestors(doc, id).find(isSolidGroup)?.id ?? id);
+    const ids = topLevelIds(doc, [...new Set(outer)]).filter((id) => !findNode(doc, id)?.node.locked);
     const frame = ids.length ? vectorCropFrame(doc, ids) : null;
     cropCache = { doc, sel, value: frame ? { ids, frame } : null };
     return cropCache.value;
@@ -147,6 +158,30 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
       height: b.height,
       rotation: f.rotation,
     };
+  };
+
+  /**
+   * Objet le plus profond sous le point dans le groupe `g`. `solid` : un cadre d'image, un tableau
+   * ou un recadrage rencontré en chemin compte comme un seul objet.
+   */
+  const deepest = (g: SceneNode, p: Vec, solid: boolean): SceneNode => {
+    if (g.type !== 'group') return g;
+    const tol = 4 / c.view.zoom;
+    for (let i = g.children.length - 1; i >= 0; i--) {
+      const k = g.children[i];
+      if (!k.locked && hitNode(k, p, tol)) return solid && isSolidGroup(k) ? k : deepest(k, p, solid);
+    }
+    return g;
+  };
+
+  /**
+   * Objet visé par la Pipette de style : l'objet touché, même dans un groupe sélectionné (qui passe
+   * en premier dans `hitTest`), mais jamais le cadre invisible d'un recadrage (le vide autour).
+   */
+  const styleTarget = (p: Vec): SceneNode | null => {
+    const hit = c.hitTest(p, true);
+    const n = hit && deepest(hit, p, false);
+    return n && !isCropFrame(n.id) ? n : null;
   };
 
   const outline = (ctx: CanvasRenderingContext2D, n: SceneNode, color: string) => {
@@ -243,7 +278,7 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
         return true;
       }
       if (current === 'stylePicker') {
-        const hit = c.hitTest(p, true);
+        const hit = styleTarget(p);
         if (!hit) return true;
         // Premier clic (ou Alt + clic) : prend le style ; ensuite, chaque clic l'applique.
         if (!moveState.get().picked || e.altKey) loadStyle(hit.id);
@@ -271,7 +306,7 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
           hover.handle = target && handleAt(target.frame, s);
           hover.inside = !!target && insideFrame(target.frame, p);
         } else if (current === 'stylePicker') {
-          hover.node = c.hitTest(p, true)?.id ?? null;
+          hover.node = styleTarget(p)?.id ?? null;
           if (hover.node !== prevNode) c.requestDraw();
         }
         return false;
@@ -360,15 +395,20 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
       }
       // Double-clic sur une courbe ou une forme : outil Nœud (le texte s'édite, l'image se recadre).
       const doc = editor.doc;
-      const hit = c.hitTest(p, true);
-      if (!hit || !isStyled(hit) || hit.type === 'text' || hit.locked) return false;
+      let hit = c.hitTest(p, true);
+      // Le premier clic a choisi le groupe (sélection auto) : on vise l'objet touché dedans.
+      if (hit?.type === 'group' && editor.selection.includes(hit.id)) hit = deepest(hit, p, true);
+      if (!hit || hit.locked) return false;
       const parent = findNode(doc, hit.id)?.parent as SceneNode | undefined;
       if (parent?.type === 'group') {
-        if (isPictureFrame(parent) || isTable(parent)) return false;
-        if (isVectorCrop(parent) && parent.children[0].id === hit.id) return false;
-        // Dans un groupe, le premier double-clic choisit l'objet (voir le contrôleur).
-        if (!editor.selection.includes(hit.id)) return false;
+        if (isPictureFrame(parent) || isTable(parent) || isCropFrame(hit.id)) return false;
+        // Dans un groupe, le premier double-clic choisit l'objet, le suivant l'édite (Affinity).
+        if (!editor.selection.includes(hit.id)) {
+          editor.select([hit.id]);
+          return true;
+        }
       }
+      if (!isStyled(hit) || hit.type === 'text') return false;
       editor.select([hit.id]);
       setTool('direct');
       return true;
@@ -422,8 +462,7 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
         const target = cropTarget();
         if (!target) return;
         // Contenu entier (pointillés) d'un objet déjà recadré, puis le cadre et ses poignées.
-        const sel = selectedVectorCrop();
-        const grp = sel ? findNode(editor.doc, sel)?.node : null;
+        const grp = target.ids.length === 1 ? findNode(editor.doc, target.ids[0])?.node : null;
         if (isVectorCrop(grp)) {
           const b = unionBoxes(grp.children.slice(1).map(nodeBounds));
           if (b) {
