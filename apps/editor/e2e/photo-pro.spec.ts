@@ -108,9 +108,9 @@ test.beforeEach(async ({ page }) => {
 
 test('lasso polygonal, et la sélection s’annule avec Ctrl+Z', async ({ page }) => {
   await openTestPhoto(page);
-  // L : lasso, puis lasso polygonal au deuxième appui (comme dans Affinity).
+  // L : lasso (sélection à main levée), en mode polygonal (comme dans Affinity).
   await page.keyboard.press('l');
-  await page.keyboard.press('l');
+  await page.getByTestId('lasso-polygonal').click();
   for (const [x, y] of [
     [20, 20],
     [120, 20],
