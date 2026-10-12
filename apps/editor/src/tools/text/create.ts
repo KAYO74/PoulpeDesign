@@ -22,6 +22,7 @@ import {
   type Vec,
 } from '@poulpe/core';
 import { beginTextEdit } from '../../canvas/textEdit';
+import { frameFromShapeAt } from '../textFlow/actions';
 import { t } from '../../i18n';
 import { editor, ui } from '../../store';
 
@@ -81,6 +82,8 @@ export function sizedArtisticText(start: Vec, end: Vec, artboardId: string): voi
  * sur quatre lignes) qui part du point cliqué et reste dans le plan de travail.
  */
 export function clickFrame(at: Vec, artboardId: string): void {
+  // Clic dans une forme fermée : elle devient un cadre de texte de sa forme (tools/textFlow).
+  if (frameFromShapeAt(at)) return;
   const d = ui.get().defaults;
   const ab = findArtboard(editor.doc, artboardId);
   const size = d.text.fontSize;

@@ -2654,3 +2654,45 @@ h4.sub .link {
   border: none;
   border-radius: 3px;
 }
+
+/* textFlow : panneaux Habillage et Cadre de la barre contextuelle (posés par-dessus le canevas) */
+.tf-pop {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
+  max-width: 320px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--fg);
+  white-space: normal;
+}
+.tf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tf-label {
+  color: var(--muted);
+  min-width: 60px;
+}
+.tf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.tf-note {
+  margin: 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+.tf-caret {
+  margin-left: 4px;
+  font-size: 9px;
+  opacity: 0.7;
+}

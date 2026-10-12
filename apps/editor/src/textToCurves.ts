@@ -4,6 +4,7 @@ import {
   createGroup,
   createPath,
   exactBounds,
+  frameShapeCommands,
   localToWorld,
   layoutTextOnPath,
   pathToSvg,
@@ -205,6 +206,23 @@ export async function textToCurves(
     p.fill = part.paint;
     p.stroke = cloneData(node.stroke);
     paths.push(p);
+  }
+  // Cadre de texte en forme (tools/textFlow) : son fond et son contour restent sous les lettres.
+  const shape = node.path ? undefined : node.frameShape;
+  if (shape && (shape.fill || shape.stroke)) {
+    const bg = createPath({
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+      d: pathToSvg(frameShapeCommands(node)),
+      viewBox: { x: 0, y: 0, width: node.width || 1, height: node.height || 1 },
+      name,
+    });
+    bg.rotation = node.rotation;
+    bg.fill = shape.fill ? cloneData(shape.fill) : { type: 'none' };
+    bg.stroke = cloneData(shape.stroke ?? { ...bg.stroke, paint: { type: 'none' } });
+    paths.unshift(bg);
   }
   if (!paths.length) return { node: null, missing: [] };
   const finish = (n: SceneNode) => {

@@ -3,7 +3,9 @@ import {
   adjustmentReach,
   applyAdjustment,
   chainHead,
+  flowDependencies,
   flowText,
+  frameShapeCommands,
   masterOf,
   needsFlow,
   pageFields,
@@ -211,6 +213,16 @@ export function cachedLayout(node: TextNode, measure: MeasureText = measureText)
 }
 
 let flowCache = new WeakMap<PoulpeDocument, Map<string, TextFlow>>();
+/**
+ * Répartitions par chaîne (clé : son premier cadre), avec ce dont elles dépendent : quand une
+ * autre partie du document change, une chaîne dont les cadres et les objets qui l'habillent sont
+ * les mêmes garde sa répartition.
+ */
+let chainCache = new WeakMap<TextNode, Map<string, { deps: unknown[]; flow: TextFlow }>>();
+
+function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
 
 /**
  * Répartition d'un texte de mise en page (cadre, chaîne de cadres liés ou champs), mémorisée tant
@@ -228,7 +240,18 @@ export function cachedFlow(
   let map = flowCache.get(doc);
   if (!map) flowCache.set(doc, (map = new Map()));
   let flow = map.get(key);
-  if (!flow) map.set(key, (flow = flowText(doc, id, measure, fields)));
+  if (!flow) {
+    const deps = flowDependencies(doc, id);
+    let per = head && Object.isFrozen(head) ? chainCache.get(head) : undefined;
+    if (head && Object.isFrozen(head) && !per) chainCache.set(head, (per = new Map()));
+    const hit = per?.get(key);
+    if (hit && sameDeps(hit.deps, deps)) flow = hit.flow;
+    else {
+      flow = flowText(doc, id, measure, fields);
+      per?.set(key, { deps, flow });
+    }
+    map.set(key, flow);
+  }
   return flow;
 }
 
@@ -252,6 +275,7 @@ export function textLayoutIn(
 export function clearLayoutCache(): void {
   layoutCache = new WeakMap();
   flowCache = new WeakMap();
+  chainCache = new WeakMap();
   renderRevision++;
   sharedRevision++;
   layoutRevision++;
@@ -550,6 +574,7 @@ function drawText(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOpt
     node.stroke.paint.type !== 'none' && node.stroke.width > 0
       ? canvasPaint(ctx, node.stroke.paint, node.width, node.height, doc, opts.images)
       : null;
+  if (node.frameShape && !node.path) drawFrameShape(ctx, doc, node, opts);
   ctx.textBaseline = 'alphabetic';
   ctx.lineJoin = 'round';
   applyFeatures(ctx, node.style.features);
@@ -624,6 +649,35 @@ function drawText(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOpt
         if (st.strike) ctx.fillRect(x0, y - st.fontSize * 0.3, x1 - x0, thickness);
       }
     }
+  }
+}
+
+const frameShapeCache = new WeakMap<TextNode, Path2D>();
+
+/** Cadre de texte de forme : le remplissage et le contour de la forme d'origine, sous le texte. */
+function drawFrameShape(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOptions): void {
+  const s = node.frameShape!;
+  let path = frameShapeCache.get(node);
+  if (!path) {
+    path = toPath2D(frameShapeCommands(node));
+    if (Object.isFrozen(node)) frameShapeCache.set(node, path);
+  }
+  const fill = s.fill ? canvasPaint(ctx, s.fill, node.width, node.height, doc, opts.images) : null;
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill(path);
+  }
+  const st = s.stroke;
+  const paint =
+    st && st.paint.type !== 'none' && st.width > 0
+      ? canvasPaint(ctx, st.paint, node.width, node.height, doc, opts.images)
+      : null;
+  if (st && paint) {
+    ctx.save();
+    ctx.strokeStyle = paint;
+    applyStrokeStyle(ctx, st);
+    ctx.stroke(path);
+    ctx.restore();
   }
 }
 

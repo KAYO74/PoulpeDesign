@@ -205,6 +205,24 @@ interface NodeBase {
   mask?: LayerMask;
   /** Dégradé de transparence de tout l'objet (outil Transparence). */
   transparency?: Transparency;
+  /** Habillage : l'objet repousse le texte des cadres de texte placés dessous. Absent : aucun. */
+  wrap?: TextWrap;
+}
+
+/**
+ * Habillage du texte, comme dans Affinity Publisher : comment un objet repousse le texte des cadres
+ * de texte placés sous lui (dans l'ordre des calques de sa page).
+ */
+export interface TextWrap {
+  /**
+   * `square` : autour de sa boîte ; `tight` : au plus près de son contour ; `jump` : aucun texte à
+   * sa gauche ni à sa droite ; `through` : le texte passe dessous sans être repoussé.
+   */
+  type: 'square' | 'tight' | 'jump' | 'through';
+  /** Côtés où le texte peut aller : les deux (absent), à gauche, à droite, le plus grand côté. */
+  side?: 'both' | 'left' | 'right' | 'largest';
+  /** Distance entre l'objet et le texte, en pixels (0 si absente). */
+  distance?: number;
 }
 
 /**
@@ -357,6 +375,26 @@ export interface TextNode extends NodeBase, Styled {
    * suivants affichent la suite et leur propre `text` est ignoré.
    */
   next?: string;
+  /** Marges intérieures d'un cadre de texte, en pixels : haut, droite, bas, gauche. */
+  insets?: [number, number, number, number];
+  /** Le cadre ne se laisse pas repousser par l'habillage des objets placés dessus. */
+  ignoreWrap?: boolean;
+  /** Le texte qui ne tient pas reste caché sans l'indicateur rouge de débordement. */
+  hideOverflow?: boolean;
+  /** Cadre de texte de forme : les lignes se posent à l'intérieur de ce contour. */
+  frameShape?: TextFrameShape;
+}
+
+/**
+ * Forme d'un cadre de texte (une forme convertie en cadre) : contour exprimé dans `viewBox` et
+ * étiré sur la boîte du texte, avec le remplissage et le contour de la forme d'origine, dessinés
+ * sous le texte.
+ */
+export interface TextFrameShape {
+  d: string;
+  viewBox: { x: number; y: number; width: number; height: number };
+  fill?: Paint;
+  stroke?: Stroke;
 }
 
 /** Courbe suivie par un texte, exprimée dans `viewBox` et étirée sur la boîte du texte. */

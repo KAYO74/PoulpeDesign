@@ -20,6 +20,7 @@ import {
   type TextLayout,
 } from './text';
 import { featureSettings } from './text';
+import { frameShapeCommands } from './textWrap';
 import { hasWidthProfile, visibleStrokes, widthProfileOutline } from './strokeProfile';
 import { symbolContent } from './symbols';
 import type { Artboard, BevelEffect, Paint, PoulpeDocument, SceneNode, Stroke, TextNode } from './types';
@@ -371,6 +372,12 @@ function nodeContentToSvg(node: SceneNode, ctx: Ctx): string {
         .join('');
       return `${open}<g xml:space="preserve"${attrs}>${glyphs}</g></g>`;
     }
+    // Cadre de texte de forme : la forme d'origine (remplissage et contour) passe sous le texte.
+    const fs = node.frameShape;
+    const shape =
+      fs && (fs.fill || fs.stroke)
+        ? `<path d="${pathToSvg(frameShapeCommands(node))}" ${paintAttr('fill', fs.fill ?? { type: 'none' }, w, h, defs)}${fs.stroke ? strokeAttrs(fs.stroke, w, h, defs) : ''}/>`
+        : '';
     let spans = '';
     for (const line of layout!.lines) {
       // Puce ou numéro de liste, jamais souligné ni barré.
@@ -388,7 +395,7 @@ function nodeContentToSvg(node: SceneNode, ctx: Ctx): string {
         }
       }
     }
-    return `${open}<text xml:space="preserve"${attrs}>${spans}</text></g>`;
+    return `${open}${shape}<text xml:space="preserve"${attrs}>${spans}</text></g>`;
   }
   const cmds = shapePath(node);
   const d = pathToSvg(cmds);

@@ -80,6 +80,11 @@ export interface TextLine {
   column?: number;
   /** Puce ou numéro de liste, devant la première ligne d'un paragraphe. */
   marker?: TextMarker;
+  /**
+   * Place où la ligne est posée dans un cadre de texte (bords gauche et droit depuis le bord gauche
+   * de la boîte) : plusieurs lignes peuvent partager une hauteur autour d'un objet qui habille.
+   */
+  slot?: [number, number];
 }
 
 /** Puce ou numéro d'un paragraphe de liste, posé dans le retrait de sa première ligne. */
@@ -100,7 +105,7 @@ export interface TextLayout {
   height: number;
 }
 
-type TextLike = Pick<TextNode, 'text' | 'style' | 'autoWidth' | 'width'> & {
+export type TextLike = Pick<TextNode, 'text' | 'style' | 'autoWidth' | 'width'> & {
   runs?: TextRun[];
   height?: number;
   /** Suite d'un texte dans un cadre lié : rangs de liste déjà donnés dans les cadres précédents. */
@@ -115,7 +120,7 @@ export function listMarker(list: NonNullable<TextStyle['list']>, n: number): str
 }
 
 /** Retrait des lignes d'une liste, où se placent les repères ; il s'élargit pour les numéros à 3 chiffres. */
-function listIndent(style: TextStyle, lastRank: number): number {
+export function listIndent(style: TextStyle, lastRank: number): number {
   if (!style.list) return 0;
   if (style.list === 'bullet') return style.fontSize * 1.3;
   return style.fontSize * Math.max(2, 0.6 * String(lastRank).length + 0.9);
@@ -269,14 +274,14 @@ export function adjustRuns(
 
 // ————— Mise en page —————
 
-interface StyleSpan {
+export interface StyleSpan {
   start: number;
   end: number;
   style: CharStyle;
   font: string;
 }
 
-function styleSpans(node: TextLike, length: number): StyleSpan[] {
+export function styleSpans(node: TextLike, length: number): StyleSpan[] {
   const runs = node.runs ?? [];
   const spans: StyleSpan[] = [];
   const baseFont = cssFont(node.style);
@@ -491,6 +496,8 @@ export function indexAtPoint(layout: TextLayout, x: number, y: number, measure: 
   const lines = layout.lines;
   let k = lines.findIndex((l) => y < l.top + l.height);
   if (k < 0) k = lines.length - 1;
+  // Cadre de texte (habillage, colonnes, forme) : la ligne dont la place est la plus proche.
+  if (lines.some((l) => l.slot)) k = nearestLine(lines, x, y);
   const line = lines[k];
   let best = line.start;
   let bestD = Infinity;
@@ -501,5 +508,22 @@ export function indexAtPoint(layout: TextLayout, x: number, y: number, measure: 
       best = i;
     }
   }
+  return best;
+}
+
+/** Ligne la plus proche d'un point, mesurée jusqu'à la place qu'elle occupe (sa colonne, son côté de l'objet). */
+function nearestLine(lines: TextLine[], x: number, y: number): number {
+  let best = 0;
+  let bestD = Infinity;
+  lines.forEach((l, k) => {
+    const dy = Math.max(0, l.top - y, y - (l.top + l.height));
+    const [a, b] = l.slot ?? [l.offset, l.offset + l.width];
+    const dx = Math.max(0, a - x, x - b);
+    const d = dx * dx + dy * dy;
+    if (d < bestD) {
+      best = k;
+      bestD = d;
+    }
+  });
   return best;
 }
