@@ -164,7 +164,7 @@ Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-r
 
 ## Contribuer
 
-Poulpe Design est écrit en TypeScript (React, Vite) et en Rust, et embarqué dans une appli de bureau [Tauri](https://v2.tauri.app/). Le cœur passe peu à peu en Rust : depuis la 1.1.1, les réglages et filtres d'image sont calculés par le moteur Rust, sur la carte graphique ou sur tous les cœurs ([Moteur Rust](docs/moteur-rust.md)). Il faut Node 20 ou plus et pnpm 10 (`corepack enable`).
+Poulpe Design est écrit en TypeScript (React, Vite) et en Rust, et embarqué dans une appli de bureau [Tauri](https://v2.tauri.app/). Le cœur passe peu à peu en Rust : depuis la 1.1.1, les réglages et filtres d'image sont calculés par le moteur Rust, sur la carte graphique ou sur tous les cœurs ([Moteur Rust](docs/moteur-rust.md)). Il faut Node 22 (22.13 ou plus) ou Node 20 (20.19 ou plus), et pnpm 10 (`corepack enable`).
 
 ```sh
 pnpm install
