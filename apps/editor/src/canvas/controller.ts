@@ -11,6 +11,7 @@ import {
   caretAt,
   chainHead,
   charX,
+  frameShapeCommands,
   isLinked,
   masterOf,
   needsFlow,
@@ -48,7 +49,15 @@ import {
   pageFields as pageFieldsOf,
   softProofPixels,
 } from '@poulpe/core';
-import { ImageCache, RenderCache, cachedFlow, clearLayoutCache, measureText, nodePath } from '@poulpe/render';
+import {
+  ImageCache,
+  RenderCache,
+  cachedFlow,
+  clearLayoutCache,
+  measureText,
+  nodePath,
+  toPath2D,
+} from '@poulpe/render';
 import { cpuThreads } from '../preferences';
 import { onPerformanceSettings, recordFrame, setRenderStatsSource } from '../perf';
 import { setPaint } from '../actions';
@@ -74,7 +83,8 @@ import {
   textSelection,
 } from './textEdit';
 import { editParts, indexAtWorld, partAt } from './textParts';
-import { linkTextFrames } from '../layoutActions';
+import { startFrameLink } from '../tools/textFlow/delegate';
+import { autoFlow } from '../tools/textFlow/actions';
 import { PhotoTools } from '../photo/photoTools';
 
 type HandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -580,17 +590,18 @@ export class CanvasController {
       (document.activeElement as HTMLElement | null)?.blur();
     }
 
-    // Choix du cadre suivant d'un texte qui déborde : un cadre existant, ou un nouveau cadre ici.
-    const linkFrom = ui.get().linkFrom;
-    if (linkFrom) {
-      ui.set({ linkFrom: null });
-      const hit = this.hitTest(p, true);
-      linkTextFrames(linkFrom, hit?.type === 'text' ? hit.id : null, p);
+    // Choix du cadre suivant d'un texte qui déborde : un cadre existant, un nouveau cadre de même
+    // taille ici, ou un cadre tracé en glissant (tools/textFlow).
+    if (ui.get().linkFrom) {
+      startFrameLink(this, p);
       this.requestDraw();
       return;
     }
-    if ((tool === 'select' || tool === 'text' || tool === 'frameText') && this.hitOverflow(sx, sy)) {
-      ui.set({ linkFrom: this.hitOverflow(sx, sy) });
+    const overflowId = this.hitOverflow(sx, sy);
+    if ((tool === 'select' || tool === 'text' || tool === 'frameText') && overflowId) {
+      // Maj+clic : coulée automatique (pages et cadres ajoutés jusqu'à ce que le texte tienne).
+      if (e.shiftKey) autoFlow(overflowId);
+      else ui.set({ linkFrom: overflowId });
       this.updateCursor();
       return;
     }
@@ -1875,11 +1886,13 @@ export class CanvasController {
       ctx.lineWidth = 1 / v.zoom;
       ctx.setLineDash([3 / v.zoom, 3 / v.zoom]);
       ctx.strokeStyle = inSel ? this.colors.sel : 'rgba(120,120,130,0.55)';
-      ctx.strokeRect(0, 0, n.width, n.height);
+      // Cadre de forme : son contour.
+      if (n.frameShape) ctx.stroke(toPath2D(frameShapeCommands(n)));
+      else ctx.strokeRect(0, 0, n.width, n.height);
       ctx.restore();
-      // Débordement : petit carré rouge « + » en bas à droite du dernier cadre.
+      // Débordement : petit carré rouge « + » en bas à droite du dernier cadre (sauf texte en trop masqué).
       const last = chain?.nodes[chain.nodes.length - 1];
-      const overflow = last?.id === n.id && chain!.overflow;
+      const overflow = last?.id === n.id && chain!.overflow && !n.hideOverflow;
       if (overflow || linkFrom === n.id || (inSel && last?.id === n.id)) {
         const q = this.toScreen(localToWorld(n, { x: n.width, y: n.height }));
         const s = 12;

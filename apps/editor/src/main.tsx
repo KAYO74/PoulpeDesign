@@ -18,6 +18,7 @@ import * as retouch from './photo/retouchActions';
 import { normalizeTexts } from './normalize';
 import { normalizeTables } from './tools/frames/tableActions';
 import * as frames from './tools/frames/actions';
+import * as textFlow from './tools/textFlow/actions';
 import * as prefs from './preferences';
 import { artboardToSvg } from '@poulpe/core';
 import { getPerformanceSettings, renderStats, setPerformanceSettings } from './perf';
@@ -69,6 +70,7 @@ if (isDesktop()) {
   symbols,
   layout,
   frames,
+  textFlow,
   core: { artboardToSvg },
   controller: getController,
   perf: { setPerformanceSettings, getPerformanceSettings, renderStats },

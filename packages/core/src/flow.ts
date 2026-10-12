@@ -1,4 +1,6 @@
 import { adjustRuns, layoutText, type MeasureText, type TextLayout, type TextLine } from './text';
+import { layoutInRegion } from './textRegion';
+import { frameRegion, wrapObstacles, wrapSources } from './textWrap';
 import { walkDocument } from './tree';
 import type { PoulpeDocument, TextNode, TextRun, TextStyle } from './types';
 
@@ -188,6 +190,70 @@ function sliceRuns(runs: TextRun[] | undefined, from: number): TextRun[] | undef
   return out.length ? out : undefined;
 }
 
+/** Texte d'une chaîne à partir de `offset`, tel qu'un cadre le met en page. */
+function textFrom(
+  src: Pick<TextNode, 'style' | 'runs'>,
+  text: string,
+  offset: number,
+  frame: TextNode,
+  autoWidth: boolean,
+) {
+  return {
+    text: text.slice(offset),
+    style: src.style,
+    runs: sliceRuns(src.runs, offset),
+    autoWidth,
+    width: frame.width,
+    // La hauteur du cadre répartit les lignes entre ses colonnes.
+    height: frame.height,
+    ...listFrom(text, offset, !!src.style.list),
+  };
+}
+
+/**
+ * Part d'un cadre de texte (hauteur fixe) : les lignes se posent dans sa zone (colonnes, marges
+ * intérieures, forme, objets qui l'habillent) à partir de l'indice `offset` du texte.
+ */
+export function framePart(
+  doc: PoulpeDocument,
+  frame: TextNode,
+  src: Pick<TextNode, 'style' | 'runs'>,
+  text: string,
+  offset: number,
+  measure: MeasureText,
+): FlowPart {
+  const sub = textFrom(src, text, offset, frame, false);
+  const region = frameRegion(frame, src.style, wrapObstacles(doc, frame));
+  let lay = layoutInRegion(sub, measure, region);
+  const v = src.style.verticalAlign;
+  if (v && v !== 'top' && lay.lines.length) {
+    if (!region.shaped) lay = { ...lay, lines: alignVertically(lay.lines, region.bottom, v) };
+    else if (region.columns === 1) {
+      // Zone habillée ou de forme : on recommence plus bas, tant que le même texte y tient.
+      const k = v === 'center' ? 0.5 : 1;
+      let shift = (region.bottom - Math.max(...lay.lines.map((l) => l.top + l.height))) * k;
+      for (let n = 0; n < 4 && shift > 0.5; n++, shift /= 2) {
+        const again = layoutInRegion(sub, measure, region, region.top + shift);
+        if (again.end === lay.end) {
+          lay = again;
+          break;
+        }
+      }
+    }
+  }
+  return {
+    node: frame,
+    layout: {
+      lines: lay.lines.map((l) => shiftLine(l, offset)),
+      lineHeight: lay.lineHeight,
+      width: lay.width,
+      height: frame.height,
+    },
+    start: offset,
+    end: offset + lay.end,
+  };
+}
+
 /**
  * Répartit le texte d'une chaîne dans ses cadres. `fields` : valeurs des champs, ou null pour
  * garder les champs tels quels (texte en cours d'édition).
@@ -207,28 +273,16 @@ export function flowText(
   let offset = 0;
   for (let i = 0; i < chain.length; i++) {
     const frame = chain[i];
-    const sub = {
-      text: text.slice(offset),
-      style: src.style,
-      runs: sliceRuns(src.runs, offset),
-      autoWidth: chain.length > 1 || frame.frame ? false : head.autoWidth,
-      width: frame.width,
-      // La hauteur du cadre répartit les lignes entre ses colonnes.
-      height: frame.height,
-      ...listFrom(text, offset, !!src.style.list),
-    };
-    const full = layoutText(sub, measure);
-    const fixed = frame.frame || chain.length > 1;
-    let count = full.lines.length;
-    if (fixed) {
-      count = 0;
-      while (count < full.lines.length) {
-        const l = full.lines[count];
-        if (l.top + l.height > frame.height + 0.5) break;
-        count++;
-      }
+    // Cadre de texte : sa hauteur est fixe, ce qui ne tient pas passe au cadre suivant.
+    if (frame.frame || chain.length > 1) {
+      const part = framePart(doc, frame, src, text, offset, measure);
+      parts.push(part);
+      offset = part.end;
+      continue;
     }
-    let lines = full.lines.slice(0, count).map((l) => shiftLine(l, offset));
+    const sub = textFrom(src, text, offset, frame, head.autoWidth);
+    const full = layoutText(sub, measure);
+    let lines = full.lines.map((l) => shiftLine(l, offset));
     // Texte artistique dont les champs ont changé la longueur : l'alignement suit sa boîte.
     const k = src.style.align === 'center' ? 0.5 : src.style.align === 'right' ? 1 : 0;
     if (sub.autoWidth && k && frame.width !== full.width) {
@@ -239,23 +293,30 @@ export function flowText(
         marker: l.marker && { ...l.marker, x: l.marker.x + dx },
       }));
     }
-    if (fixed) lines = alignVertically(lines, frame.height, src.style.verticalAlign);
-    const rest = full.lines[count];
-    const end = rest ? offset + rest.start : text.length;
     parts.push({
       node: frame,
-      layout: {
-        lines,
-        lineHeight: full.lineHeight,
-        width: full.width,
-        height: fixed ? frame.height : full.height,
-      },
+      layout: { lines, lineHeight: full.lineHeight, width: full.width, height: full.height },
       start: offset,
-      end,
+      end: text.length,
     });
-    offset = end;
+    offset = text.length;
   }
   // Une ligne vide en fin de texte (après un retour à la ligne) ne compte pas comme débordement.
   const overflow = offset < text.length && text.slice(offset).trim() !== '';
   return { text, parts, overflow };
+}
+
+/**
+ * Ce dont dépend la répartition d'une chaîne, hors champs et polices : ses cadres et, pour chacun,
+ * les objets qui l'habillent. Tant que la liste est la même (objets comparés par référence), la
+ * répartition déjà calculée reste bonne.
+ */
+export function flowDependencies(doc: PoulpeDocument, id: string): unknown[] {
+  const chain = textChain(doc, id);
+  const out: unknown[] = [];
+  for (const f of chain) {
+    out.push(f);
+    if (f.frame || chain.length > 1) out.push(...wrapSources(doc, f));
+  }
+  return out;
 }

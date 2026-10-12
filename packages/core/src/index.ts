@@ -41,3 +41,6 @@ export * from './shapes';
 export * from './shapeNodes';
 export * from './paintGeometry';
 export * from './contour';
+export * from './textRegion';
+export * from './textWrap';
+export * from './autoFlow';
