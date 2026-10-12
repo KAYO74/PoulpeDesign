@@ -15,7 +15,8 @@ import { isPhotoTool } from '../photo/photoTools';
 
 const SHAPES: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line'];
 
-function PaintSwatches({ node }: { node: SceneNode | null }) {
+/** Couleurs de remplissage et de contour (de l'objet, ou des prochains objets) et épaisseur du trait. */
+export function PaintSwatches({ node }: { node: SceneNode | null }) {
   const t = useT();
   const defaults = useUi((s) => s.defaults);
   const target = useUi((s) => s.colorTarget);
@@ -67,7 +68,6 @@ export function ContextBar() {
   const tool = useUi((s) => s.tool);
   const defaults = useUi((s) => s.defaults);
   const cropId = useUi((s) => s.cropId);
-  const smoothing = useUi((s) => s.pencilSmoothing);
   const cornerRadius = useUi((s) => s.cornerRadiusTool);
   const cornerKind = useUi((s) => s.cornerKind);
   const fonts = useFonts();
@@ -82,27 +82,6 @@ export function ContextBar() {
     content = <Own />;
   } else if (isPhotoTool(tool)) {
     content = <PhotoContext tool={tool} />;
-  } else if (tool === 'pen' || tool === 'pencil') {
-    content = (
-      <>
-        <PaintSwatches node={null} />
-        {tool === 'pencil' && (
-          <label className="field">
-            <span className="field-label">{t('ctx.smoothing')}</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={smoothing}
-              aria-label={t('ctx.smoothing')}
-              data-testid="pencil-smoothing"
-              onChange={(e) => ui.set({ pencilSmoothing: Number(e.target.value) })}
-            />
-          </label>
-        )}
-        <span className="ctx-dim">{t(tool === 'pen' ? 'ctx.penHint' : 'ctx.pencilHint')}</span>
-      </>
-    );
   } else if (tool === 'corner') {
     content = (
       <>
@@ -125,8 +104,8 @@ export function ContextBar() {
         <span className="ctx-dim">{t('ctx.cornerHint')}</span>
       </>
     );
-  } else if (tool === 'scissors' || tool === 'knife' || tool === 'shapeBuilder') {
-    content = <span className="ctx-dim">{t(`ctx.${tool}Hint`)}</span>;
+  } else if (tool === 'scissors') {
+    content = <span className="ctx-dim">{t('ctx.scissorsHint')}</span>;
   } else if (tool === 'artboard' && ab) {
     const preset = FORMAT_PRESETS.find((f) => f.width === ab.width && f.height === ab.height)?.id ?? 'custom';
     content = (
