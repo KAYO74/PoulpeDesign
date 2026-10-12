@@ -4,6 +4,7 @@ import {
   applyKnifePath,
   applyShapeBuilder,
   applyVectorFill,
+  booleanCommands,
   createDocument,
   createEllipse,
   createLine,
@@ -21,6 +22,7 @@ import {
   splitPieces,
   taperProfile,
   toSubpaths,
+  worldOutline,
   type PathCommand,
   type PathNode,
   type SubPath,
@@ -50,6 +52,20 @@ const area = (cmds: PathCommand[]) => {
   const b = exactBounds(cmds)!;
   return b.width * b.height;
 };
+
+/** Aire nette d'un contour fait de segments droits (les trous sont orientés à l'inverse). */
+function polyArea(cmds: PathCommand[]): number {
+  let sum = 0;
+  for (const sp of toSubpaths(cmds)) {
+    const a = sp.anchors;
+    for (let i = 0; i < a.length; i++) {
+      const p = a[i],
+        q = a[(i + 1) % a.length];
+      sum += p.x * q.y - q.x * p.y;
+    }
+  }
+  return Math.abs(sum / 2);
+}
 
 describe('zones formées par des formes qui se chevauchent', () => {
   // Deux carrés de 100 qui se chevauchent sur 50 × 100.
@@ -259,6 +275,42 @@ describe('remplissage de zone vectoriel', () => {
     ).toBeNull();
   });
 
+  it('des formes qui se chevauchent, de sens opposés, sont retirées comme une seule', () => {
+    const reversed = (cmds: PathCommand[]) =>
+      fromSubpaths([{ ...toSubpaths(cmds)[0], anchors: toSubpaths(cmds)[0].anchors.reverse() }]);
+    const obstacles = [
+      { closed: { cmds: square(0, 0, 400) }, open: null },
+      { closed: { cmds: square(100, 100, 100) }, open: null },
+      { closed: { cmds: reversed(square(150, 150, 100)) }, open: null },
+    ];
+    const cmds = fillArea(obstacles, { x: 350, y: 350 })!;
+    expect(polyArea(cmds)).toBeCloseTo(400 * 400 - (100 * 100 * 2 - 50 * 50), -1);
+  });
+
+  it('le trou d’une forme pair-impair est une zone fermée', () => {
+    const donut = { cmds: [...square(0, 0, 300), ...square(100, 100, 100)], fillRule: 'evenodd' as const };
+    const cmds = fillArea([{ closed: donut, open: null }], { x: 150, y: 150 })!;
+    const b = exactBounds(cmds)!;
+    expect(b.x).toBeCloseTo(100, 1);
+    expect(b.width).toBeCloseTo(100, 1);
+  });
+
+  it('reste rapide avec des centaines d’objets', () => {
+    const doc = createDocument({ width: 2000, height: 2000 });
+    const ab = doc.artboards[0];
+    ab.children.push(createRect({ x: 0, y: 0, width: 2000, height: 2000 }));
+    for (let i = 0; i < 300; i++)
+      ab.children.push(
+        createEllipse({ x: (i % 18) * 110 + 10, y: Math.floor(i / 18) * 110 + 10, width: 80, height: 80 }),
+      );
+    const t0 = performance.now();
+    const id = applyVectorFill(doc, ab.id, { x: 105, y: 105 }, { type: 'solid', color: '#00ff00' }, 'Zone')!;
+    // Une soustraction par objet prenait plusieurs secondes.
+    expect(performance.now() - t0).toBeLessThan(3000);
+    const n = findNode(doc, id)!.node as PathNode;
+    expect(toSubpaths(parseSvgPath(n.d))).toHaveLength(301);
+  });
+
   it('dans une forme pleine : la nouvelle forme se place au-dessus d’elle', () => {
     const doc = createDocument();
     const ab = doc.artboards[0];
@@ -291,6 +343,38 @@ describe('cutter à main levée', () => {
     expect(kids).toHaveLength(2);
     const total = kids.reduce((s, k) => s + k.width * k.height, 0);
     expect(total).toBeGreaterThan(100 * 100);
+  });
+
+  it('les morceaux se touchent exactement et se réunissent en une forme', () => {
+    for (const pts of [
+      [
+        { x: 600, y: -10 },
+        { x: 600, y: 1210 },
+      ],
+      [
+        { x: 600, y: -10 },
+        { x: 650, y: 300 },
+        { x: 560, y: 700 },
+        { x: 640, y: 1210 },
+      ],
+    ]) {
+      const doc = createDocument();
+      const r = createRect({ x: 100, y: 100, width: 1000, height: 1000 });
+      doc.artboards[0].children.push(r);
+      expect(applyKnifePath(doc, [r.id], pts, 'Courbe')).toHaveLength(2);
+      const kids = doc.artboards[0].children as PathNode[];
+      if (pts.length === 2) {
+        expect(kids[0].x + kids[0].width).toBeCloseTo(600, 4);
+        expect(kids[1].x).toBeCloseTo(600, 4);
+      }
+      const united = booleanCommands(
+        kids.map((k) => ({ cmds: worldOutline(k)! })),
+        'unite',
+      );
+      expect(united).toHaveLength(1);
+      expect(toSubpaths(united[0].cmds)).toHaveLength(1);
+      expect(polyArea(united[0].cmds)).toBeCloseTo(1000 * 1000, -1);
+    }
   });
 
   it('un zigzag qui traverse trois fois donne trois morceaux', () => {

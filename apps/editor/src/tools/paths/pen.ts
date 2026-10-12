@@ -197,15 +197,34 @@ export class PenTool implements SubTool {
       const cmds = fromSubpaths(sps);
       const a0 = d.anchors[0];
       const b = exactBounds(cmds) ?? { x: a0.x, y: a0.y, width: 0, height: 0 };
+      const geom = {
+        x: b.x,
+        y: b.y,
+        width: b.width,
+        height: b.height,
+        d: pathToSvg(cmds),
+        viewBox: { ...b },
+      };
+      const marks = smartMarks(sps);
+      // Une autre commande (opacité au clavier, couleur…) a pu valider le geste en cours : le tracé
+      // est alors déjà dans la base de l'aperçu, on le met à jour au lieu d'en ajouter un second.
+      const found = findNode(doc, d.id)?.node;
+      if (found) {
+        if (found.type !== 'path') return [d.id];
+        Object.assign(found, geom);
+        if (d.closed) found.fill = ui.get().defaults.fill;
+        if (marks.length) found.smartNodes = marks;
+        else delete found.smartNodes;
+        return [d.id];
+      }
       const ab = doc.artboards.find((a) => a.id === d.artboardId) ?? doc.artboards[0];
       const n = createPath(
-        { ...b, d: pathToSvg(cmds), viewBox: b, name: t('name.curve') },
+        { ...geom, name: t('name.curve') },
         { ...ui.get().defaults, stroke: drawnStroke() },
       );
       n.id = d.id;
       const fill: Paint = d.closed ? ui.get().defaults.fill : { type: 'none' };
       n.fill = fill;
-      const marks = smartMarks(sps);
       if (marks.length) n.smartNodes = marks;
       ab.children.push(n);
       return [d.id];

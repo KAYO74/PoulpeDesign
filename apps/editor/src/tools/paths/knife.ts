@@ -54,8 +54,8 @@ export class KnifeTool implements SubTool {
     let made: string[] | null = null;
     if (ids.length)
       editor.apply('history.knife', (d) => {
-        // Coupe très fine (un vingtième de pixel à l'écran) : les morceaux se touchent à l'œil.
-        made = applyKnifePath(d, ids, pts, t('name.curve'), 0.05 / this.c.view.zoom);
+        // Les morceaux se touchent exactement, quel que soit le zoom.
+        made = applyKnifePath(d, ids, pts, t('name.curve'));
         return made ?? undefined;
       });
     if (!made) toast(t('vector.cutNothing'));

@@ -82,7 +82,10 @@ function components(item: paper.PathItem): paper.PathItem[] {
   const paths = all.filter((p) => Math.abs(p.area) > 1e-6);
   if (paths.length <= 1) return [item];
   const inner = paths.map((p) => p.getPointAt(p.length * 0.37));
-  const depth = paths.map((_, i) => paths.filter((q, j) => j !== i && q.contains(inner[i])).length);
+  // Les boîtes d'abord : avec des centaines de trous, tester chaque contour contre chaque autre coûtait cher.
+  const boxes = paths.map((p) => p.bounds);
+  const inside = (o: number, i: number) => boxes[o].contains(inner[i]) && paths[o].contains(inner[i]);
+  const depth = paths.map((_, i) => paths.filter((_q, j) => j !== i && inside(j, i)).length);
   const groups = new Map<number, paper.Path[]>();
   paths.forEach((p, i) => depth[i] % 2 === 0 && groups.set(i, [p]));
   paths.forEach((p, i) => {
@@ -92,7 +95,7 @@ function components(item: paper.PathItem): paper.PathItem[] {
     for (const [o] of groups)
       if (
         depth[o] === depth[i] - 1 &&
-        paths[o].contains(inner[i]) &&
+        inside(o, i) &&
         (best < 0 || Math.abs(paths[o].area) < Math.abs(paths[best].area))
       )
         best = o;
@@ -286,12 +289,38 @@ function sliver(cmds: PathCommand[], half: number): paper.PathItem | null {
   return new s.CompoundPath({ children, insert: false });
 }
 
+/** Les contours d'un objet Paper (un tracé simple ou les enfants d'un tracé composé). */
+function pathsOf(item: paper.PathItem): paper.Path[] {
+  return item.className === 'CompoundPath' ? (item.children as paper.Path[]) : [item as paper.Path];
+}
+
+/**
+ * Contours orientés pour être réunis : extérieurs dans le sens horaire, trous dans l'autre, selon
+ * la règle de remplissage de l'objet. Mis ensemble dans un tracé composé « nonzero », plusieurs
+ * objets ainsi orientés donnent leur union, même s'ils se chevauchent.
+ */
+function unitePaths(item: paper.PathItem): paper.Path[] {
+  // `resolveCrossings` (méthode publique de Paper.js) manque à ses types.
+  const copy = item.clone(OPTS) as paper.PathItem & { resolveCrossings(): paper.PathItem };
+  const r = copy.resolveCrossings().reorient(item.fillRule !== 'evenodd', true);
+  return pathsOf(r).filter((c) => !c.isEmpty());
+}
+
 /**
  * Zone fermée sous `p`, délimitée par les surfaces des objets et par leurs traits ouverts (bandes
  * de demi-largeur `gap`). Renvoie null si le point n'est dans aucune zone fermée. Le calcul se fait
  * dans une fenêtre qui grandit autour du point : seuls les objets proches comptent.
  */
 export function fillArea(obstacles: FillObstacle[], p: Vec, gap = 0.01): PathCommand[] | null {
+  return fillRegion(obstacles, p, gap)?.cmds ?? null;
+}
+
+/** `fillArea`, avec l'indice de l'objet le plus haut dont la surface contient le point (-1 sinon). */
+function fillRegion(
+  obstacles: FillObstacle[],
+  p: Vec,
+  gap: number,
+): { cmds: PathCommand[]; top: number } | null {
   const s = ps();
   const q = point(p);
   const items = obstacles.map((o) => {
@@ -304,10 +333,13 @@ export function fillArea(obstacles: FillObstacle[], p: Vec, gap = 0.01): PathCom
       openBounds: ob
         ? new s.Rectangle(ob.x - gap, ob.y - gap, ob.width + 2 * gap, ob.height + 2 * gap)
         : null,
-      band: undefined as paper.PathItem | null | undefined,
+      /** Contours orientés de la surface et de la bande du trait (calculés au premier besoin). */
+      cut: undefined as paper.Path[] | undefined,
+      band: undefined as paper.Path[] | undefined,
     };
   });
   const containing = items.filter((o) => o.closed?.contains(q));
+  const top = containing.length ? items.indexOf(containing[containing.length - 1]) : -1;
   let all: paper.Rectangle | null = null;
   for (const o of items)
     for (const b of [o.closed?.bounds, o.openBounds]) if (b) all = all ? all.unite(b) : b.clone();
@@ -319,15 +351,24 @@ export function fillArea(obstacles: FillObstacle[], p: Vec, gap = 0.01): PathCom
   for (;;) {
     let r: paper.PathItem = new s.Path.Rectangle({ rectangle: win, insert: false });
     for (const o of containing) r = r.intersect(o.closed!, OPTS);
+    if (isEmpty(r)) return null;
+    // Les objets proches sont retirés en une seule soustraction : un objet à la fois, la zone
+    // gardait un trou par objet et le calcul devenait quadratique (des secondes pour 300 objets).
+    const rb = r.bounds;
+    const nearby: paper.Path[] = [];
     for (const o of items) {
-      if (isEmpty(r)) return null;
-      if (o.closed && !containing.includes(o) && o.closed.bounds.intersects(r.bounds))
-        r = r.subtract(o.closed, OPTS);
-      if (o.openBounds?.intersects(r.bounds)) {
-        if (o.band === undefined) o.band = sliver(o.open!, gap);
-        if (o.band) r = r.subtract(o.band, OPTS);
+      if (o.closed && !containing.includes(o) && o.closed.bounds.intersects(rb))
+        nearby.push(...(o.cut ??= unitePaths(o.closed)));
+      if (o.openBounds?.intersects(rb)) {
+        if (!o.band) {
+          const band = sliver(o.open!, gap);
+          o.band = band ? unitePaths(band) : [];
+        }
+        nearby.push(...o.band);
       }
     }
+    if (nearby.length)
+      r = r.subtract(new s.CompoundPath({ children: nearby.map((c) => c.clone(OPTS)), insert: false }), OPTS);
     const piece = components(r).find((c) => c.contains(q));
     if (!piece) return null;
     const b = piece.bounds;
@@ -337,7 +378,7 @@ export function fillArea(obstacles: FillObstacle[], p: Vec, gap = 0.01): PathCom
       b.top <= win.top + e ||
       b.right >= win.right - e ||
       b.bottom >= win.bottom - e;
-    if (!touches || containing.length) return fromItem(piece);
+    if (!touches || containing.length) return { cmds: fromItem(piece), top };
     // La zone touche le bord de la fenêtre : elle est peut-être plus grande, ou ouverte.
     if (win.contains(all)) return null;
     win = win.expand(win.width, win.height);
@@ -404,20 +445,16 @@ export function applyVectorFill(
   const obstacles = leaves.map(obstacleOf);
   const used = leaves.filter((_, i) => obstacles[i]);
   const list = obstacles.filter((o): o is FillObstacle => !!o);
-  const cmds = fillArea(list, p, gap);
-  if (!cmds?.length) return null;
+  const found = fillRegion(list, p, gap);
+  const cmds = found?.cmds;
+  if (!found || !cmds?.length) return null;
   const b = exactBounds(cmds);
   if (!b) return null;
   const node = createPath({ ...b, d: pathToSvg(cmds), viewBox: b, fillRule: 'evenodd', name });
   node.fill = structuredClone(paint);
   node.stroke = { ...node.stroke, paint: { type: 'none' } };
   // Au-dessus de l'objet le plus haut dont la surface contient le point.
-  const q = point(p);
-  let above: SceneNode | null = null;
-  list.forEach((o, i) => {
-    if (o.closed && toItem(o.closed.cmds, o.closed.fillRule).contains(q)) above = used[i];
-  });
-  const loc = above ? findNode(doc, (above as SceneNode).id) : null;
+  const loc = found.top >= 0 ? findNode(doc, used[found.top].id) : null;
   const parent: Parent = loc ? loc.parent : ab;
   parent.children.splice(loc ? loc.index + 1 : 0, 0, node);
   return node.id;
@@ -462,9 +499,50 @@ function crossingPart(points: Vec[], inside: (p: Vec) => boolean): Vec[] | null 
 }
 
 /**
+ * Ramène sur la ligne brisée `line` les points d'un contour qui en sont à moins de `reach` (les bords
+ * de la bande de coupe) : les morceaux coupés se touchent exactement, sans jour entre eux.
+ */
+function snapToLine(item: paper.PathItem, line: Vec[], reach: number): void {
+  const xs = line.map((v) => v.x),
+    ys = line.map((v) => v.y);
+  const x0 = Math.min(...xs) - reach,
+    x1 = Math.max(...xs) + reach,
+    y0 = Math.min(...ys) - reach,
+    y1 = Math.max(...ys) + reach;
+  for (const path of pathsOf(item))
+    for (const seg of path.segments) {
+      const p = seg.point;
+      if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
+      // Un sommet de la ligne d'abord (les coins de la bande), sinon le point le plus proche d'un segment.
+      let best: Vec | null = null;
+      let dist = reach;
+      for (const v of line) {
+        const d = Math.hypot(v.x - p.x, v.y - p.y);
+        if (d <= dist) [best, dist] = [v, d];
+      }
+      if (!best)
+        for (let i = 1; i < line.length; i++) {
+          const a = line[i - 1],
+            b = line[i];
+          const dx = b.x - a.x,
+            dy = b.y - a.y;
+          const t = Math.max(
+            0,
+            Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy || 1)),
+          );
+          const q = { x: a.x + dx * t, y: a.y + dy * t };
+          const d = Math.hypot(q.x - p.x, q.y - p.y);
+          if (d <= dist) [best, dist] = [q, d];
+        }
+      if (best) seg.point = point(best);
+    }
+}
+
+/**
  * Cutter à main levée : la ligne brisée `points` (monde) coupe les objets `ids` partout où elle
  * passe. Une forme pleine traversée donne un objet par morceau ; un tracé ouvert est séparé à
- * chaque croisement. `gap` : demi-largeur de la coupe. Renvoie les ids créés, ou null.
+ * chaque croisement. `gap` : demi-largeur de la bande qui sépare les morceaux, dont les bords sont
+ * ensuite ramenés sur la ligne. Renvoie les ids créés, ou null.
  */
 export function applyKnifePath(
   doc: PoulpeDocument,
@@ -489,6 +567,9 @@ export function applyKnifePath(
       if (!band) continue;
       const parts = components(item.subtract(band, OPTS));
       if (parts.length < 2) continue;
+      // Les bords de la bande reviennent sur la ligne de coupe : les morceaux se touchent, comme
+      // avec l'ancien cutter (ils se réunissent sans jour).
+      parts.forEach((part) => snapToLine(part, cut, gap * 1.5));
       pieces = parts.map(fromItem);
     } else {
       let cmds = outline;

@@ -152,6 +152,24 @@ test('plume : Ctrl déplace les nœuds en cours de tracé, puis la courbe se pro
   expect(p.d.match(/L/g)).toHaveLength(2);
 });
 
+test('plume : une commande pendant le tracé (opacité au clavier) ne double pas la courbe', async ({
+  page,
+}) => {
+  await page.keyboard.press('p');
+  await click(page, 200, 200);
+  await click(page, 400, 200);
+  // La touche 5 valide le geste en cours : la suite du tracé doit reprendre la même courbe.
+  await page.keyboard.press('5');
+  await click(page, 400, 400);
+  await page.keyboard.press('Enter');
+  const list = await nodes(page);
+  expect(list).toHaveLength(1);
+  expect(list[0].opacity).toBeCloseTo(0.5);
+  expect(list[0].d.match(/L/g)).toHaveLength(2);
+  expect(list[0].height).toBeCloseTo(200, 0);
+  expect((await history(page)).at(-1)).toBe('history.pen');
+});
+
 test('crayon : fermeture automatique, pression du stylet et mode Sculpter', async ({ page }) => {
   await page.keyboard.press('n');
   // Un trait qui revient à son départ se ferme.
@@ -213,6 +231,18 @@ test('constructeur de formes : ajouter, soustraire et créer des zones', async (
   await page.keyboard.press('Control+a');
   await page.keyboard.press('s');
   await expect(page.getByTestId('builder-mode-add')).toHaveAttribute('aria-pressed', 'true');
+
+  // La zone survolée s'éclaire, puis s'éteint quand on change d'outil.
+  const [px, py] = await screen(page, 440, 440);
+  const pixel = async () =>
+    (await page.screenshot({ clip: { x: px, y: py, width: 1, height: 1 } })).toString('base64');
+  const plain = await pixel();
+  await page.mouse.move(px, py);
+  await expect.poll(pixel).not.toBe(plain);
+  await page.keyboard.press('v');
+  await page.mouse.move(...(await screen(page, 900, 900)));
+  await expect.poll(pixel).toBe(plain);
+  await page.keyboard.press('s');
 
   // Ajouter : la zone commune devient une forme à part.
   await click(page, 440, 440);

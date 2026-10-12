@@ -9,7 +9,7 @@ import {
 } from '@poulpe/core';
 import type { CanvasController } from '../../canvas/controller';
 import { t } from '../../i18n';
-import { editor, toast } from '../../store';
+import { editor, toast, ui } from '../../store';
 import { screenDist, traceCommands, type SubTool } from './common';
 import { pathsState } from './state';
 
@@ -143,6 +143,9 @@ export class ShapeBuilderTool implements SubTool {
 
   draw(ctx: CanvasRenderingContext2D, color: string): void {
     const g = this.drag;
+    // La zone survolée ne vaut que pour l'outil actif et le document tel qu'il était au survol.
+    if (!g && this.hover && (ui.get().tool !== 'shapeBuilder' || this.source?.doc !== editor.doc))
+      this.hover = null;
     const regions = g ? [...g.picked.values()].map((v) => v.region) : this.hover ? [this.hover] : [];
     if (!regions.length) return;
     const subtract = (g?.mode ?? this.mode(this.alt)) === 'subtract';
