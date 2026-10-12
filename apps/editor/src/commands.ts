@@ -17,6 +17,7 @@ import {
 } from './registry';
 import { exportDocument, importImage, isDesktop, openDocument, saveDocument } from './io';
 import { startPlaceImage } from './tools/frames/frameActions';
+import { duplicateWithRepeat } from './tools/move/actions';
 import { checkForUpdates } from './updater';
 import * as V from './vectorActions';
 import * as L from './layoutActions';
@@ -126,7 +127,8 @@ export const COMMANDS = {
   'edit.duplicate': {
     label: 'edit.duplicate',
     shortcut: 'Mod+J',
-    run: () => A.duplicateSelection(),
+    // Répète la transformation faite sur la copie précédente (duplication intelligente).
+    run: duplicateWithRepeat,
     enabled: hasSel,
   },
   'edit.delete': { label: 'edit.delete', shortcut: 'Delete', run: A.deleteSelection, enabled: hasSel },

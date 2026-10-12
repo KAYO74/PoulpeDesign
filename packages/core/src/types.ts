@@ -475,6 +475,11 @@ export interface GroupNode extends NodeBase {
   picture?: PictureFrame;
   /** Tableau : les enfants sont ses cellules (voir `TableInfo`). */
   table?: TableInfo;
+  /**
+   * Recadrage vectoriel (avec `clip`) : le premier enfant est un rectangle invisible qui découpe
+   * le reste ; l'outil Recadrage vectoriel règle ce cadre et peut le retirer.
+   */
+  vectorCrop?: boolean;
 }
 
 /**
