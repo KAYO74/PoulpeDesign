@@ -22,6 +22,8 @@ const HINTS: Record<string, string> = {
   eyedropper: 'hint.eyedropper',
   pen: 'hint.pen',
   pencil: 'hint.pencil',
+  // Outil Recadrage de la Persona Photo (« hint.crop » est le recadrage d'une image).
+  crop: 'hint.cropTool',
 };
 
 /**

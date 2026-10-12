@@ -99,6 +99,8 @@ export function pathNodeFromWorld(cmds: PathCommand[], style: SceneNode, name: s
   node.opacity = style.opacity;
   node.blendMode = style.blendMode;
   if (style.effects) node.effects = cloneData(style.effects);
+  if (style.transparency) node.transparency = cloneData(style.transparency);
+  if (style.wrap) node.wrap = { ...style.wrap };
   return node;
 }
 

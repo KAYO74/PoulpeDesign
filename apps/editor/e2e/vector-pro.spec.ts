@@ -67,19 +67,21 @@ test('le cutter coupe une forme en deux', async ({ page }) => {
   expect(await nodes(page)).toHaveLength(1);
 });
 
-test('le constructeur de formes réunit les formes traversées', async ({ page }) => {
+test('le constructeur de formes réunit les zones traversées', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
   await page.keyboard.press('e');
   await drag([400, 350], [550, 500]);
   expect(await nodes(page)).toHaveLength(2);
+  // Comme dans Affinity, il travaille sur les formes sélectionnées.
+  await page.keyboard.press('Control+a');
   await page.getByTestId('tool-shapeBuilder').click();
   await drag([320, 320], [520, 470]);
   const list = await nodes(page);
   expect(list).toHaveLength(1);
   expect(list[0].type).toBe('path');
-  expect(await history(page)).toContain('history.unite');
+  expect(await history(page)).toContain('history.shapeBuilder');
 });
 
 test('l’outil Coin arrondit un angle', async ({ page }) => {
@@ -87,11 +89,11 @@ test('l’outil Coin arrondit un angle', async ({ page }) => {
   await page.keyboard.press('u');
   await drag([300, 300], [500, 500]);
   await page.getByTestId('tool-corner').click();
-  // Glisser depuis le coin en haut à gauche vers l'intérieur.
+  // Glisser depuis le coin en haut à gauche vers l'intérieur : le rectangle reste un rectangle.
   await drag([300, 300], [340, 300]);
   const [n] = await nodes(page);
-  expect(n.type).toBe('path');
-  expect(n.d).toMatch(/C/);
+  expect(n.type).toBe('rect');
+  expect(n.radii[0]).toBeGreaterThan(40);
   expect(await history(page)).toContain('history.corner');
 });
 
@@ -179,6 +181,8 @@ test('applique un biseau et un dégradé conique', async ({ page }) => {
 
 test('met un texte en colonnes avec des petites capitales', async ({ page }) => {
   const { drag } = await canvas(page);
+  // T puis T : outil Cadre de texte (glisser avec le Texte artistique choisit la taille de la police).
+  await page.keyboard.press('t');
   await page.keyboard.press('t');
   await drag([300, 300], [700, 500]);
   await page.keyboard.type('Le poulpe dessine en colonnes et en petites capitales sans effort du tout');

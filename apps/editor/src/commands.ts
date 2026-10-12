@@ -16,11 +16,14 @@ import {
   unregisterCommand,
 } from './registry';
 import { exportDocument, importImage, isDesktop, openDocument, saveDocument } from './io';
+import { startPlaceImage } from './tools/frames/frameActions';
+import { duplicateWithRepeat } from './tools/move/actions';
 import { checkForUpdates } from './updater';
 import * as V from './vectorActions';
 import * as L from './layoutActions';
 import * as S from './symbolActions';
-import { editor, setSettings, setTool, ui, type Persona, type ToolId } from './store';
+import * as TX from './tools/text/actions';
+import { editor, isBrushTool, setBrush, setSettings, setTool, ui, type Persona, type ToolId } from './store';
 import * as P from './photo/photoActions';
 import { clearSelection, invertSelection, selectAll, selectFromLayer } from './photo/selection';
 import { images, newPixelLayer, selectedImage } from './photo/pixels';
@@ -28,6 +31,7 @@ import { openPhoto } from './photo/persona';
 import { canCutout, removeBackground, selectSubject } from './smart/cutout';
 import { canVectorize } from './smart/vectorize';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
+import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { openPersona } from './workspaces';
 import { selectAdjacentLayer } from './layers';
@@ -123,7 +127,8 @@ export const COMMANDS = {
   'edit.duplicate': {
     label: 'edit.duplicate',
     shortcut: 'Mod+J',
-    run: () => A.duplicateSelection(),
+    // Répète la transformation faite sur la copie précédente (duplication intelligente).
+    run: duplicateWithRepeat,
     enabled: hasSel,
   },
   'edit.delete': { label: 'edit.delete', shortcut: 'Delete', run: A.deleteSelection, enabled: hasSel },
@@ -164,6 +169,13 @@ export const COMMANDS = {
     label: 'select.shrink',
     run: () => ui.set({ dialog: 'selectionModify', selectionModify: 'shrink' }),
     enabled: photoSel,
+  },
+  'select.quickMask': {
+    label: 'select.quickMask' as MessageKey,
+    shortcut: 'Q',
+    persona: 'photo',
+    run: toggleQuickMask,
+    enabled: () => ui.get().persona === 'photo',
   },
   'select.fromLayer': {
     label: 'select.fromLayer',
@@ -331,6 +343,61 @@ export const COMMANDS = {
   'text.frame': { label: 'text.frame', run: L.toggleFrame, enabled: L.canToggleFrame },
   'text.link': { label: 'text.link', run: L.linkSelection, enabled: L.canLinkSelection },
   'text.unlink': { label: 'text.unlink', run: L.unlinkSelected, enabled: L.canUnlink },
+  // Mise en forme du texte (tools/text) : aussi pendant l'édition, sur la sélection dans le texte.
+  'text.bold': {
+    label: 'text.bold' as MessageKey,
+    shortcut: 'Mod+B',
+    run: TX.toggleBold,
+    enabled: TX.canFormatText,
+  },
+  'text.italic': {
+    label: 'text.italic' as MessageKey,
+    shortcut: 'Mod+I',
+    run: TX.toggleItalic,
+    enabled: TX.canFormatText,
+  },
+  'text.underline': {
+    label: 'text.underline' as MessageKey,
+    shortcut: 'Mod+U',
+    run: TX.toggleUnderline,
+    enabled: TX.canFormatText,
+  },
+  'text.biggerFont': {
+    label: 'text.biggerFont' as MessageKey,
+    shortcut: 'Mod+Shift+>',
+    run: () => TX.stepFontSize(1),
+    enabled: TX.canFormatText,
+  },
+  'text.smallerFont': {
+    label: 'text.smallerFont' as MessageKey,
+    shortcut: 'Mod+Shift+<',
+    run: () => TX.stepFontSize(-1),
+    enabled: TX.canFormatText,
+  },
+  'text.alignLeft': {
+    label: 'text.alignLeft' as MessageKey,
+    shortcut: 'Mod+Alt+L',
+    run: () => TX.setAlign('left'),
+    enabled: TX.canFormatText,
+  },
+  'text.alignCenter': {
+    label: 'text.alignCenter' as MessageKey,
+    shortcut: 'Mod+Alt+C',
+    run: () => TX.setAlign('center'),
+    enabled: TX.canFormatText,
+  },
+  'text.alignRight': {
+    label: 'text.alignRight' as MessageKey,
+    shortcut: 'Mod+Alt+R',
+    run: () => TX.setAlign('right'),
+    enabled: TX.canFormatText,
+  },
+  'text.justify': {
+    label: 'text.justify' as MessageKey,
+    shortcut: 'Mod+Alt+J',
+    run: () => TX.setAlign('justify'),
+    enabled: TX.canFormatText,
+  },
 
   'arrange.front': {
     label: 'arrange.front',
@@ -537,51 +604,170 @@ export function runCommand(id: string): unknown {
   return result;
 }
 
-/** Raccourcis des outils de la Persona Photo. */
-export const PHOTO_TOOL_KEYS: Record<string, ToolId> = {
-  v: 'select',
-  m: 'marqueeRect',
-  l: 'lasso',
-  w: 'magicWand',
-  b: 'brush',
-  e: 'eraser',
-  g: 'fill',
-  j: 'magicEraser',
-  y: 'heal',
-  s: 'clone',
-  p: 'polyLasso',
-  q: 'quickSelect',
-  u: 'smudge',
-  k: 'liquify',
-  o: 'dodge',
-  r: 'blurBrush',
-  t: 'text',
-  i: 'eyedropper',
-  h: 'hand',
-  z: 'zoom',
+/*
+ * Raccourcis d'outils, sans modificateur, ceux d'Affinity (Designer, Publisher et Photo). Une
+ * touche partagée par plusieurs outils passe de l'un à l'autre à chaque appui, comme dans Affinity.
+ */
+
+/** Persona Dessin (Affinity Designer). */
+export const TOOL_KEYS: Record<string, ToolId[]> = {
+  v: ['select'],
+  a: ['direct'],
+  c: ['corner'],
+  p: ['pen'],
+  n: ['pencil'],
+  b: ['vectorBrush'],
+  k: ['knife'],
+  u: ['rect', 'roundRect', 'ellipse'],
+  e: ['ellipse'],
+  l: ['line'],
+  s: ['shapeBuilder'],
+  o: ['contour'],
+  w: ['strokeWidth'],
+  g: ['gradient'],
+  y: ['transparency'],
+  r: ['vectorFill'],
+  t: ['text', 'frameText'],
+  i: ['eyedropper', 'stylePicker'],
+  h: ['hand'],
+  z: ['zoom'],
 };
 
-/** Raccourcis d'outils, sans modificateur, ceux d'Affinity Designer. */
-export const TOOL_KEYS: Record<string, ToolId> = {
-  v: 'select',
-  a: 'direct',
-  c: 'corner',
-  p: 'pen',
-  n: 'pencil',
-  k: 'knife',
-  u: 'rect',
-  e: 'ellipse',
-  l: 'line',
-  s: 'shapeBuilder',
-  o: 'contour',
-  w: 'strokeWidth',
-  g: 'gradient',
-  y: 'transparency',
-  t: 'text',
-  i: 'eyedropper',
-  h: 'hand',
-  z: 'zoom',
+/** Persona Mise en page (Affinity Publisher). */
+export const LAYOUT_TOOL_KEYS: Record<string, ToolId[]> = {
+  v: ['select'],
+  a: ['direct'],
+  t: ['frameText', 'text', 'table'],
+  f: ['pictureFrameRect', 'pictureFrameEllipse'],
+  p: ['pen'],
+  u: ['rect', 'roundRect', 'ellipse'],
+  e: ['ellipse'],
+  l: ['line'],
+  g: ['gradient'],
+  y: ['transparency'],
+  i: ['eyedropper', 'stylePicker'],
+  h: ['hand'],
+  z: ['zoom'],
 };
+
+/** Persona Photo (Affinity Photo). */
+export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
+  v: ['select'],
+  c: ['crop', 'straighten'],
+  m: ['marqueeRect', 'marqueeEllipse'],
+  l: ['lasso'],
+  w: ['quickSelect', 'magicWand'],
+  b: ['brush'],
+  r: ['colorReplace'],
+  e: ['eraser', 'backgroundEraser', 'floodEraser'],
+  g: ['fill', 'pixelGradient'],
+  j: ['magicEraser', 'heal', 'patch', 'blemish', 'redEye'],
+  k: ['clone'],
+  s: ['smudge'],
+  o: ['dodge', 'burn', 'sponge'],
+  t: ['text', 'frameText'],
+  i: ['eyedropper'],
+  h: ['hand'],
+  z: ['zoom'],
+};
+
+export function toolKeysFor(persona: Persona): Record<string, ToolId[]> {
+  return persona === 'photo' ? PHOTO_TOOL_KEYS : persona === 'layout' ? LAYOUT_TOOL_KEYS : TOOL_KEYS;
+}
+
+/** Touche d'un outil dans une Persona (affichée dans les bulles d'aide), ou undefined. */
+export function toolKeyOf(id: ToolId, persona: Persona): string | undefined {
+  const hit = Object.entries(toolKeysFor(persona)).find(([, tools]) => tools.includes(id));
+  return hit?.[0].toUpperCase();
+}
+
+/** Outil choisi par une touche : le suivant de la famille si l'outil actif en fait déjà partie. */
+function toolForKey(tools: ToolId[], current: ToolId): ToolId {
+  const i = tools.indexOf(current);
+  return i >= 0 ? tools[(i + 1) % tools.length] : tools[0];
+}
+
+/**
+ * Touche d'outil maintenue : si l'on se sert de l'outil sur le canevas pendant qu'elle est
+ * enfoncée, on revient à l'outil précédent en la lâchant (outil temporaire, comme dans Affinity).
+ * Lâchée pendant un geste, l'outil précédent revient à la fin du geste (`released`). Main et Zoom
+ * maintenus ne changent que la vue (`view`, comme Espace) : l'outil en cours garde son travail
+ * (contour magnétique, tracé, pièce, aperçu du recadrage).
+ */
+let held: {
+  key: string;
+  prev: ToolId;
+  used: boolean;
+  released: boolean;
+  view: 'hand' | 'zoom' | null;
+} | null = null;
+
+function restoreHeld(): void {
+  if (!held?.released || getController()?.busy()) return;
+  const { prev } = held;
+  held = null;
+  setTool(prev);
+}
+
+function dropHeldView(): void {
+  if (!held?.view) return;
+  held = null;
+  getController()?.setHeldView(null);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (held && e.target === getController()?.canvas) held.used = true;
+    },
+    true,
+  );
+  // Fin du geste en cours (dessiné juste après) : l'outil lâché pendant le geste revient.
+  window.addEventListener('poulpe:drawn', restoreHeld);
+  window.addEventListener('blur', dropHeldView);
+}
+
+export function handleKeyUp(e: KeyboardEvent): void {
+  if (!held || held.released || e.key.toLowerCase() !== held.key) return;
+  const h = held;
+  if (h.view) {
+    dropHeldView();
+    // Simple appui : l'outil Main ou Zoom reste choisi.
+    if (!h.used) setTool(h.view);
+    return;
+  }
+  if (!h.used) {
+    held = null;
+    return;
+  }
+  h.released = true;
+  restoreHeld();
+}
+
+/**
+ * Touches 1 à 0 : opacité de la sélection (ou du pinceau en Persona Photo), 1 = 10 %, 0 = 100 %.
+ * Deux chiffres tapés vite donnent une valeur précise (4 puis 5 = 45 %), comme dans Affinity.
+ */
+let lastDigit: { digit: string; at: number } | null = null;
+function opacityKey(e: KeyboardEvent): boolean {
+  if (e.shiftKey || !/^(Digit|Numpad)\d$/.test(e.code)) return false;
+  // Touche maintenue : la répétition ne combine pas deux chiffres et n'ajoute pas d'étapes.
+  if (e.repeat) return true;
+  const d = e.code.slice(-1);
+  const now = performance.now();
+  const quick = lastDigit && now - lastDigit.at < 600;
+  const value = quick ? Number(lastDigit!.digit + d) : d === '0' ? 100 : Number(d) * 10;
+  lastDigit = quick ? null : { digit: d, at: now };
+  const tool = ui.get().tool;
+  if (ui.get().persona === 'photo' && isBrushTool(tool)) {
+    setBrush({ opacity: value });
+    return true;
+  }
+  if (!editor.selection.length) return false;
+  A.updateSelected('history.style', (n) => void (n.opacity = value / 100));
+  return true;
+}
 
 export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -595,7 +781,7 @@ export function formatShortcut(s: string): string {
     .replace(/(Ctrl|Maj|Alt)(?=[^+])/g, '$1+');
 }
 
-function matches(e: KeyboardEvent, shortcut: string): boolean {
+export function matches(e: KeyboardEvent, shortcut: string): boolean {
   const parts = shortcut.split('+');
   const key = parts.pop()!;
   const mod = parts.includes('Mod');
@@ -614,7 +800,9 @@ function matches(e: KeyboardEvent, shortcut: string): boolean {
     (key === '0' && (e.code === 'Digit0' || e.code === 'Numpad0')) ||
     (key === '1' && (e.code === 'Digit1' || e.code === 'Numpad1')) ||
     (key === 'Enter' && e.key === 'Enter');
-  if (shift !== e.shiftKey && !(key === '=' && e.key === '+')) return false;
+  // `<` et `>` : touche distincte ou ponctuation avec Maj selon le clavier, Maj n'est pas exigée.
+  if (shift !== e.shiftKey && !(key === '=' && e.key === '+') && !('<>'.includes(key) && e.key === key))
+    return false;
   return codeMatch || k.toLowerCase() === key.toLowerCase();
 }
 
@@ -627,6 +815,10 @@ export function handleKeyDown(e: KeyboardEvent): void {
     // Le focus a quitté le texte édité (clic dans un panneau) : la touche termine l'édition.
     endTextEdit();
     if (e.key === 'Escape') return;
+  }
+  if (!e.ctrlKey && !e.metaKey && getController()?.moduleKey(e)) {
+    e.preventDefault();
+    return;
   }
   if (!e.ctrlKey && !e.metaKey && getController()?.paths.key(e)) {
     e.preventDefault();
@@ -686,10 +878,24 @@ export function handleKeyDown(e: KeyboardEvent): void {
     beginTextEdit(editor.selection[0], false);
     return;
   }
-  const tool = (persona === 'photo' ? PHOTO_TOOL_KEYS : TOOL_KEYS)[e.key.toLowerCase()];
-  if (tool && !e.shiftKey) {
+  if (opacityKey(e)) {
     e.preventDefault();
-    if (tool === 'image') void importImage();
+    return;
+  }
+  const key = e.key.toLowerCase();
+  const tools = toolKeysFor(persona)[key];
+  if (tools && !e.shiftKey) {
+    e.preventDefault();
+    if (e.repeat) return;
+    const current = ui.get().tool;
+    const tool = toolForKey(tools, current);
+    dropHeldView();
+    held = tools.includes(current) ? null : { key, prev: current, used: false, released: false, view: null };
+    const c = getController();
+    if (held && c && (tool === 'hand' || tool === 'zoom')) {
+      held.view = tool;
+      c.setHeldView(tool);
+    } else if (tool === 'image') void startPlaceImage();
     else setTool(tool);
   }
 }

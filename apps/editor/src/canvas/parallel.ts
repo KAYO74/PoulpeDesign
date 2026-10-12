@@ -204,7 +204,15 @@ export class WorkerPainter implements ParallelPainter {
 
 function paintsOf(n: SceneNode): ({ type?: string; assetId?: string } | undefined)[] {
   const any = n as { fill?: unknown; stroke?: { paint?: unknown }; strokes?: { paint?: unknown }[] };
-  return [any.fill, any.stroke?.paint, ...(any.strokes ?? []).map((s) => s.paint)] as {
+  // Cadre de texte en forme : son fond et son contour aussi.
+  const shape = n.type === 'text' ? n.frameShape : undefined;
+  return [
+    any.fill,
+    any.stroke?.paint,
+    ...(any.strokes ?? []).map((s) => s.paint),
+    shape?.fill,
+    shape?.stroke?.paint,
+  ] as {
     type?: string;
     assetId?: string;
   }[];

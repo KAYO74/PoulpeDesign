@@ -1,5 +1,7 @@
 import {
+  Stabilizer,
   applyAdjustment,
+  dodgeBurnPixels,
   findNode,
   floodMask,
   gaussianBlurred,
@@ -7,15 +9,18 @@ import {
   liquifyDab,
   luma,
   parseColor,
+  similarDab,
   warpPerspective,
   type ImageNode,
   type Pixels,
   type SceneNode,
   type Vec,
 } from '@poulpe/core';
-import { setLiveBitmap } from '@poulpe/render';
+import { compositeOp, setLiveBitmap } from '@poulpe/render';
 import type { CanvasController } from '../canvas/controller';
 import { t } from '../i18n';
+import { compositeIn, nodesAboveOf } from '../tools/brushes/sample';
+import { brushOptions } from '../tools/brushes/state';
 import {
   brushSettings,
   editor,
@@ -78,12 +83,51 @@ const CREATES_LAYER: ToolId[] = ['brush', 'fill'];
 const SOURCE_TOOLS: ToolId[] = ['clone', 'heal', 'dodge', 'burn', 'blurBrush', 'sharpenBrush'];
 /** Outils qui déplacent les pixels du calque eux-mêmes, touche après touche. */
 const WARP_TOOLS: ToolId[] = ['smudge', 'liquify'];
+/** Outils de la version 1.2 sans pinceau (voir tools/pixel), qui gèrent eux-mêmes leurs gestes. */
+const PIXEL_V12_TOOLS: ToolId[] = ['crop', 'pixelGradient', 'floodEraser', 'patch'];
 
 export function isPhotoTool(tool: ToolId): boolean {
-  return SELECT_TOOLS.includes(tool) || isBrushTool(tool) || tool === 'fill' || GEOMETRY_TOOLS.includes(tool);
+  return (
+    SELECT_TOOLS.includes(tool) ||
+    isBrushTool(tool) ||
+    tool === 'fill' ||
+    GEOMETRY_TOOLS.includes(tool) ||
+    PIXEL_V12_TOOLS.includes(tool)
+  );
 }
 
-interface Rect {
+/** Retouche au pinceau ajoutée par un outil de la version 1.2 (voir tools/pixel). */
+export interface BrushExtension {
+  /** Libellé de l'historique. */
+  history: string;
+  /** Pixels déposés à la place de ceux du calque, transformés tuile par tuile (lu au début du geste). */
+  source?: () => (px: Pixels, x0: number, y0: number) => void;
+  /** Le pinceau efface (comme la gomme). */
+  erase?: boolean;
+  /** La touche ne couvre que les pixels proches de la couleur prélevée sous le centre du pinceau. */
+  similar?: () => { tolerance: number; continuous: boolean; contiguous: boolean };
+}
+
+/** Cible d'un coup de pinceau hors calque : le masque rapide peint dans la sélection. */
+export interface StrokeRedirect {
+  /** Toile de départ (l'opacité est la valeur peinte) et passage du document à ses pixels. */
+  base: HTMLCanvasElement;
+  toPx: DOMMatrix;
+  /** Aperçu pendant le geste (null à la fin), avec la zone qui vient de changer. */
+  live(canvas: HTMLCanvasElement | null, dirty?: Rect): void;
+  commit(canvas: HTMLCanvasElement): void;
+}
+
+/** Points d'entrée des outils de la version 1.2 dans les pinceaux de la Persona Photo. */
+export const photoHooks: {
+  brushes: Partial<Record<ToolId, BrushExtension>>;
+  /** Le pinceau ou la gomme peint ailleurs que dans un calque (masque rapide). */
+  redirect: ((tool: ToolId) => StrokeRedirect | null) | null;
+  /** Les fourmis de la sélection sont cachées (masque rapide). */
+  hideAnts: () => boolean;
+} = { brushes: {}, redirect: null, hideAnts: () => false };
+
+export interface Rect {
   x0: number;
   y0: number;
   x1: number;
@@ -167,6 +211,18 @@ interface Stroke {
   pickup: HTMLCanvasElement | null;
   /** Fluidité : position de la touche précédente (le geste pousse de l'une à l'autre). */
   prevDab: Vec | null;
+  /** Le pinceau efface (gomme, gomme d'arrière-plan). */
+  erase: boolean;
+  /** Masque rapide : le geste peint dans la sélection. */
+  redirect: StrokeRedirect | null;
+  /** Couverture limitée aux pixels proches de la couleur prélevée dans `ref`. */
+  similar: { tolerance: number; continuous: boolean; contiguous: boolean } | null;
+  ref: HTMLCanvasElement;
+  sample: { r: number; g: number; b: number; a: number } | null;
+  /** Stabilisateur du tracé (positions du document), s'il est activé. */
+  stab?: Stabilizer | null;
+  /** Correcteur dont la source est faite des calques du dessous : il peint aussi hors des pixels existants. */
+  sourceOver?: boolean;
 }
 
 function luminance(color: string): number {
@@ -196,7 +252,15 @@ function makeStamp(radius: number, hardness: number, color: string): HTMLCanvasE
 
 export class PhotoTools {
   private stroke: Stroke | null = null;
-  private marquee: { start: Vec; current: Vec; mode: SelectionMode; shape: 'rect' | 'ellipse' } | null = null;
+  /** `origin` : point de départ du glisser ; Alt enfoncé au départ retire de la sélection (sinon : depuis le centre). */
+  private marquee: {
+    start: Vec;
+    current: Vec;
+    mode: SelectionMode;
+    shape: 'rect' | 'ellipse';
+    origin: Vec;
+    altAtStart: boolean;
+  } | null = null;
   private lasso: { points: Vec[]; mode: SelectionMode } | null = null;
   /** Lasso polygonal : sommets posés un par un ; `hover` suit le pointeur. */
   private poly: { points: Vec[]; mode: SelectionMode; hover: Vec; lastClick: number } | null = null;
@@ -208,20 +272,44 @@ export class PhotoTools {
   private cloneSource: Vec | null = null;
   /** Décalage du tampon (source − destination, en pixels du document), gardé d'un coup à l'autre. */
   private cloneOffset: Vec | null = null;
+  /** Dernier point du coup de pinceau précédent (document) : Maj + clic trace un trait droit depuis lui. */
+  private lastStrokePoint: { nodeId: string; p: Vec } | null = null;
   private timer: ReturnType<typeof setInterval> | undefined;
   private unsub: () => void;
+  private unsubOptions: () => void;
   private tmp = makeCanvas(64, 64);
   private tmp2 = makeCanvas(64, 64);
 
   constructor(private readonly c: CanvasController) {
     // Les fourmis de la sélection bougent : on redessine régulièrement tant qu'il y en a.
     this.unsub = ui.subscribe(() => this.updateTimer());
+    // Un autre mode du lasso abandonne le polygone en cours (sinon il garderait le pointeur).
+    this.unsubOptions = brushOptions.subscribe(() => {
+      if (!this.poly || brushOptions.get().lassoMode === 'polygonal') return;
+      this.poly = null;
+      this.updateTimer();
+      this.c.requestDraw();
+    });
+    // Un autre outil (ou une autre Persona) abandonne la sélection en cours de tracé : sinon le
+    // polygone garderait le pointeur et l'outil temporaire ne reviendrait plus.
+    window.addEventListener('poulpe:toolchange', this.dropSelection);
   }
 
   dispose(): void {
     this.unsub();
+    this.unsubOptions();
+    window.removeEventListener('poulpe:toolchange', this.dropSelection);
     clearInterval(this.timer);
   }
+
+  private dropSelection = () => {
+    if (!this.poly && !this.lasso && !this.marquee) return;
+    this.poly = null;
+    this.lasso = null;
+    this.marquee = null;
+    this.updateTimer();
+    this.c.requestDraw();
+  };
 
   private updateTimer() {
     const need = ui.get().hasPixelSelection || !!this.lasso || !!this.poly || !!ui.get().busy;
@@ -257,10 +345,12 @@ export class PhotoTools {
         current: p,
         mode: this.mode(e),
         shape: tool === 'marqueeRect' ? 'rect' : 'ellipse',
+        origin: p,
+        altAtStart: e.altKey,
       };
       return true;
     }
-    if (tool === 'lasso') {
+    if (tool === 'lasso' && brushOptions.get().lassoMode !== 'polygonal') {
       this.lasso = { points: [p], mode: this.mode(e) };
       this.updateTimer();
       return true;
@@ -269,7 +359,8 @@ export class PhotoTools {
       selectSimilar(p, images(), this.mode(e));
       return true;
     }
-    if (tool === 'polyLasso') {
+    // Lasso en mode polygonal (et l'ancien outil Lasso polygonal).
+    if (tool === 'polyLasso' || tool === 'lasso') {
       this.polyClick(p, e);
       return true;
     }
@@ -300,6 +391,7 @@ export class PhotoTools {
       this.fillAt(p);
       return true;
     }
+    if (!isBrushTool(tool)) return true;
     this.beginStroke(tool, p, e);
     return true;
   }
@@ -313,16 +405,19 @@ export class PhotoTools {
       if (isBrushTool(tool)) this.c.requestDraw();
     }
     if (this.marquee) {
-      let cur = p;
-      if (e.shiftKey && this.marquee.mode !== 'add') {
+      const m = this.marquee;
+      let dx = p.x - m.origin.x,
+        dy = p.y - m.origin.y;
+      if (e.shiftKey && m.mode !== 'add') {
         // Maj pendant le tracé : carré ou cercle.
-        const d = Math.max(Math.abs(p.x - this.marquee.start.x), Math.abs(p.y - this.marquee.start.y));
-        cur = {
-          x: this.marquee.start.x + Math.sign(p.x - this.marquee.start.x || 1) * d,
-          y: this.marquee.start.y + Math.sign(p.y - this.marquee.start.y || 1) * d,
-        };
+        const d = Math.max(Math.abs(dx), Math.abs(dy));
+        dx = Math.sign(dx || 1) * d;
+        dy = Math.sign(dy || 1) * d;
       }
-      this.marquee.current = cur;
+      // Depuis le centre : option de la barre, ou Alt enfoncé pendant le tracé.
+      const center = brushOptions.get().fromCenter || (e.altKey && !m.altAtStart);
+      m.start = center ? { x: m.origin.x - dx, y: m.origin.y - dy } : m.origin;
+      m.current = { x: m.origin.x + dx, y: m.origin.y + dy };
       this.c.requestDraw();
       return true;
     }
@@ -374,7 +469,12 @@ export class PhotoTools {
             pen: ev.pointerType === 'pen',
           }))
         : [{ p, pressure: e.pressure, pen: e.pointerType === 'pen' }];
-      for (const q of pts) this.strokeTo(q.p, q.pen ? q.pressure : 1);
+      const stab = this.stroke.stab;
+      for (const q of pts) {
+        const pressure = q.pen ? q.pressure : 1;
+        if (!stab) this.strokeTo(q.p, pressure);
+        else for (const r of stab.push({ ...q.p, pressure })) this.strokeTo(r, r.pressure);
+      }
       this.recompose();
       return true;
     }
@@ -402,7 +502,7 @@ export class PhotoTools {
     if (this.marquee) {
       const m = this.marquee;
       this.marquee = null;
-      selectShape(m.shape, [m.start, m.current], m.mode);
+      selectShape(m.shape, [m.start, m.current], m.mode, brushOptions.get().antialias);
       this.c.requestDraw();
       return true;
     }
@@ -416,6 +516,10 @@ export class PhotoTools {
       return true;
     }
     if (this.stroke && !this.stroke.pending) {
+      // La fenêtre du stabilisateur rattrape le pointeur.
+      const rest = this.stroke.stab?.finish() ?? [];
+      for (const r of rest) this.strokeTo(r, r.pressure);
+      if (rest.length) this.recompose();
       void this.endStroke();
       return true;
     }
@@ -425,15 +529,17 @@ export class PhotoTools {
   pointerCancel(): void {
     this.marquee = null;
     this.lasso = null;
+    this.poly = null;
     this.straight = null;
     if (this.quick) {
       this.quick.session.end();
       this.quick = null;
     }
     if (this.stroke && !this.stroke.pending) {
-      setLiveBitmap(this.stroke.assetId, null);
+      this.showLive(this.stroke, null);
       this.stroke = null;
     }
+    this.updateTimer();
     this.c.requestDraw();
   }
 
@@ -709,10 +815,15 @@ export class PhotoTools {
   // ————— Pinceaux —————
 
   private beginStroke(tool: ToolId, p: Vec, e: PointerEvent) {
-    const target = this.target(tool, p);
+    const ext = photoHooks.brushes[tool];
+    // Masque rapide : le pinceau et la gomme peignent dans la sélection.
+    const redirect = photoHooks.redirect?.(tool) ?? null;
+    const target = redirect ? { node: null, which: 'mask' as const } : this.target(tool, p);
     if (!target) return;
     const { node, which } = target;
-    const px = this.targetPixels(node, which);
+    const px = redirect
+      ? { base: redirect.base, toPx: redirect.toPx, assetId: '' }
+      : this.targetPixels(node!, which);
     if (!px) return;
     const settings = brushSettings(tool);
     const { base, toPx, assetId } = px;
@@ -721,47 +832,56 @@ export class PhotoTools {
       h = base.height;
     const work = copyDrawable(base);
     const buf = makeCanvas(w, h);
-    const sel = selectionIn(w, h, toPx);
+    const sel = redirect ? null : selectionIn(w, h, toPx);
     const color = ui.get().brushColor;
-    const maskValue = tool === 'eraser' ? 0 : luminance(color);
+    const erase = tool === 'eraser' || !!ext?.erase;
+    const maskValue = erase ? 0 : luminance(color);
     const radius = (settings.size / 2) * pxScale;
     const stampColor = which === 'pixels' && tool === 'brush' ? color : '#ffffff';
     const stamp = makeStamp(radius, tool === 'magicEraser' ? 100 : settings.hardness, stampColor);
 
     let source: Stroke['source'] = null;
-    if (which === 'pixels' && SOURCE_TOOLS.includes(tool)) {
+    let sourceOver = false;
+    if (which === 'pixels' && ext?.source) source = new LazySource(base, ext.source(), 0);
+    else if (which === 'pixels' && SOURCE_TOOLS.includes(tool)) {
       if (tool === 'clone' || tool === 'heal') {
         if (!this.cloneSource) {
           toast(t('photo.cloneNeedSource'));
           return;
         }
-        if (!this.cloneOffset)
+        const o = brushOptions.get();
+        // Aligné : le décalage est gardé d'un coup à l'autre ; sinon chaque coup repart de la source.
+        if (!this.cloneOffset || !o.aligned)
           this.cloneOffset = { x: this.cloneSource.x - p.x, y: this.cloneSource.y - p.y };
-        const a = toPx.transformPoint(new DOMPoint(p.x, p.y));
-        const b = toPx.transformPoint(new DOMPoint(p.x + this.cloneOffset.x, p.y + this.cloneOffset.y));
+        // Pixels recopiés : ceux du calque, ou ce qui est visible sous lui (avec ou sans lui).
+        const below = o.cloneSource !== 'layer';
+        const from = below
+          ? compositeIn(node, w, h, toPx, nodesAboveOf(node.id, o.cloneSource === 'layerBelow'))
+          : base;
         const s = makeCanvas(w, h);
-        s.getContext('2d')!.drawImage(base, a.x - b.x, a.y - b.y);
+        const sc = s.getContext('2d')!;
+        sc.setTransform(this.cloneMatrix(toPx, tool === 'clone'));
+        sc.drawImage(from, 0, 0);
         source = s;
         if (tool === 'heal') {
           // Correcteur : la texture de la source prend la lumière et les couleurs de la destination.
           const sigma = Math.max(2, (settings.size / 2) * pxScale * 0.5);
           const sctx = s.getContext('2d', { willReadFrequently: true })!;
           source = new LazySource(
-            base,
+            from,
             (q, x0, y0) => {
               const src = sctx.getImageData(x0, y0, q.width, q.height);
               q.data.set(healBlend(q, { data: src.data, width: q.width, height: q.height }, sigma));
             },
             sigma * 3,
           );
+          sourceOver = below;
         }
       } else if (tool === 'dodge' || tool === 'burn') {
-        const ev = tool === 'dodge' ? 0.7 : -0.7;
-        source = new LazySource(
-          base,
-          (q) => applyAdjustment(q, { kind: 'exposure', exposure: ev, offset: 0, gamma: 1 }),
-          0,
-        );
+        // Plage de tons (ombres, tons moyens, hautes lumières) et protection de la teinte.
+        const { toneRange, protectHue } = brushOptions.get();
+        const amount = tool === 'dodge' ? 1 : -1;
+        source = new LazySource(base, (q) => dodgeBurnPixels(q, amount, toneRange, protectHue), 0);
       } else if (tool === 'blurBrush') {
         const sigma = 3 * pxScale;
         source = new LazySource(base, (q) => q.data.set(gaussianBlurred(q, sigma)), sigma * 3);
@@ -781,10 +901,28 @@ export class PhotoTools {
       // Sur un masque, ces outils n'ont pas de sens : on peint simplement.
     }
 
-    const start = toPx.transformPoint(new DOMPoint(p.x, p.y));
+    const similar = ext?.similar && !redirect && (which === 'pixels' || erase) ? ext.similar() : null;
+    // Sur un masque, la couleur est prélevée dans les pixels du calque.
+    const ref =
+      similar && which === 'mask' && node?.type === 'image'
+        ? (this.pixelsInMask(node, w, h, toPx) ?? base)
+        : base;
+    // Maj + clic : trait droit depuis la fin du coup précédent sur le même calque.
+    const prev =
+      e.shiftKey && this.lastStrokePoint?.nodeId === (node?.id ?? '') ? this.lastStrokePoint.p : null;
+    const first = prev ?? p;
+    const start = toPx.transformPoint(new DOMPoint(first.x, first.y));
+    // Stabilisateur : la longueur de la corde est en pixels d'écran.
+    const opts = brushOptions.get();
+    const stab = opts.stabilizer
+      ? new Stabilizer(
+          opts.stabilizerMode,
+          opts.stabilizerMode === 'rope' ? opts.ropeLength / ui.get().view.zoom : opts.windowSize,
+        )
+      : null;
     this.stroke = {
       tool,
-      nodeId: node.id,
+      nodeId: node?.id ?? '',
       which,
       assetId,
       toPx,
@@ -803,10 +941,57 @@ export class PhotoTools {
       pending: false,
       pickup: null,
       prevDab: null,
+      erase,
+      redirect,
+      similar,
+      ref,
+      sample: null,
+      stab,
+      sourceOver,
     };
-    if (tool !== 'magicEraser') setLiveBitmap(assetId, work);
-    this.dab(start.x, start.y, e.pointerType === 'pen' ? e.pressure : 1);
+    if (tool !== 'magicEraser') this.showLive(this.stroke, work);
+    const pressure = e.pointerType === 'pen' ? e.pressure : 1;
+    this.dab(start.x, start.y, pressure);
+    if (prev) this.strokeTo(p, pressure);
+    stab?.start({ ...p, pressure });
     this.recompose();
+  }
+
+  /**
+   * Tampon et correcteur : passe des pixels de la source à ceux de la destination (pixels du
+   * calque). Le point source choisi correspond au point de destination du décalage ; le tampon
+   * peut tourner et mettre à l'échelle ce qu'il recopie autour de ce point.
+   */
+  private cloneMatrix(toPx: DOMMatrix, transform: boolean): DOMMatrix {
+    const src = this.cloneSource!,
+      off = this.cloneOffset!;
+    const { cloneRotation, cloneScale } = brushOptions.get();
+    const k = transform ? Math.max(0.01, cloneScale / 100) : 1;
+    return toPx
+      .multiply(
+        new DOMMatrix()
+          .translate(src.x - off.x, src.y - off.y)
+          .rotate(transform ? cloneRotation : 0)
+          .scale(k)
+          .translate(-src.x, -src.y),
+      )
+      .multiply(toPx.inverse());
+  }
+
+  /** Point source du tampon qui correspond à un point de destination (document). */
+  private cloneSourceAt(d: Vec): Vec {
+    const src = this.cloneSource!,
+      off = this.cloneOffset!;
+    if (ui.get().tool !== 'clone') return { x: d.x + off.x, y: d.y + off.y };
+    const { cloneRotation, cloneScale } = brushOptions.get();
+    const m = new DOMMatrix()
+      .translate(src.x - off.x, src.y - off.y)
+      .rotate(cloneRotation)
+      .scale(Math.max(0.01, cloneScale / 100))
+      .translate(-src.x, -src.y)
+      .inverse();
+    const q = m.transformPoint(new DOMPoint(d.x, d.y));
+    return { x: q.x, y: q.y };
   }
 
   private dirty: Rect | null = null;
@@ -815,6 +1000,7 @@ export class PhotoTools {
     const s = this.stroke!;
     if (s.tool === 'smudge') return this.smudgeDab(x, y);
     if (s.tool === 'liquify') return this.liquifyDab(x, y);
+    if (s.similar) return this.similarDab(x, y, pressure);
     const r = (s.settings.size / 2) * s.pxScale * Math.max(0.05, pressure);
     const ctx = s.buf.getContext('2d')!;
     ctx.globalAlpha = s.tool === 'magicEraser' ? 1 : Math.max(0.01, s.settings.flow / 100);
@@ -908,6 +1094,78 @@ export class PhotoTools {
   }
 
   private altDown = false;
+
+  /** Gomme d'arrière-plan, remplacement de couleur : la touche ne couvre que les pixels proches de la couleur prélevée. */
+  private similarDab(x: number, y: number, pressure: number) {
+    const s = this.stroke!;
+    const sim = s.similar!;
+    const r = (s.settings.size / 2) * s.pxScale * Math.max(0.05, pressure);
+    const x0 = Math.max(0, Math.floor(x - r)),
+      y0 = Math.max(0, Math.floor(y - r));
+    const x1 = Math.min(s.ref.width, Math.ceil(x + r)),
+      y1 = Math.min(s.ref.height, Math.ceil(y + r));
+    if (x1 <= x0 || y1 <= y0) return;
+    const w = x1 - x0,
+      h = y1 - y0;
+    const img = s.ref.getContext('2d', { willReadFrequently: true })!.getImageData(x0, y0, w, h);
+    const d = img.data;
+    if (!s.sample || sim.continuous) {
+      // Couleur sous le centre du pinceau (moyenne de 3 × 3 pixels, moins sensible au bruit).
+      let n = 0;
+      const acc = [0, 0, 0, 0];
+      for (let yy = Math.floor(y) - 1; yy <= Math.floor(y) + 1; yy++)
+        for (let xx = Math.floor(x) - 1; xx <= Math.floor(x) + 1; xx++) {
+          if (xx < x0 || yy < y0 || xx >= x1 || yy >= y1) continue;
+          const p = ((yy - y0) * w + (xx - x0)) * 4;
+          for (let c = 0; c < 4; c++) acc[c] += d[p + c];
+          n++;
+        }
+      if (n) s.sample = { r: acc[0] / n, g: acc[1] / n, b: acc[2] / n, a: acc[3] / n };
+    }
+    if (!s.sample) return;
+    const cov = similarDab(
+      { data: d, width: w, height: h },
+      x - x0,
+      y - y0,
+      r,
+      s.settings.hardness,
+      s.sample,
+      sim.tolerance,
+      sim.contiguous,
+    );
+    const out = new ImageData(w, h);
+    for (let i = 0; i < cov.length; i++) {
+      out.data[i * 4] = out.data[i * 4 + 1] = out.data[i * 4 + 2] = 255;
+      out.data[i * 4 + 3] = cov[i];
+    }
+    const t1 = this.scratch(w, h, 1);
+    t1.getContext('2d')!.putImageData(out, 0, 0);
+    const ctx = s.buf.getContext('2d')!;
+    ctx.globalAlpha = Math.max(0.01, s.settings.flow / 100);
+    ctx.drawImage(t1, 0, 0, w, h, x0, y0, w, h);
+    const dd = this.dirty;
+    this.dirty = dd
+      ? { x0: Math.min(dd.x0, x0), y0: Math.min(dd.y0, y0), x1: Math.max(dd.x1, x1), y1: Math.max(dd.y1, y1) }
+      : { x0, y0, x1, y1 };
+  }
+
+  /** Pixels du calque redessinés dans le repère de son masque (couleur prélevée en peignant le masque). */
+  private pixelsInMask(node: ImageNode, w: number, h: number, toMask: DOMMatrix): HTMLCanvasElement | null {
+    const img = images().get(editor.doc, node.assetId);
+    if (!img) return null;
+    const src = copyDrawable(img);
+    const c = makeCanvas(w, h);
+    const ctx = c.getContext('2d', { willReadFrequently: true })!;
+    ctx.setTransform(toMask.multiply(docToPixels(node, src.width, src.height).inverse()));
+    ctx.drawImage(src, 0, 0);
+    return c;
+  }
+
+  /** Aperçu du coup de pinceau : à la place de l'image du calque, ou chez la cible redirigée. */
+  private showLive(s: Stroke, canvas: HTMLCanvasElement | null, dirty?: Rect) {
+    if (s.redirect) s.redirect.live(canvas, dirty);
+    else setLiveBitmap(s.assetId, canvas);
+  }
 
   private strokeTo(p: Vec, pressure: number) {
     const s = this.stroke!;
@@ -1006,7 +1264,7 @@ export class PhotoTools {
         wc.globalCompositeOperation = 'lighter';
         wc.drawImage(cov, 0, 0, w, h, x0, y0, w, h);
       }
-    } else if (s.tool === 'eraser') {
+    } else if (s.erase) {
       wc.globalAlpha = opacity;
       wc.globalCompositeOperation = 'destination-out';
       wc.drawImage(cov, 0, 0, w, h, x0, y0, w, h);
@@ -1022,14 +1280,37 @@ export class PhotoTools {
       tc.globalCompositeOperation = 'source-over';
       wc.globalAlpha = opacity;
       // Les retouches ne changent pas l'opacité du calque.
-      wc.globalCompositeOperation = s.tool === 'clone' ? 'source-over' : 'source-atop';
+      wc.globalCompositeOperation = s.tool === 'clone' || s.sourceOver ? 'source-over' : 'source-atop';
       wc.drawImage(t2, 0, 0, w, h, x0, y0, w, h);
+    } else if (
+      s.tool === 'brush' &&
+      (brushOptions.get().blend !== 'normal' || brushOptions.get().protectAlpha)
+    ) {
+      // Pinceau : mode de fusion, et « Protéger l'alpha » (seulement là où il y a déjà des pixels).
+      const { blend, protectAlpha } = brushOptions.get();
+      if (protectAlpha && blend !== 'normal') {
+        const t2 = this.scratch(w, h, 2);
+        const tc = t2.getContext('2d')!;
+        tc.globalCompositeOperation = 'copy';
+        tc.drawImage(s.base, x0, y0, w, h, 0, 0, w, h);
+        tc.globalCompositeOperation = compositeOp(blend);
+        tc.globalAlpha = opacity;
+        tc.drawImage(cov, 0, 0, w, h, 0, 0, w, h);
+        tc.globalAlpha = 1;
+        tc.globalCompositeOperation = 'source-over';
+        wc.globalCompositeOperation = 'source-atop';
+        wc.drawImage(t2, 0, 0, w, h, x0, y0, w, h);
+      } else {
+        wc.globalAlpha = opacity;
+        wc.globalCompositeOperation = protectAlpha ? 'source-atop' : compositeOp(blend);
+        wc.drawImage(cov, 0, 0, w, h, x0, y0, w, h);
+      }
     } else {
       wc.globalAlpha = opacity;
       wc.drawImage(cov, 0, 0, w, h, x0, y0, w, h);
     }
     wc.restore();
-    setLiveBitmap(s.assetId, s.work);
+    this.showLive(s, s.work, { x0, y0, x1, y1 });
     this.c.requestDraw();
   }
 
@@ -1046,6 +1327,13 @@ export class PhotoTools {
       return;
     }
     this.stroke = null;
+    const end = s.toPx.inverse().transformPoint(new DOMPoint(s.last.x, s.last.y));
+    this.lastStrokePoint = { nodeId: s.nodeId, p: { x: end.x, y: end.y } };
+    if (s.redirect) {
+      s.redirect.commit(s.work);
+      s.redirect.live(null);
+      return;
+    }
     const labels: Partial<Record<ToolId, string>> = {
       brush: 'history.brush',
       eraser: 'history.erase',
@@ -1062,7 +1350,9 @@ export class PhotoTools {
       s.nodeId,
       s.which,
       s.work,
-      s.which === 'mask' ? 'history.maskPaint' : (labels[s.tool] ?? 'history.brush'),
+      s.which === 'mask'
+        ? 'history.maskPaint'
+        : (labels[s.tool] ?? photoHooks.brushes[s.tool]?.history ?? 'history.brush'),
     );
     setLiveBitmap(s.assetId, null);
   }
@@ -1143,8 +1433,16 @@ export class PhotoTools {
     if (q.x < 0 || q.y < 0 || q.x >= W || q.y >= H) return;
     const ctx = base.getContext('2d', { willReadFrequently: true })!;
     const img = ctx.getImageData(0, 0, W, H);
+    // Couleurs comparées : celles du calque, ou tout ce qui est visible (option Source).
+    const { fillSource, fillBlend } = brushOptions.get();
+    const all = fillSource === 'all' && target.which === 'pixels';
+    const ref = all
+      ? compositeIn(target.node, W, H, toPx)
+          .getContext('2d', { willReadFrequently: true })!
+          .getImageData(0, 0, W, H)
+      : img;
     const mask = floodMask(
-      { data: img.data, width: W, height: H },
+      { data: ref.data, width: W, height: H },
       q.x,
       q.y,
       ui.get().tolerance,
@@ -1156,11 +1454,20 @@ export class PhotoTools {
     const col = parseColor(ui.get().brushColor);
     const d = img.data;
     const value = luminance(ui.get().brushColor) * 255;
+    // Mode de fusion : la couleur est posée par le navigateur, à travers le masque du remplissage.
+    const blended = target.which === 'pixels' && fillBlend !== 'normal' ? new ImageData(W, H) : null;
     for (let i = 0; i < mask.length; i++) {
       let k = (mask[i] / 255) * op;
       if (sd) k *= sd[i * 4 + 3] / 255;
       if (k <= 0) continue;
       const j = i * 4;
+      if (blended) {
+        blended.data[j] = col.r;
+        blended.data[j + 1] = col.g;
+        blended.data[j + 2] = col.b;
+        blended.data[j + 3] = k * 255;
+        continue;
+      }
       if (target.which === 'mask') {
         d[j + 3] = d[j + 3] + (value - d[j + 3]) * k;
         d[j] = d[j + 1] = d[j + 2] = 255;
@@ -1176,7 +1483,14 @@ export class PhotoTools {
       d[j + 3] = outA * 255;
     }
     const out = makeCanvas(W, H);
-    out.getContext('2d')!.putImageData(img, 0, 0);
+    const octx = out.getContext('2d')!;
+    octx.putImageData(img, 0, 0);
+    if (blended) {
+      const paint = makeCanvas(W, H);
+      paint.getContext('2d')!.putImageData(blended, 0, 0);
+      octx.globalCompositeOperation = compositeOp(fillBlend);
+      octx.drawImage(paint, 0, 0);
+    }
     commitBitmap(
       target.node.id,
       target.which,
@@ -1209,7 +1523,7 @@ export class PhotoTools {
       ctx.restore();
     }
     // Fourmis de la sélection.
-    const outline = selectionOutline();
+    const outline = photoHooks.hideAnts() ? null : selectionOutline();
     if (outline) {
       const offset = (Date.now() / 60) % 8;
       ctx.save();
@@ -1333,10 +1647,9 @@ export class PhotoTools {
     const tool = ui.get().tool;
     if ((tool === 'clone' || tool === 'heal') && this.cloneSource && ui.get().persona === 'photo') {
       let src = this.cloneSource;
-      if (this.cloneOffset && this.pointer) {
-        const w = this.c.toWorld(this.pointer.x, this.pointer.y);
-        src = { x: w.x + this.cloneOffset.x, y: w.y + this.cloneOffset.y };
-      }
+      // Non aligné : le prochain coup repartira du point source.
+      if (this.cloneOffset && this.pointer && (brushOptions.get().aligned || this.stroke))
+        src = this.cloneSourceAt(this.c.toWorld(this.pointer.x, this.pointer.y));
       const q = toScreen(src);
       ctx.save();
       ctx.strokeStyle = '#ffffff';
@@ -1346,6 +1659,19 @@ export class PhotoTools {
       ctx.lineTo(q.x + 8, q.y);
       ctx.moveTo(q.x, q.y - 8);
       ctx.lineTo(q.x, q.y + 8);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Stabilisateur en mode corde : la corde tendue entre le pinceau et le pointeur.
+    if (this.pointer && s?.stab?.mode === 'rope') {
+      const b0 = s.toPx.inverse().transformPoint(new DOMPoint(s.last.x, s.last.y));
+      const b = toScreen({ x: b0.x, y: b0.y });
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(this.pointer.x, this.pointer.y);
       ctx.stroke();
       ctx.restore();
     }

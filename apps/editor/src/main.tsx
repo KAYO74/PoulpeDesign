@@ -16,6 +16,9 @@ import * as photo from './photo/photoActions';
 import * as pixelSelection from './photo/selection';
 import * as retouch from './photo/retouchActions';
 import { normalizeTexts } from './normalize';
+import { normalizeTables } from './tools/frames/tableActions';
+import * as frames from './tools/frames/actions';
+import * as textFlow from './tools/textFlow/actions';
 import * as prefs from './preferences';
 import { artboardToSvg } from '@poulpe/core';
 import { getPerformanceSettings, renderStats, setPerformanceSettings } from './perf';
@@ -25,7 +28,11 @@ import './styles.css';
 document.documentElement.lang = getLang();
 
 // La taille des textes dépend des polices : elle est recalculée après chaque modification.
-editor.setNormalizer(normalizeTexts);
+// Les lignes des tableaux suivent ensuite la hauteur de leur texte.
+editor.setNormalizer((d) => {
+  normalizeTexts(d);
+  normalizeTables(d);
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -62,6 +69,8 @@ if (isDesktop()) {
   vector,
   symbols,
   layout,
+  frames,
+  textFlow,
   core: { artboardToSvg },
   controller: getController,
   perf: { setPerformanceSettings, getPerformanceSettings, renderStats },

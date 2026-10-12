@@ -9,12 +9,14 @@ import {
   pxToPt,
   activeEffects,
   artboardToSvg,
+  contourReach,
   bytesToDataUrl,
   effectMargin,
   nodeBounds,
   type SceneNode,
   createDocument,
   type Artboard,
+  type TextFlow,
   type PoulpeDocument,
 } from '@poulpe/core';
 import {
@@ -23,6 +25,7 @@ import {
   drawNode,
   materialize,
   measureText,
+  paintBounds,
   rasterizeArtboard,
 } from '@poulpe/render';
 import { placeImage } from './actions';
@@ -423,12 +426,14 @@ async function rasterizedParts(
   const visit = async (n: SceneNode) => {
     if (!n.visible) return;
     const fx = activeEffects(n);
-    if (!pdf || (!fx.length && !n.mask?.enabled)) {
+    // La transparence (outil Transparence) passe aussi en image : svg2pdf ne lit pas les masques.
+    if (!pdf || (!fx.length && !n.mask?.enabled && !n.transparency)) {
       if (n.type === 'group') await visitChildren(n.children, nodeBounds(n));
       return;
     }
-    const m = effectMargin(fx) + 2;
-    const b = nodeBounds(n);
+    // Le décalage de l'outil Contour dépasse de la boîte (déjà compté avec une transparence).
+    const m = effectMargin(fx) + 2 + (n.transparency ? 0 : contourReach(n));
+    const b = n.transparency ? paintBounds(n) : nodeBounds(n);
     const x = b.x - m,
       y = b.y - m,
       w = b.width + 2 * m,
@@ -467,7 +472,14 @@ async function rasterizedParts(
 async function svgToPdf(
   doc: PoulpeDocument,
   artboards: Artboard[],
-  opts: { bleed?: boolean; marks?: boolean; color?: 'rgb' | 'cmyk'; pdfx?: boolean } = {},
+  opts: {
+    bleed?: boolean;
+    marks?: boolean;
+    color?: 'rgb' | 'cmyk';
+    pdfx?: boolean;
+    /** Répartitions des textes liés, partagées par les pages de l'export (voir `artboardToSvg`). */
+    flows?: Map<string, TextFlow>;
+  } = {},
 ): Promise<{ bytes: Uint8Array; missingFonts: string[]; rgbImages: number }> {
   const cmyk = opts.color === 'cmyk' || !!opts.pdfx;
   const [{ jsPDF }, { svg2pdf }] = await Promise.all([import('jspdf'), import('svg2pdf.js')]);
@@ -488,6 +500,8 @@ async function svgToPdf(
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-99999px;top:0';
   document.body.appendChild(host);
+  // Une chaîne de cadres liés n'est répartie qu'une fois pour tout le document.
+  const flows = opts.flows ?? new Map<string, TextFlow>();
   try {
     for (let i = 0; i < artboards.length; i++) {
       const ab = artboards[i];
@@ -498,6 +512,7 @@ async function svgToPdf(
         measureText,
         bleed: bleedPx,
         override: (n) => fx.get(n.id) ?? null,
+        flows,
       });
       const svg = host.querySelector('svg')!;
       // Les images JPEG passent en PNG : leurs pixels pourront être convertis en CMJN.
@@ -605,9 +620,10 @@ export async function exportDocument(opts: ExportOptions): Promise<void> {
     return;
   }
   let done = false;
+  const flows = new Map<string, TextFlow>();
   for (const ab of artboards) {
     const name = artboards.length > 1 || doc.artboards.length > 1 ? `${doc.name} - ${ab.name}` : doc.name;
-    const bytes = await artboardBytes(doc, ab, opts.kind, opts);
+    const bytes = await artboardBytes(doc, ab, opts.kind, { ...opts, flows });
     if (!(await saveBytes(bytes, opts.kind, name))) break;
     done = true;
   }
@@ -619,7 +635,8 @@ async function artboardBytes(
   doc: PoulpeDocument,
   ab: Artboard,
   kind: ExportKind,
-  opts: Pick<ExportOptions, 'scale' | 'quality' | 'transparent'> & Partial<ExportOptions>,
+  opts: Pick<ExportOptions, 'scale' | 'quality' | 'transparent'> &
+    Partial<ExportOptions> & { flows?: Map<string, TextFlow> },
 ): Promise<Uint8Array> {
   if (kind === 'pdf') return (await svgToPdf(doc, [ab], opts)).bytes;
   if (kind === 'psd') {
@@ -633,6 +650,7 @@ async function artboardBytes(
         measureText,
         background: !opts.transparent,
         override: (n) => parts.get(n.id) ?? null,
+        flows: opts.flows,
       }),
     );
   }
@@ -676,6 +694,7 @@ export async function batchExport(opts: BatchExportOptions): Promise<void> {
   };
   const total = artboards.length * opts.formats.length;
   let step = 0;
+  const flows = new Map<string, TextFlow>();
   for (const ab of artboards) {
     for (const kind of opts.formats) {
       toast(t('export.batchProgress', { n: ++step, total }));
@@ -686,6 +705,7 @@ export async function batchExport(opts: BatchExportOptions): Promise<void> {
           quality: opts.quality,
           transparent: opts.transparent,
           color: opts.cmyk ? 'cmyk' : 'rgb',
+          flows,
         });
         const suffix = scales.length > 1 || scale !== 1 ? `@${scale}x` : '';
         files[unique(`${safeName(ab.name)}${suffix}.${KINDS[kind].ext}`)] = bytes;

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   colorToCmyk,
   findNode,
@@ -17,7 +16,8 @@ import { NumberField, paintPreview } from '../components/fields';
 import { Icon } from '../components/Icon';
 import { useT } from '../i18n';
 import { editingStyle, isEditingText } from '../canvas/textEdit';
-import { editor, pushRecentColor, ui, useEditor, useTextSelection, useUi } from '../store';
+import { editor, pushRecentColor, ui, useEditor, useStore, useTextSelection, useUi } from '../store';
+import { paintStore } from '../tools/paint/state';
 import { ColorPicker, type Phase } from './ColorPicker';
 
 const DEFAULT_STOPS = (c: string): GradientStop[] => [
@@ -47,6 +47,12 @@ export function useCurrentPaint(): { paint: Paint; target: 'fill' | 'stroke'; ha
   return { paint: target === 'fill' ? defaults.fill : defaults.stroke.paint, target, hasSelection: false };
 }
 
+/**
+ * Un autre geste était ouvert au début du glissement (tracé en cours à la Plume) : la couleur n'en
+ * prend pas la base (l'historique mêlerait les deux) ; elle s'applique d'un coup au relâchement.
+ */
+let foreign = false;
+
 /** Applique une peinture ; pendant un glissement, un seul pas d'historique pour tout le geste. */
 export function applyPaint(target: 'fill' | 'stroke', paint: Paint, phase: Phase): void {
   if (ui.get().persona === 'photo') {
@@ -57,9 +63,16 @@ export function applyPaint(target: 'fill' | 'stroke', paint: Paint, phase: Phase
   }
   // Pendant l'édition d'un texte, la session d'édition forme déjà un seul pas d'historique.
   const live = editor.selection.length > 0 && !isEditingText();
-  if (live && phase === 'start') editor.begin();
-  setPaint(target, paint, live && (phase === 'start' || phase === 'move' || phase === 'end'));
-  if (live && phase === 'end') editor.commit('history.style');
+  if (phase === 'start') foreign = live && editor.inGesture;
+  if (foreign) {
+    if (phase === 'end') foreign = false;
+    if (phase === 'start' || phase === 'move') return;
+    setPaint(target, paint);
+  } else {
+    if (live && phase === 'start') editor.begin();
+    setPaint(target, paint, live && (phase === 'start' || phase === 'move' || phase === 'end'));
+    if (live && phase === 'end') editor.commit('history.style');
+  }
   if (phase === 'end' || phase === 'set') {
     const c = paint.type === 'solid' ? paint.color : null;
     if (c) pushRecentColor(c);
@@ -77,7 +90,9 @@ export function ColorPanel() {
   const { paint, target, hasSelection } = useCurrentPaint();
   const recent = useUi((s) => s.recentColors);
   const { doc } = useEditor();
-  const [stopIndex, setStopIndex] = useState(0);
+  // Arrêt choisi, partagé avec les outils Remplissage et Transparence (sur le canevas).
+  const stopIndex = useStore(paintStore, (s) => s.stop);
+  const setStopIndex = (stop: number) => paintStore.set({ stop });
   const photo = useUi((s) => s.persona) === 'photo';
   // Document d'impression : le sélecteur s'ouvre en CMJN et signale les couleurs hors gamut.
   const print = doc.layout?.colorMode === 'cmyk';
@@ -165,7 +180,11 @@ export function ColorPanel() {
             max={360}
             unit="°"
             width={90}
-            onChange={(v) => applyPaint(target, { ...gradient, angle: v }, 'set')}
+            onChange={(v) => {
+              // L'angle saisi remplace le début et la fin posés avec l'outil Remplissage.
+              const { x1: _a, y1: _b, x2: _c, y2: _d, ...rest } = gradient;
+              applyPaint(target, { ...rest, angle: v }, 'set');
+            }}
           />
         </div>
       )}

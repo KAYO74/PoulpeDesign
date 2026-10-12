@@ -2620,3 +2620,186 @@ h4.sub .link {
 .tool-tip-more:hover {
   background: var(--line);
 }
+
+/* ——— Cadres d'image, tableaux et pages (tools/frames) ——— */
+.frames-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 8px;
+}
+.frames-dialog .field select,
+.frames-dialog .text-input {
+  min-width: 200px;
+}
+
+/* paint : pastille de couleur de l'arrêt choisi dans la barre contextuelle */
+.paint-swatch {
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.paint-swatch::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.paint-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+.paint-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+/* textFlow : panneaux Habillage et Cadre de la barre contextuelle (posés par-dessus le canevas) */
+.tf-pop {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 250px;
+  max-width: 320px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  color: var(--fg);
+  white-space: normal;
+}
+.tf-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tf-label {
+  color: var(--muted);
+  min-width: 60px;
+}
+.tf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.tf-note {
+  margin: 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+.tf-caret {
+  margin-left: 4px;
+  font-size: 9px;
+  opacity: 0.7;
+}
+
+/* ——— Outil Déplacer, Recadrage vectoriel et Pipette de style (tools/move) ——— */
+.move-style {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.move-style .chip {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+}
+
+/* ——— Pinceaux et sélections de la Persona Photo (tools/brushes) ——— */
+.brushes-refine {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 8px;
+  min-width: 340px;
+}
+.brushes-refine .pslider {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+}
+.brushes-refine .pslider input[type='range'] {
+  width: 100%;
+}
+.brushes-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.brushes-presets-title {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.brushes-presets ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.brushes-presets li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+}
+.brushes-presets li[aria-selected='true'] {
+  background: var(--panel-2);
+}
+.brushes-preset {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: var(--fg);
+  text-align: left;
+  min-width: 0;
+}
+.brushes-preset:hover {
+  background: var(--panel-2);
+}
+.brushes-dab-box {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.brushes-dab {
+  display: block;
+  border-radius: 50%;
+}
+.brushes-preset-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brushes-preset-size {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+.brushes-save {
+  display: flex;
+  gap: 6px;
+}
+.brushes-save .text-input {
+  flex: 1;
+  min-width: 0;
+}

@@ -1,4 +1,5 @@
 import { localToWorld, shapePath, type PathCommand, type Vec } from './geometry';
+import { activeContour } from './contour';
 import { commandsToCubics, flattenCommands } from './bezier';
 import { setPathCommands } from './pathEdit';
 import { cachedSvgPath, fitCommands } from './path';
@@ -172,10 +173,23 @@ export function worldOutline(node: SceneNode): PathCommand[] | null {
 
 /**
  * Convertit une forme en tracé modifiable, en gardant son identifiant, sa place et son style.
- * Renvoie null pour un texte (il faut ses polices), une image ou un groupe.
+ * Le contour (outil Contour) est appliqué au tracé. Renvoie null pour un texte (il faut ses
+ * polices), une image ou un groupe.
  */
 export function toPathNode(node: SceneNode): PathNode | null {
-  if (node.type === 'path') return cloneData(node) as PathNode;
+  if (node.type === 'path') {
+    const copy = cloneData(node) as PathNode;
+    if (!copy.shape && !copy.corners && !copy.contour) return copy;
+    // Forme paramétrique, coins non destructifs ou contour : le tracé affiché devient de simples nœuds.
+    const baked = !!copy.shape || !!copy.corners || !!activeContour(node);
+    delete copy.corners;
+    delete copy.contour;
+    if (!baked) return copy;
+    delete copy.smartNodes;
+    copy.viewBox = { x: 0, y: 0, width: node.width, height: node.height };
+    setPathCommands(copy, shapePath(node));
+    return copy;
+  }
   if (!isStyled(node) || node.type === 'text') return null;
   const p: PathNode = {
     id: node.id,
@@ -190,9 +204,13 @@ export function toPathNode(node: SceneNode): PathNode | null {
     visible: node.visible,
     locked: node.locked,
     ...(node.effects ? { effects: cloneData(node.effects) } : {}),
+    ...(node.mask ? { mask: { ...node.mask } } : {}),
+    ...(node.transparency ? { transparency: cloneData(node.transparency) } : {}),
+    ...(node.wrap ? { wrap: { ...node.wrap } } : {}),
     type: 'path',
     fill: node.type === 'line' ? { type: 'none' } : node.fill,
     stroke: node.stroke,
+    ...(node.strokes ? { strokes: cloneData(node.strokes) } : {}),
     d: '',
     viewBox: { x: 0, y: 0, width: node.width, height: node.height },
   };

@@ -1,6 +1,8 @@
 import { distanceToPolylines, flattenCommands, pointInPolylines } from './bezier';
 import { cachedSvgPath, fitCommands } from './path';
-import type { SceneNode, Artboard, Paint } from './types';
+import { applyCorners, polygonOutline, rectBase, rectCorners, shapeCommands } from './shapes';
+import { activeContour, contourCommands, contourReach } from './contour';
+import type { SceneNode, Artboard, GroupNode, Paint, Corners } from './types';
 
 export interface Vec {
   x: number;
@@ -85,9 +87,18 @@ export function unionBoxes(boxes: Box[]): Box | null {
   );
 }
 
+/** Masque d'un groupe écrêté (son premier enfant), comme le dessinent le rendu et l'export SVG. */
+export function clipMaskOf(g: GroupNode): SceneNode | null {
+  const kids = g.children;
+  return g.clip && kids.length > 1 && kids[0].type !== 'group' ? kids[0] : null;
+}
+
 /** Boîte englobante alignée sur les axes, dans le monde. */
 export function nodeBounds(node: SceneNode): Box {
   if (node.type === 'group') {
+    // Un masque d'écrêtage borne ce qu'on voit du groupe (cadre d'image : le cadre, pas l'image).
+    const mask = clipMaskOf(node);
+    if (mask) return nodeBounds(mask);
     return unionBoxes(node.children.map(nodeBounds)) ?? { x: node.x, y: node.y, width: 0, height: 0 };
   }
   return boundsOfPoints(corners(node));
@@ -160,18 +171,61 @@ export function roundRectPath(x: number, y: number, w: number, h: number, radius
   ];
 }
 
-/** Tracé d'une forme dans ses coordonnées locales (0..width, 0..height). */
-export function shapePath(node: SceneNode): PathCommand[] {
+/**
+ * Contour d'une forme avant ses coins non destructifs (outil Coin), dans son repère local. Null
+ * pour les objets sans coins (ellipse, ligne, texte…).
+ */
+export function baseOutline(node: SceneNode): PathCommand[] | null {
   const { width: w, height: h } = node;
   switch (node.type) {
     case 'rect':
-      return roundRectPath(0, 0, w, h, node.cornerRadius);
+      return rectBase(w, h);
+    case 'polygon':
+      return node.curve
+        ? polygonOutline(node.sides, node.curve, w, h)
+        : polyline(regularPoints(Math.max(3, Math.round(node.sides)), w, h));
+    case 'star':
+      return polyline(regularPoints(Math.max(3, Math.round(node.points)), w, h, node.innerRatio));
+    case 'path':
+      return node.shape
+        ? shapeCommands(node.shape, w, h)
+        : fitCommands(cachedSvgPath(node.d), node.viewBox, { x: 0, y: 0, width: w, height: h });
+    default:
+      return null;
+  }
+}
+
+/** Coins non destructifs d'une forme (ceux d'un rectangle viennent de ses rayons). */
+export function nodeCorners(node: SceneNode): Corners | undefined {
+  if (node.type === 'rect') return rectCorners(node);
+  if (node.type === 'polygon' || node.type === 'star' || node.type === 'path') return node.corners;
+  return undefined;
+}
+
+/**
+ * Tracé d'une forme dans ses coordonnées locales (0..width, 0..height), décalé par son contour
+ * (outil Contour) s'il en a un : c'est le tracé dessiné, exporté et touché.
+ */
+export function shapePath(node: SceneNode): PathCommand[] {
+  const base = baseShapePath(node);
+  const c = activeContour(node);
+  return c ? contourCommands(base, c) : base;
+}
+
+/** Tracé d'une forme dans ses coordonnées locales (0..width, 0..height), sans son contour. */
+export function baseShapePath(node: SceneNode): PathCommand[] {
+  const { width: w, height: h } = node;
+  switch (node.type) {
+    case 'rect':
+      // Rectangle aux coins arrondis tous pareils : le tracé historique, inchangé.
+      return node.radii || (node.cornerType && node.cornerType !== 'round')
+        ? applyCorners(rectBase(w, h), rectCorners(node))
+        : roundRectPath(0, 0, w, h, node.cornerRadius);
     case 'ellipse':
       return ellipsePath(0, 0, w, h);
     case 'polygon':
-      return polyline(regularPoints(Math.max(3, Math.round(node.sides)), w, h));
     case 'star':
-      return polyline(regularPoints(Math.max(3, Math.round(node.points)), w, h, node.innerRatio));
+      return applyCorners(baseOutline(node)!, node.corners);
     case 'line':
       return node.direction === 1
         ? polyline(
@@ -189,7 +243,7 @@ export function shapePath(node: SceneNode): PathCommand[] {
             false,
           );
     case 'path':
-      return fitCommands(cachedSvgPath(node.d), node.viewBox, { x: 0, y: 0, width: w, height: h });
+      return applyCorners(baseOutline(node)!, node.corners);
     case 'text':
     case 'image':
     case 'group':
@@ -253,23 +307,42 @@ const flatCache = new WeakMap<SceneNode, ReturnType<typeof flattenCommands>>();
 export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
   // Un calque de réglage couvre tout le plan de travail : on le choisit dans le panneau Calques.
   if (!node.visible || node.type === 'adjustment') return false;
-  if (node.type === 'group') return node.children.some((c) => hitNode(c, p, tolerance));
+  if (node.type === 'group') {
+    // Groupe écrêté : seul ce qui est dans le masque se voit, donc se touche.
+    const mask = clipMaskOf(node);
+    if (mask && !hitNode(mask, p, tolerance)) {
+      const b = nodeBounds(mask);
+      const t = tolerance;
+      if (p.x < b.x - t || p.y < b.y - t || p.x > b.x + b.width + t || p.y > b.y + b.height + t) return false;
+      return node.children.some((c, i) => i > 0 && hitNode(c, p, tolerance));
+    }
+    return !!mask || node.children.some((c) => hitNode(c, p, tolerance));
+  }
   const l = worldToLocal(node, p);
   if (node.type === 'line') {
     const a = node.direction === 1 ? { x: 0, y: 0 } : { x: 0, y: node.height };
     const b = node.direction === 1 ? { x: node.width, y: node.height } : { x: node.width, y: 0 };
     return distToSegment(l, a, b) <= Math.max(tolerance, node.stroke.width / 2 + tolerance);
   }
-  const t = tolerance;
+  // Un contour (outil Contour) peut sortir de la boîte : on teste alors le tracé décalé.
+  const contoured = !!activeContour(node);
+  const t = tolerance + contourReach(node);
   if (l.x < -t || l.y < -t || l.x > node.width + t || l.y > node.height + t) return false;
-  if (node.type === 'ellipse') {
+  if (node.type === 'ellipse' && !contoured) {
     const rx = node.width / 2 + t,
       ry = node.height / 2 + t;
     const nx = (l.x - node.width / 2) / rx,
       ny = (l.y - node.height / 2) / ry;
     return nx * nx + ny * ny <= 1;
   }
-  if (node.type === 'path' || node.type === 'polygon' || node.type === 'star') {
+  const roundedRect = node.type === 'rect' && (node.cornerRadius > 0 || !!node.radii);
+  if (
+    node.type === 'path' ||
+    node.type === 'polygon' ||
+    node.type === 'star' ||
+    roundedRect ||
+    (contoured && (node.type === 'rect' || node.type === 'ellipse'))
+  ) {
     // Forme libre : on touche le remplissage ou le trait, pas la boîte entière.
     let polys = flatCache.get(node);
     if (!polys) {
@@ -277,12 +350,13 @@ export function hitNode(node: SceneNode, p: Vec, tolerance = 0): boolean {
       if (Object.isFrozen(node)) flatCache.set(node, polys);
     }
     const stroked = node.stroke.paint.type !== 'none' && node.stroke.width > 0;
+    // Un rectangle se saisit partout à l'intérieur, même sans remplissage (comme sans arrondi).
     if (
-      node.fill.type !== 'none' &&
+      (node.fill.type !== 'none' || roundedRect) &&
       pointInPolylines(polys, l, node.type === 'path' ? node.fillRule : 'nonzero')
     )
       return true;
-    const reach = (stroked ? node.stroke.width / 2 : 0) + Math.max(t, 1);
+    const reach = (stroked ? node.stroke.width / 2 : 0) + Math.max(tolerance, 1);
     return distanceToPolylines(polys, l) <= reach;
   }
   return true;

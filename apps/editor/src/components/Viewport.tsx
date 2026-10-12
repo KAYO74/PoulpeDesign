@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { caretAt, charX, cssFont, findNode, type TextNode } from '@poulpe/core';
+import { caretAt, charX, cssFont, findNode, type TextLine, type TextNode } from '@poulpe/core';
 import { measureText } from '@poulpe/render';
 import { editParts, indexAtWorld, partAt } from '../canvas/textParts';
 import { CanvasController } from '../canvas/controller';
@@ -18,6 +18,7 @@ import { addElement, type ElementKind } from '../libraryActions';
 import { ELEMENT_MIME } from '../panels/Library';
 import { editor, ui, useEditor, useUi } from '../store';
 import { CanvasMenu } from './CanvasMenu';
+import { textEditKey } from '../tools/text/keys';
 
 let controller: CanvasController | null = null;
 export const getController = () => controller;
@@ -267,7 +268,15 @@ function EditingText({ editingId }: { editingId: string }) {
     const part = partAt(parts, focus);
     const c = caretAt(part.layout, focus, measureText);
     const lines = parts.flatMap((p) => p.layout.lines);
-    const target = lines[lines.indexOf(part.layout.lines[c.line]) + dir];
+    const cur = part.layout.lines[c.line];
+    // Cadre habillé : plusieurs lignes partagent une hauteur ; on va à la bande du dessus ou du
+    // dessous dans la même colonne, sur la ligne la plus proche du curseur.
+    const band = part.layout.lines.filter(
+      (l) =>
+        (l.column ?? 0) === (cur.column ?? 0) && (dir > 0 ? l.top > cur.top + 0.5 : l.top < cur.top - 0.5),
+    );
+    const near = band.length && cur.slot ? nearestInBand(band, dir, c.x) : null;
+    const target = near ?? lines[lines.indexOf(cur) + dir];
     const i = target ? indexOnLine(target, c.x) : dir < 0 ? 0 : node.text.length;
     const a = extend ? (el.selectionDirection === 'backward' ? el.selectionEnd : el.selectionStart) : i;
     setTextSelection(a, i);
@@ -336,6 +345,11 @@ function EditingText({ editingId }: { editingId: string }) {
       }}
       onKeyDown={(e) => {
         e.stopPropagation();
+        // Gras, italique, taille, alignement, interlettrage : appliqués à la sélection dans le texte.
+        if (textEditKey(e.nativeEvent)) {
+          e.preventDefault();
+          return;
+        }
         const el = e.currentTarget;
         if (e.key === 'Escape') {
           e.preventDefault();
@@ -367,4 +381,15 @@ function EditingText({ editingId }: { editingId: string }) {
       onKeyUp={notify}
     />
   );
+}
+
+/** Ligne de la bande voisine (la plus haute en descendant, la plus basse en montant) la plus proche de `x`. */
+function nearestInBand(lines: TextLine[], dir: -1 | 1, x: number): TextLine {
+  const top = dir > 0 ? Math.min(...lines.map((l) => l.top)) : Math.max(...lines.map((l) => l.top));
+  const row = lines.filter((l) => Math.abs(l.top - top) < 0.5);
+  const dist = (l: TextLine) => {
+    const [a, b] = l.slot ?? [l.offset, l.offset + l.width];
+    return Math.max(0, a - x, x - b);
+  };
+  return row.reduce((best, l) => (dist(l) < dist(best) ? l : best));
 }

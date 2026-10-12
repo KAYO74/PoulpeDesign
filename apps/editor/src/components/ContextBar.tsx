@@ -1,20 +1,24 @@
+import { useEffect, useRef } from 'react';
 import { FORMAT_PRESETS, findArtboard, findNode, isStyled, localToWorld, type SceneNode } from '@poulpe/core';
-import { setPaint, setTextStyle, updateArtboard, updateSelected } from '../actions';
-import { useFonts } from '../fonts';
+import { setPaint, updateArtboard, updateSelected } from '../actions';
 import { useT } from '../i18n';
 import { editor, ui, useEditor, useUi, type ToolId } from '../store';
 import { getController } from './Viewport';
 import { Icon, type IconName } from './Icon';
 import type { NodeAction } from '../canvas/pathTools';
 import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vectorActions';
-import { canLinkSelection, linkSelection, toggleFrame } from '../layoutActions';
+import { canLinkSelection, linkSelection } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
+import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
 import { isPhotoTool } from '../photo/photoTools';
+import { SHAPE_FAMILY } from '../toolCatalog';
 
-const SHAPES: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line'];
+/** Outils de forme : leurs réglages viennent de tools/shapes (barre ajoutée en fin de barre). */
+const SHAPES: ToolId[] = SHAPE_FAMILY;
 
-function PaintSwatches({ node }: { node: SceneNode | null }) {
+/** Couleurs de remplissage et de contour (de l'objet, ou des prochains objets) et épaisseur du trait. */
+export function PaintSwatches({ node }: { node: SceneNode | null }) {
   const t = useT();
   const defaults = useUi((s) => s.defaults);
   const target = useUi((s) => s.colorTarget);
@@ -60,69 +64,48 @@ function PaintSwatches({ node }: { node: SceneNode | null }) {
   );
 }
 
+/**
+ * La barre déborde sans barre de défilement visible : la molette (verticale) la fait défiler
+ * horizontalement. Les fenêtres et listes ouvertes depuis la barre gardent leur défilement.
+ */
+function useWheelScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || el.scrollWidth <= el.clientWidth) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if ((e.target as Element).closest?.('[role="dialog"], [role="listbox"]')) return;
+      el.scrollLeft += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+  return ref;
+}
+
 export function ContextBar() {
   const t = useT();
   const { doc, selection, activeArtboardId } = useEditor();
   const tool = useUi((s) => s.tool);
   const defaults = useUi((s) => s.defaults);
   const cropId = useUi((s) => s.cropId);
-  const smoothing = useUi((s) => s.pencilSmoothing);
-  const cornerRadius = useUi((s) => s.cornerRadiusTool);
-  const cornerKind = useUi((s) => s.cornerKind);
-  const fonts = useFonts();
   const node = selection.length === 1 ? (findNode(doc, selection[0])?.node ?? null) : null;
   const ab = findArtboard(doc, activeArtboardId);
 
   const toolName = t(`tool.${tool}`);
+  const bar = useWheelScroll();
   let content: React.ReactNode;
+  const Own = contextFor(tool);
 
-  if (isPhotoTool(tool)) {
+  if (Own) {
+    content = <Own />;
+  } else if (isPhotoTool(tool)) {
     content = <PhotoContext tool={tool} />;
-  } else if (tool === 'pen' || tool === 'pencil') {
-    content = (
-      <>
-        <PaintSwatches node={null} />
-        {tool === 'pencil' && (
-          <label className="field">
-            <span className="field-label">{t('ctx.smoothing')}</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={smoothing}
-              aria-label={t('ctx.smoothing')}
-              data-testid="pencil-smoothing"
-              onChange={(e) => ui.set({ pencilSmoothing: Number(e.target.value) })}
-            />
-          </label>
-        )}
-        <span className="ctx-dim">{t(tool === 'pen' ? 'ctx.penHint' : 'ctx.pencilHint')}</span>
-      </>
-    );
-  } else if (tool === 'corner') {
-    content = (
-      <>
-        <NumberField
-          label={t('ctx.cornerRadius')}
-          value={cornerRadius}
-          min={0}
-          max={500}
-          unit="px"
-          testId="corner-radius"
-          onChange={(cornerRadiusTool) => ui.set({ cornerRadiusTool })}
-        />
-        <Select
-          label={t('ctx.cornerKind')}
-          value={cornerKind}
-          testId="corner-kind"
-          options={(['round', 'chamfer'] as const).map((k) => ({ value: k, label: t(`ctx.corner.${k}`) }))}
-          onChange={(k) => ui.set({ cornerKind: k })}
-        />
-        <span className="ctx-dim">{t('ctx.cornerHint')}</span>
-      </>
-    );
-  } else if (tool === 'scissors' || tool === 'knife' || tool === 'shapeBuilder') {
-    content = <span className="ctx-dim">{t(`ctx.${tool}Hint`)}</span>;
+  } else if (tool === 'scissors') {
+    content = <span className="ctx-dim">{t('ctx.scissorsHint')}</span>;
   } else if (tool === 'artboard' && ab) {
     const preset = FORMAT_PRESETS.find((f) => f.width === ab.width && f.height === ab.height)?.id ?? 'custom';
     content = (
@@ -191,37 +174,6 @@ export function ContextBar() {
                 : t('ctx.noSelection')}
         </span>
         {(node || tool !== 'select' || !selection.length) && <PaintSwatches node={node} />}
-        {kind === 'rect' && (
-          <NumberField
-            label={t('ctx.cornerRadius')}
-            value={shape?.type === 'rect' ? shape.cornerRadius : defaults.cornerRadius}
-            min={0}
-            unit="px"
-            width={84}
-            onChange={(v) =>
-              shape
-                ? updateSelected('history.style', (n) => void (n.type === 'rect' && (n.cornerRadius = v)))
-                : ui.set({ defaults: { ...defaults, cornerRadius: v } })
-            }
-          />
-        )}
-        {kind === 'polygon' && (
-          <NumberField
-            label={t('ctx.sides')}
-            value={shape?.type === 'polygon' ? shape.sides : defaults.sides}
-            min={3}
-            max={64}
-            width={70}
-            onChange={(v) =>
-              shape
-                ? updateSelected(
-                    'history.style',
-                    (n) => void (n.type === 'polygon' && (n.sides = Math.round(v))),
-                  )
-                : ui.set({ defaults: { ...defaults, sides: Math.round(v) } })
-            }
-          />
-        )}
         {shape?.type === 'image' && (
           <>
             <button
@@ -257,41 +209,6 @@ export function ContextBar() {
             </button>
           </>
         )}
-        {kind === 'star' && (
-          <>
-            <NumberField
-              label={t('ctx.points')}
-              value={shape?.type === 'star' ? shape.points : defaults.points}
-              min={3}
-              max={64}
-              width={70}
-              onChange={(v) =>
-                shape
-                  ? updateSelected(
-                      'history.style',
-                      (n) => void (n.type === 'star' && (n.points = Math.round(v))),
-                    )
-                  : ui.set({ defaults: { ...defaults, points: Math.round(v) } })
-              }
-            />
-            <NumberField
-              label={t('ctx.innerRatio')}
-              value={Math.round((shape?.type === 'star' ? shape.innerRatio : defaults.innerRatio) * 100)}
-              min={5}
-              max={100}
-              unit="%"
-              width={84}
-              onChange={(v) =>
-                shape
-                  ? updateSelected(
-                      'history.style',
-                      (n) => void (n.type === 'star' && (n.innerRatio = v / 100)),
-                    )
-                  : ui.set({ defaults: { ...defaults, innerRatio: v / 100 } })
-              }
-            />
-          </>
-        )}
         {tool === 'direct' && node?.type === 'path' && !node.locked && <NodeButtons single />}
         {tool === 'direct' && selection.length > 1 && <NodeButtons single={false} />}
         {tool === 'direct' &&
@@ -325,39 +242,7 @@ export function ContextBar() {
             </button>
           </>
         )}
-        {kind === 'text' && (
-          <>
-            <Select
-              label={t('char.font')}
-              value={shape?.type === 'text' ? shape.style.fontFamily : defaults.text.fontFamily}
-              options={fonts.map((f) => ({ value: f, label: f }))}
-              onChange={(f) => setTextStyle({ fontFamily: f })}
-              width={160}
-            />
-            <NumberField
-              label={t('char.size')}
-              value={shape?.type === 'text' ? shape.style.fontSize : defaults.text.fontSize}
-              min={1}
-              max={2000}
-              unit="px"
-              decimals={1}
-              width={80}
-              onChange={(v) => setTextStyle({ fontSize: v })}
-            />
-            {shape?.type === 'text' && !shape.path && (
-              <label className="check" title={t('ctx.frameHint')}>
-                <input
-                  type="checkbox"
-                  data-testid="text-frame"
-                  checked={!!shape.frame || !!shape.next}
-                  disabled={!!shape.next}
-                  onChange={toggleFrame}
-                />
-                {t('ctx.frame')}
-              </label>
-            )}
-          </>
-        )}
+        {/* Police, taille et cadre d'un texte : barre du texte (tools/text), ajoutée à la fin. */}
         {canLinkSelection() && (
           <button className="btn small" data-testid="link-frames" onClick={linkSelection}>
             {t('text.link')}
@@ -368,9 +253,12 @@ export function ContextBar() {
   }
 
   return (
-    <div className="contextbar" role="region" aria-label={toolName}>
+    <div className="contextbar" role="region" aria-label={toolName} ref={bar}>
       <b className="ctx-tool">{toolName}</b>
       {content}
+      {CONTEXT_EXTRAS.map((Extra, i) => (
+        <Extra key={i} />
+      ))}
     </div>
   );
 }

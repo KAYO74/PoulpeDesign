@@ -11,6 +11,7 @@ import {
   type ToolsLayout,
 } from './store';
 import { toolPersona } from './toolCatalog';
+import { brushOptions } from './tools/brushes/state';
 
 /**
  * Espaces de travail personnalisés, comme dans Affinity : on part d'une base (vectoriel, pixel ou
@@ -48,14 +49,30 @@ interface WorkspaceState {
 
 const KEY = 'poulpe.workspaces';
 
+/**
+ * Espaces enregistrés avant la version 1.2 : l'ancien Lasso polygonal est devenu un mode du lasso.
+ * La colonne garde le lasso à sa place (réglé en mode polygonal s'il n'y avait que lui).
+ */
+function migrate(list: Workspace[]): Workspace[] {
+  let polygonal = false;
+  const out = list.map((w) => {
+    if (!Array.isArray(w.tools) || !w.tools.includes('polyLasso')) return w;
+    if (!w.tools.includes('lasso')) polygonal = true;
+    return { ...w, tools: [...new Set(w.tools.map((id): ToolId => (id === 'polyLasso' ? 'lasso' : id)))] };
+  });
+  if (polygonal) brushOptions.set({ lassoMode: 'polygonal' });
+  return out;
+}
+
 function load(): WorkspaceState {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<WorkspaceState>;
-    return {
-      list: Array.isArray(s.list) ? s.list : [],
-      active: s.active ?? null,
-      builtinPanels: s.builtinPanels ?? null,
-    };
+    const list = Array.isArray(s.list) ? s.list : [];
+    const next = migrate(list);
+    const loaded = { list: next, active: s.active ?? null, builtinPanels: s.builtinPanels ?? null };
+    // La conversion est enregistrée tout de suite : elle ne se fait qu'une fois.
+    if (next.some((w, i) => w !== list[i])) localStorage.setItem(KEY, JSON.stringify(loaded));
+    return loaded;
   } catch {
     return { list: [], active: null, builtinPanels: null };
   }
@@ -107,7 +124,7 @@ export function applyWorkspace(id: string): void {
   if (!ws) return;
   const builtinPanels = state.active ? state.builtinPanels : clonePanels(panels.get());
   set({ active: null, builtinPanels });
-  setPersona(ws.base);
+  setPersona(ws.base, ws.tools);
   setSettings({
     library: ws.library,
     toolsSide: ws.toolsSide,
@@ -172,7 +189,7 @@ export function createWorkspace(draft: WorkspaceDraft): string {
 export function editWorkspace(id: string, draft: WorkspaceDraft): void {
   update(id, draft);
   if (state.active === id) {
-    setPersona(draft.base);
+    setPersona(draft.base, draft.tools);
     setSettings({ toolsColumns: draft.toolsColumns });
   }
 }

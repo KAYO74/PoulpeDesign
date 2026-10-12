@@ -78,6 +78,23 @@ export interface TextLine {
   gap: number;
   /** Colonne de la ligne (0 s'il n'y en a qu'une). */
   column?: number;
+  /** Puce ou numéro de liste, devant la première ligne d'un paragraphe. */
+  marker?: TextMarker;
+  /**
+   * Place où la ligne est posée dans un cadre de texte (bords gauche et droit depuis le bord gauche
+   * de la boîte) : plusieurs lignes peuvent partager une hauteur autour d'un objet qui habille.
+   */
+  slot?: [number, number];
+}
+
+/** Puce ou numéro d'un paragraphe de liste, posé dans le retrait de sa première ligne. */
+export interface TextMarker {
+  text: string;
+  /** Abscisse du début du repère, depuis le bord gauche de la boîte (comme `charX`). */
+  x: number;
+  /** Style du premier caractère du paragraphe. */
+  style: CharStyle;
+  font: string;
 }
 
 export interface TextLayout {
@@ -88,10 +105,26 @@ export interface TextLayout {
   height: number;
 }
 
-type TextLike = Pick<TextNode, 'text' | 'style' | 'autoWidth' | 'width'> & {
+export type TextLike = Pick<TextNode, 'text' | 'style' | 'autoWidth' | 'width'> & {
   runs?: TextRun[];
   height?: number;
+  /** Suite d'un texte dans un cadre lié : rangs de liste déjà donnés dans les cadres précédents. */
+  listStart?: number;
+  /** Le texte commence au milieu d'un paragraphe (sa puce est dans le cadre précédent). */
+  listContinued?: boolean;
 };
+
+/** Repère d'un paragraphe de liste de rang `n` (à partir de 1). */
+export function listMarker(list: NonNullable<TextStyle['list']>, n: number): string {
+  return list === 'bullet' ? '•' : `${n}.`;
+}
+
+/** Retrait des lignes d'une liste, où se placent les repères ; il s'élargit pour les numéros à 3 chiffres. */
+export function listIndent(style: TextStyle, lastRank: number): number {
+  if (!style.list) return 0;
+  if (style.list === 'bullet') return style.fontSize * 1.3;
+  return style.fontSize * Math.max(2, 0.6 * String(lastRank).length + 0.9);
+}
 
 /** Colonnes d'un texte : leur nombre et la largeur d'une colonne dans la boîte. */
 export function textColumns(node: Pick<TextNode, 'style' | 'width' | 'autoWidth'>): {
@@ -241,14 +274,14 @@ export function adjustRuns(
 
 // ————— Mise en page —————
 
-interface StyleSpan {
+export interface StyleSpan {
   start: number;
   end: number;
   style: CharStyle;
   font: string;
 }
 
-function styleSpans(node: TextLike, length: number): StyleSpan[] {
+export function styleSpans(node: TextLike, length: number): StyleSpan[] {
   const runs = node.runs ?? [];
   const spans: StyleSpan[] = [];
   const baseFont = cssFont(node.style);
@@ -298,14 +331,21 @@ export function layoutText(node: TextLike, measure: MeasureText): TextLayout {
     return b;
   };
   const cols = textColumns(node);
-  const maxWidth = node.autoWidth ? Infinity : cols.width;
-  const ranges: { start: number; end: number; stop: number; last: boolean }[] = [];
+  const paras = text.split('\n');
+  // Liste : toutes les lignes sont en retrait ; chaque paragraphe non vide reçoit un rang.
+  let rank = node.listStart ?? 0;
+  const indent = style.list ? listIndent(style, rank + paras.filter((p) => p.trim()).length) : 0;
+  const maxWidth = node.autoWidth ? Infinity : Math.max(1, cols.width - indent);
+  const ranges: { start: number; end: number; stop: number; last: boolean; rank: number }[] = [];
   let paraStart = 0;
-  for (const para of text.split('\n')) {
+  for (const [k, para] of paras.entries()) {
     const paraEnd = paraStart + para.length;
+    // Le premier paragraphe d'un cadre lié qui continue le précédent a déjà sa puce.
+    let paraRank = indent && para.trim() && !(k === 0 && node.listContinued) ? ++rank : 0;
     const pushLine = (a: number, stop: number, last = false) => {
       const end = trimEnd(a, stop);
-      ranges.push({ start: a, end, stop, last });
+      ranges.push({ start: a, end, stop, last, rank: paraRank });
+      paraRank = 0;
     };
     if (!isFinite(maxWidth)) {
       pushLine(paraStart, paraEnd, true);
@@ -353,7 +393,7 @@ export function layoutText(node: TextLike, measure: MeasureText): TextLayout {
       ? Math.max(...segs.map((sg) => sg.style.fontSize))
       : spanAt(Math.max(0, r.start - 1)).style.fontSize;
     const height = size * style.lineHeight;
-    lines.push({
+    const line: TextLine = {
       start: r.start,
       end: r.end,
       stop: r.stop,
@@ -366,7 +406,12 @@ export function layoutText(node: TextLike, measure: MeasureText): TextLayout {
       segments: segs,
       offset: 0,
       gap: 0,
-    });
+    };
+    if (r.rank) {
+      const sp = spanAt(r.start);
+      line.marker = { text: listMarker(style.list!, r.rank), x: 0, style: sp.style, font: sp.font };
+    }
+    lines.push(line);
     top += height;
     width = Math.max(width, x);
   }
@@ -382,22 +427,30 @@ export function layoutText(node: TextLike, measure: MeasureText): TextLayout {
       }
       line.column = col;
       line.top -= colTop;
+      line.baseline -= colTop;
     }
   }
+  // Largeur disponible pour le texte, hors retrait de liste.
   const boxWidth = isFinite(maxWidth) ? maxWidth : Math.max(1, width);
   lines.forEach((line, i) => {
     const r = ranges[i];
-    if (style.align === 'center') line.offset = (boxWidth - line.width) / 2;
-    else if (style.align === 'right') line.offset = boxWidth - line.width;
-    else if (style.align === 'justify' && !node.autoWidth && !r.last) {
+    // Texte justifié : la dernière ligne d'un paragraphe suit `lastLine` (à gauche par défaut).
+    let align: TextStyle['align'] = style.align;
+    if (align === 'justify' && (node.autoWidth || r.last))
+      align = node.autoWidth ? 'left' : (style.lastLine ?? 'left');
+    if (align === 'center') line.offset = (boxWidth - line.width) / 2;
+    else if (align === 'right') line.offset = boxWidth - line.width;
+    else if (align === 'justify') {
       const blanks = line.text.match(/\s+/g)?.length ?? 0;
       if (blanks) line.gap = (boxWidth - line.width) / blanks;
     }
+    line.offset += indent;
     if (line.column) line.offset += line.column * (cols.width + cols.gap);
+    if (line.marker) line.marker.x = line.offset - indent;
   });
   const lineHeight = style.fontSize * style.lineHeight;
   const height = lines.length ? Math.max(...lines.map((l) => l.top + l.height)) : 0;
-  return { lines, lineHeight, width: boxWidth, height: Math.max(lineHeight, height) };
+  return { lines, lineHeight, width: boxWidth + indent, height: Math.max(lineHeight, height) };
 }
 
 /** Abscisse (depuis le bord gauche de la boîte) de la frontière avant le caractère `i` d'une ligne. */
@@ -443,6 +496,8 @@ export function indexAtPoint(layout: TextLayout, x: number, y: number, measure: 
   const lines = layout.lines;
   let k = lines.findIndex((l) => y < l.top + l.height);
   if (k < 0) k = lines.length - 1;
+  // Cadre de texte (habillage, colonnes, forme) : la ligne dont la place est la plus proche.
+  if (lines.some((l) => l.slot)) k = nearestLine(lines, x, y);
   const line = lines[k];
   let best = line.start;
   let bestD = Infinity;
@@ -453,5 +508,22 @@ export function indexAtPoint(layout: TextLayout, x: number, y: number, measure: 
       best = i;
     }
   }
+  return best;
+}
+
+/** Ligne la plus proche d'un point, mesurée jusqu'à la place qu'elle occupe (sa colonne, son côté de l'objet). */
+function nearestLine(lines: TextLine[], x: number, y: number): number {
+  let best = 0;
+  let bestD = Infinity;
+  lines.forEach((l, k) => {
+    const dy = Math.max(0, l.top - y, y - (l.top + l.height));
+    const [a, b] = l.slot ?? [l.offset, l.offset + l.width];
+    const dx = Math.max(0, a - x, x - b);
+    const d = dx * dx + dy * dy;
+    if (d < bestD) {
+      best = k;
+      bestD = d;
+    }
+  });
   return best;
 }

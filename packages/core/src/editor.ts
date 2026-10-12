@@ -56,7 +56,13 @@ type Recipe = (draft: PoulpeDocument) => void | string[];
 export class Editor {
   private past: HistoryEntry[] = [];
   private future: HistoryEntry[] = [];
-  private gesture: { base: PoulpeDocument; selection: string[] } | null = null;
+  /**
+   * Geste en cours. `transient` : aperçu passager (rotation du Recadrage de la Persona Photo),
+   * qu'une autre commande n'enregistre pas : elle s'applique dessous, puis l'aperçu est remontré.
+   */
+  private gesture: { base: PoulpeDocument; selection: string[]; transient?: Recipe } | null = null;
+  /** Aperçu passager mis de côté pendant un autre geste, remontré à sa fin. */
+  private held: Recipe | null = null;
   private savedDoc: PoulpeDocument | null;
   private listeners = new Set<() => void>();
   private state: EditorState;
@@ -133,13 +139,47 @@ export class Editor {
   }
 
   private set(doc: PoulpeDocument, selection: string[], activeArtboardId = this.state.activeArtboardId) {
+    this.assign(doc, selection, activeArtboardId);
+    this.notify();
+  }
+
+  /** Change l'état sans prévenir (voir `set`). */
+  private assign(doc: PoulpeDocument, selection: string[], activeArtboardId = this.state.activeArtboardId) {
     const valid = new Set(allNodeIds(doc));
     this.state = this.makeState(
       doc,
       selection.filter((id) => valid.has(id)),
       activeArtboardId,
     );
+  }
+
+  private notify() {
     this.listeners.forEach((l) => l());
+  }
+
+  /** Retire sans prévenir l'aperçu passager en cours (l'état revient à sa base) ; renvoie sa recette. */
+  private lift(): Recipe | null {
+    const g = this.gesture;
+    if (!g?.transient) return null;
+    this.gesture = null;
+    this.assign(g.base, g.selection);
+    return g.transient;
+  }
+
+  /** Termine le geste en cours avant une commande ; renvoie l'aperçu passager retiré (voir `lift`). */
+  private settle(label: string): Recipe | null {
+    const transient = this.lift();
+    if (!this.gesture) return transient;
+    this.commit(label);
+    return this.lift();
+  }
+
+  /** Remontre un aperçu passager par-dessus l'état courant, sans prévenir. */
+  private reopen(recipe: Recipe | null) {
+    if (!recipe) return;
+    this.gesture = { base: this.state.doc, selection: this.state.selection, transient: recipe };
+    const { doc, selection } = this.run(this.state.doc, recipe);
+    this.assign(doc, selection ?? this.state.selection);
   }
 
   private run(base: PoulpeDocument, recipe: Recipe): { doc: PoulpeDocument; selection?: string[] } {
@@ -158,11 +198,13 @@ export class Editor {
    * une liste d'ids, celle-ci devient la nouvelle sélection.
    */
   apply(label: string, recipe: Recipe): void {
-    if (this.gesture) this.commit(label);
+    const transient = this.settle(label);
     const { doc, selection } = this.run(this.state.doc, recipe);
-    if (doc === this.state.doc && !selection) return;
+    if (doc === this.state.doc && !selection && !transient) return;
     if (doc !== this.state.doc) this.push(label);
-    this.set(doc, selection ?? this.state.selection);
+    this.assign(doc, selection ?? this.state.selection);
+    this.reopen(transient);
+    this.notify();
   }
 
   private push(label: string) {
@@ -179,6 +221,8 @@ export class Editor {
 
   /** Début d'un geste (glisser, redimensionner…) : les aperçus partent tous de cet état. */
   begin(): void {
+    const transient = this.lift();
+    if (transient) this.held = transient;
     this.gesture = { base: this.state.doc, selection: this.state.selection };
   }
 
@@ -186,9 +230,16 @@ export class Editor {
     return this.gesture !== null;
   }
 
-  /** Aperçu pendant un geste, sans entrée d'historique. */
-  preview(recipe: Recipe): void {
-    if (!this.gesture) this.begin();
+  /**
+   * Aperçu pendant un geste, sans entrée d'historique. `transient` : aperçu passager, qui reste
+   * affiché quand une autre commande passe (elle s'applique dessous, sans l'enregistrer) ; seuls
+   * `commit` et `cancel` le terminent.
+   */
+  preview(recipe: Recipe, opts: { transient?: boolean } = {}): void {
+    if (opts.transient) {
+      if (!this.gesture) this.begin();
+      this.gesture!.transient = recipe;
+    } else if (!this.gesture || this.gesture.transient) this.begin();
     const { doc, selection } = this.run(this.gesture!.base, recipe);
     this.set(doc, selection ?? this.state.selection);
   }
@@ -198,28 +249,42 @@ export class Editor {
     const g = this.gesture;
     if (!g) return;
     this.gesture = null;
-    if (this.state.doc === g.base) return;
-    this.past.push({
-      label: this.currentLabel,
-      doc: g.base,
-      selection: g.selection,
-      extra: this.extra?.get(),
-    });
-    this.future = [];
-    this.currentLabel = label;
-    this.trim();
-    this.set(this.state.doc, this.state.selection);
+    const held = g.transient ? null : this.held;
+    this.held = null;
+    if (this.state.doc === g.base && !held) return;
+    if (this.state.doc !== g.base) {
+      this.past.push({
+        label: this.currentLabel,
+        doc: g.base,
+        selection: g.selection,
+        extra: this.extra?.get(),
+      });
+      this.future = [];
+      this.currentLabel = label;
+      this.trim();
+    }
+    this.assign(this.state.doc, this.state.selection);
+    this.reopen(held);
+    this.notify();
   }
 
   cancel(): void {
     const g = this.gesture;
     if (!g) return;
     this.gesture = null;
-    this.set(g.base, g.selection);
+    const held = g.transient ? null : this.held;
+    this.held = null;
+    this.assign(g.base, g.selection);
+    this.reopen(held);
+    this.notify();
   }
 
   undo(): void {
+    // Pendant un aperçu passager (même mis de côté), Annuler retire seulement l'aperçu.
+    const transient = !!this.gesture?.transient || !!this.held;
+    this.held = null;
     if (this.gesture) this.cancel();
+    if (transient) return;
     const prev = this.past.pop();
     if (!prev) return;
     this.future.push({
@@ -234,6 +299,9 @@ export class Editor {
   }
 
   redo(): void {
+    // Un geste en cours n'est pas enregistré par le rétablissement : il est annulé.
+    this.held = null;
+    if (this.gesture) this.cancel();
     const next = this.future.pop();
     if (!next) return;
     this.past.push({
@@ -266,7 +334,7 @@ export class Editor {
    * sélection de pixels, par exemple). `before` : cet état juste avant le changement.
    */
   mark(label: string, before: unknown): void {
-    if (this.gesture) this.commit(label);
+    const transient = this.settle(label);
     this.past.push({
       label: this.currentLabel,
       doc: this.state.doc,
@@ -276,7 +344,9 @@ export class Editor {
     this.future = [];
     this.currentLabel = label;
     this.trim();
-    this.set(this.state.doc, this.state.selection);
+    this.assign(this.state.doc, this.state.selection);
+    this.reopen(transient);
+    this.notify();
   }
 
   /**
@@ -305,6 +375,7 @@ export class Editor {
 
   /** Copie de l'état complet (document, historique), pour le remettre tel quel avec `restore`. */
   snapshot(): EditorSnapshot {
+    this.held = null;
     if (this.gesture) this.cancel();
     return {
       past: [...this.past],
@@ -319,6 +390,7 @@ export class Editor {
 
   restore(s: EditorSnapshot): void {
     this.gesture = null;
+    this.held = null;
     this.past = [...s.past];
     this.future = [...s.future];
     this.currentLabel = s.label;
@@ -344,6 +416,7 @@ export class Editor {
     this.past = [];
     this.future = [];
     this.gesture = null;
+    this.held = null;
     this.currentLabel = 'history.open';
     const frozen = freeze(doc, true);
     this.savedDoc = opts.unsaved ? null : frozen;

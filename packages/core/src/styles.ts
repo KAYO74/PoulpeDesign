@@ -21,12 +21,15 @@ const TEXT_KEYS: (keyof TextStyle)[] = [
   'strike',
   'uppercase',
   'features',
+  'lastLine',
+  'list',
 ];
 
 /** Enregistre l'apparence d'un objet. Un texte garde aussi ses réglages de caractère. */
 export function styleFromNode(node: SceneNode, name: string): SavedStyle {
   const style: SavedStyle = { id: newId('style'), name, opacity: node.opacity, blendMode: node.blendMode };
   if (node.effects?.length) style.effects = structuredClone(node.effects);
+  if (node.transparency) style.transparency = structuredClone(node.transparency);
   if (isStyled(node)) {
     style.fill = structuredClone(node.fill);
     style.stroke = structuredClone(node.stroke);
@@ -54,6 +57,10 @@ export function applyStyle(node: SceneNode, style: SavedStyle): boolean {
   }
   if (style.effects) {
     node.effects = structuredClone(style.effects);
+    changed = true;
+  }
+  if (style.transparency) {
+    node.transparency = structuredClone(style.transparency);
     changed = true;
   }
   if (isStyled(node)) {

@@ -1,6 +1,9 @@
 import { openCanvasMenu } from '../components/CanvasMenu';
 import { cursorFor } from './cursors';
-import { StyleTools } from './styleTools';
+import { TOOL_MODULES } from '../tools/registry';
+import { NEW_SHAPE_TOOLS, makeShapeNode } from '../tools/shapes/make';
+import type { ToolDelegate } from '../tools/types';
+import { clickFrame } from '../tools/text/create';
 import {
   artboardAt,
   boxCenter,
@@ -8,6 +11,7 @@ import {
   caretAt,
   chainHead,
   charX,
+  frameShapeCommands,
   isLinked,
   masterOf,
   needsFlow,
@@ -45,7 +49,15 @@ import {
   pageFields as pageFieldsOf,
   softProofPixels,
 } from '@poulpe/core';
-import { ImageCache, RenderCache, cachedFlow, clearLayoutCache, measureText, nodePath } from '@poulpe/render';
+import {
+  ImageCache,
+  RenderCache,
+  cachedFlow,
+  clearLayoutCache,
+  measureText,
+  nodePath,
+  toPath2D,
+} from '@poulpe/render';
 import { cpuThreads } from '../preferences';
 import { onPerformanceSettings, recordFrame, setRenderStatsSource } from '../perf';
 import { setPaint } from '../actions';
@@ -71,7 +83,9 @@ import {
   textSelection,
 } from './textEdit';
 import { editParts, indexAtWorld, partAt } from './textParts';
-import { linkTextFrames } from '../layoutActions';
+import { startFrameLink } from '../tools/textFlow/delegate';
+import { autoFlow } from '../tools/textFlow/actions';
+import * as moveTool from '../tools/move/hooks';
 import { PhotoTools } from '../photo/photoTools';
 
 type HandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
@@ -124,7 +138,7 @@ type Gesture =
   | { kind: 'cropPan'; start: Vec; node: ImageNode; full: Box; moved: boolean }
   | { kind: 'artboardMove'; id: string; start: Vec; origin: Vec; moved: boolean };
 
-const SHAPE_TOOLS: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line'];
+const SHAPE_TOOLS: ToolId[] = ['rect', 'ellipse', 'polygon', 'star', 'line', ...NEW_SHAPE_TOOLS];
 
 /** État de l'interface sans effet sur le dessin du canevas. */
 const UI_IGNORED = new Set<keyof UiState>([
@@ -162,9 +176,10 @@ export class CanvasController {
   readonly images: ImageCache;
   /** Plume, crayon et outil Nœud. */
   readonly paths: PathTools;
-  readonly styleTools: StyleTools;
   /** Outils de la Persona Photo. */
   readonly photo: PhotoTools;
+  /** Outils ajoutés en version 1.2 (voir tools/registry.ts), consultés avant les outils de base. */
+  readonly modules: ToolDelegate[];
   private ctx: CanvasRenderingContext2D;
   private dpr = 1;
   width = 0;
@@ -193,8 +208,8 @@ export class CanvasController {
     this.ctx = canvas.getContext('2d')!;
     this.images = new ImageCache(() => this.requestDraw());
     this.paths = new PathTools(this);
-    this.styleTools = new StyleTools(this);
     this.photo = new PhotoTools(this);
+    this.modules = TOOL_MODULES.flatMap((m) => (m.delegate ? [m.delegate(this)] : []));
     this.readColors();
     this.unsubscribe.push(
       onPerformanceSettings((s) => {
@@ -273,6 +288,7 @@ export class CanvasController {
     setRenderStatsSource(null);
     this.paths.dispose();
     this.photo.dispose();
+    this.modules.forEach((m) => m.dispose?.());
     this.unsubscribe.forEach((u) => u());
     const c = this.canvas;
     c.removeEventListener('pointerdown', this.onPointerDown);
@@ -416,7 +432,7 @@ export class CanvasController {
 
   // ————— Sélection et cadre —————
 
-  private selectionFrame(): Frame | null {
+  selectionFrame(): Frame | null {
     const { doc, selection } = editor.getState();
     if (!selection.length) return null;
     if (selection.length === 1) {
@@ -440,7 +456,8 @@ export class CanvasController {
     return localToWorld(f, { x: f.width / 2, y: -ROTATE_OFFSET / z });
   }
 
-  private hitHandle(sx: number, sy: number): HandleId | 'rotate' | null {
+  /** Poignée de redimensionnement ou de rotation de la sélection sous le point écran. */
+  hitHandle(sx: number, sy: number): HandleId | 'rotate' | null {
     // Outil Nœud sur un tracé : pas de poignées de transformation, on modifie les nœuds.
     if (this.paths.editablePath()) return null;
     const f = this.selectionFrame();
@@ -519,13 +536,40 @@ export class CanvasController {
 
   // ————— Pointeur —————
 
+  /** Un geste est en cours (glisser, tracé à la plume, coup de pinceau…). */
+  busy(): boolean {
+    return !!this.gesture || this.paths.busy || this.photo.busy || this.modules.some((m) => m.busy);
+  }
+
+  /** Touche pressée : les outils de la version 1.2 d'abord. */
+  moduleKey(e: KeyboardEvent): boolean {
+    for (const m of this.modules) if (m.key?.(e)) return true;
+    return false;
+  }
+
+  /** Main ou Zoom maintenus (touche H ou Z) : la vue seulement, l'outil choisi ne change pas. */
+  private heldView: 'hand' | 'zoom' | null = null;
+
+  setHeldView(tool: 'hand' | 'zoom' | null): void {
+    if (this.heldView === tool) return;
+    this.heldView = tool;
+    this.updateCursor();
+  }
+
   private effectiveTool(): ToolId {
-    return this.spaceDown ? 'hand' : ui.get().tool;
+    return this.spaceDown ? 'hand' : (this.heldView ?? ui.get().tool);
   }
 
   private onPointerDown = (e: PointerEvent) => {
     if (e.button === 1 || (e.button === 0 && this.effectiveTool() === 'hand')) {
       this.startPan(e);
+      return;
+    }
+    if (e.button === 0 && this.effectiveTool() === 'zoom' && this.heldView) {
+      // Zoom maintenu : avant les outils, qui ne voient pas le clic (leur travail en cours reste).
+      const r = this.canvas.getBoundingClientRect();
+      const z = this.view.zoom;
+      this.zoomAt(e.altKey ? z / 1.5 : z * 1.5, e.clientX - r.left, e.clientY - r.top);
       return;
     }
     if (e.button === 2) {
@@ -564,21 +608,28 @@ export class CanvasController {
       (document.activeElement as HTMLElement | null)?.blur();
     }
 
-    // Choix du cadre suivant d'un texte qui déborde : un cadre existant, ou un nouveau cadre ici.
-    const linkFrom = ui.get().linkFrom;
-    if (linkFrom) {
-      ui.set({ linkFrom: null });
-      const hit = this.hitTest(p, true);
-      linkTextFrames(linkFrom, hit?.type === 'text' ? hit.id : null, p);
+    // Choix du cadre suivant d'un texte qui déborde : un cadre existant, un nouveau cadre de même
+    // taille ici, ou un cadre tracé en glissant (tools/textFlow).
+    if (ui.get().linkFrom) {
+      startFrameLink(this, p);
       this.requestDraw();
       return;
     }
-    if ((tool === 'select' || tool === 'text') && this.hitOverflow(sx, sy)) {
-      ui.set({ linkFrom: this.hitOverflow(sx, sy) });
+    const overflowId = this.hitOverflow(sx, sy);
+    if ((tool === 'select' || tool === 'text' || tool === 'frameText') && overflowId) {
+      // Maj+clic : coulée automatique (pages et cadres ajoutés jusqu'à ce que le texte tienne).
+      if (e.shiftKey) autoFlow(overflowId);
+      else ui.set({ linkFrom: overflowId });
       this.updateCursor();
       return;
     }
 
+    for (const m of this.modules) {
+      if (m.pointerDown?.(e, p, { x: sx, y: sy })) {
+        this.requestDraw();
+        return;
+      }
+    }
     if (tool === 'zoom') {
       const z = this.view.zoom;
       this.zoomAt(e.altKey ? z / 1.5 : z * 1.5, sx, sy);
@@ -598,10 +649,6 @@ export class CanvasController {
       return;
     }
     if (this.paths.pointerDown(e, p, { x: sx, y: sy })) {
-      this.requestDraw();
-      return;
-    }
-    if (this.styleTools.pointerDown(e, p, { x: sx, y: sy })) {
       this.requestDraw();
       return;
     }
@@ -627,7 +674,7 @@ export class CanvasController {
       }
       return;
     }
-    if (tool === 'text') {
+    if (tool === 'text' || tool === 'frameText') {
       const hit = this.hitTest(p, true);
       if (hit?.type === 'text') {
         editor.select([hit.id]);
@@ -692,7 +739,8 @@ export class CanvasController {
     }
     if (handle === 'rotate') {
       const f = this.selectionFrame()!;
-      const c = boxCenter(f);
+      const pivot = moveTool.pivotLocal(f);
+      const c = pivot ? localToWorld(f, pivot) : boxCenter(f);
       const ids = topLevelIds(doc, editor.selection);
       editor.begin();
       this.gesture = { kind: 'rotate', center: c, startAngle: Math.atan2(p.y - c.y, p.x - c.x), ids };
@@ -713,7 +761,7 @@ export class CanvasController {
       };
       return;
     }
-    const hit = this.hitTest(p, tool === 'direct' || e.metaKey || e.ctrlKey);
+    const hit = moveTool.clickTarget(this, p, tool, e);
     if (hit) {
       let selection = editor.selection;
       if (e.shiftKey) {
@@ -767,8 +815,11 @@ export class CanvasController {
     const p = this.toWorld(sx, sy);
     this.lastPointer = { x: sx, y: sy };
     ui.set({ cursor: { x: Math.round(p.x), y: Math.round(p.y) } });
+    if (!this.gesture && this.modules.some((m) => m.pointerMove?.(e, p, { x: sx, y: sy }))) {
+      this.requestDraw();
+      return;
+    }
     if (!this.gesture && this.photo.pointerMove(e, p, { x: sx, y: sy })) return;
-    if (!this.gesture && this.styleTools.pointerMove(e, p, { x: sx, y: sy })) return;
     if (!this.gesture && this.paths.pointerMove(e, p, { x: sx, y: sy })) {
       if (this.effectiveTool() === 'direct') this.canvas.style.cursor = cursorFor('direct');
       return;
@@ -786,12 +837,17 @@ export class CanvasController {
       case 'move':
         return this.dragMove(g, p, e.shiftKey, snap);
       case 'resize':
-        return this.dragResize(g, p, e.shiftKey, e.altKey, snap);
+        // Ctrl (comme dans Affinity) ou Alt : à partir du centre ou du point d'origine.
+        return this.dragResize(g, p, e.shiftKey, e.altKey || e.ctrlKey || e.metaKey, this.snapping());
       case 'rotate': {
         let delta = ((Math.atan2(p.y - g.center.y, p.x - g.center.x) - g.startAngle) * 180) / Math.PI;
         if (e.shiftKey) delta = Math.round(delta / 15) * 15;
+        const apart = moveTool.separately(g.ids.length);
         editor.preview((d) => {
-          for (const id of g.ids) rotateNode(findNode(d, id)!.node, normalizeAngle(delta), g.center);
+          for (const id of g.ids) {
+            const n = findNode(d, id)!.node;
+            rotateNode(n, normalizeAngle(delta), apart ? boxCenter(nodeBounds(n)) : g.center);
+          }
         });
         return;
       }
@@ -855,7 +911,8 @@ export class CanvasController {
       if (clones) {
         ids = clones.map((c, i) => {
           const loc = findNode(d, g.ids[i])!;
-          loc.parent.children.splice(loc.index + 1, 0, c);
+          // Une copie neuve à chaque aperçu : immer fige les objets ajoutés au document.
+          loc.parent.children.splice(loc.index + 1, 0, structuredClone(c));
           return c.id;
         });
       }
@@ -886,37 +943,48 @@ export class CanvasController {
     const corner = hx !== 0.5 && hy !== 0.5;
     // Un texte artistique s'agrandit proportionnellement par les coins.
     if (text?.autoWidth && corner) keepRatio = true;
-    const ax = fromCenter ? f.width / 2 : (1 - hx) * f.width;
-    const ay = fromCenter ? f.height / 2 : (1 - hy) * f.height;
+    // À partir du centre : du point d'origine de la transformation s'il est affiché.
+    const pivot = fromCenter ? (moveTool.pivotLocal(f) ?? { x: f.width / 2, y: f.height / 2 }) : null;
+    const ax = pivot ? pivot.x : (1 - hx) * f.width;
+    const ay = pivot ? pivot.y : (1 - hy) * f.height;
+    // Rapport d'échelle depuis l'origine sur un axe (null : l'origine est sur l'axe de la poignée).
+    const ratio = (a: number, b: number) => (Math.abs(b) > 1e-9 ? Math.abs(a / b) : null);
+    const kx = pivot ? ratio(l.x - ax, hx * f.width - ax) : null;
+    const ky = pivot ? ratio(l.y - ay, hy * f.height - ay) : null;
     let x0 = 0,
       x1 = f.width,
       y0 = 0,
       y1 = f.height;
     if (hx !== 0.5) {
       const edge = l.x;
-      if (fromCenter) {
-        x0 = ax - Math.abs(edge - ax);
-        x1 = ax + Math.abs(edge - ax);
+      if (pivot) {
+        const k = kx ?? 1;
+        x0 = ax - ax * k;
+        x1 = ax + (f.width - ax) * k;
       } else [x0, x1] = hx === 1 ? [ax, edge] : [edge, ax];
     }
     if (hy !== 0.5) {
       const edge = l.y;
-      if (fromCenter) {
-        y0 = ay - Math.abs(edge - ay);
-        y1 = ay + Math.abs(edge - ay);
+      if (pivot) {
+        const k = ky ?? 1;
+        y0 = ay - ay * k;
+        y1 = ay + (f.height - ay) * k;
       } else [y0, y1] = hy === 1 ? [ay, edge] : [edge, ay];
     }
     let sx = f.width ? (x1 - x0) / f.width : 1;
     let sy = f.height ? (y1 - y0) / f.height : 1;
     if (keepRatio) {
-      const k = corner ? Math.max(Math.abs(sx), Math.abs(sy)) : hx !== 0.5 ? Math.abs(sx) : Math.abs(sy);
+      let k = corner ? Math.max(Math.abs(sx), Math.abs(sy)) : hx !== 0.5 ? Math.abs(sx) : Math.abs(sy);
+      // Origine sur l'axe de la poignée : cet axe ne mesure rien (l'objet ne ferait que grandir),
+      // le rapport de l'autre axe décide.
+      if (pivot && (kx === null || ky === null)) k = (hx !== 0.5 ? kx : ky) ?? (hx !== 0.5 ? ky : kx) ?? k;
       sx = Math.sign(sx || 1) * k;
       sy = Math.sign(sy || 1) * k;
       const w = f.width * sx,
         h = f.height * sy;
-      if (fromCenter) {
-        x0 = ax - w / 2;
-        y0 = ay - h / 2;
+      if (pivot) {
+        x0 = ax - (ax * w) / (f.width || 1);
+        y0 = ay - (ay * h) / (f.height || 1);
       } else {
         x0 = hx === 0 ? ax - w : hx === 1 ? ax : ax - w / 2;
         y0 = hy === 0 ? ay - h : hy === 1 ? ay : ay - h / 2;
@@ -955,14 +1023,17 @@ export class CanvasController {
       const origin = localToWorld(f, { x: ax, y: ay });
       const sxx = (x1 - x0) / (f.width || 1);
       const syy = (y1 - y0) / (f.height || 1);
-      for (const id of g.ids)
+      const apart = moveTool.separately(g.ids.length);
+      for (const id of g.ids) {
+        const n = findNode(d, id)!.node;
         scaleNode(
-          findNode(d, id)!.node,
+          n,
           hx === 0.5 && !keepRatio ? 1 : sxx,
           hy === 0.5 && !keepRatio ? 1 : syy,
-          fromCenter ? boxCenter(f) : origin,
+          apart ? boxCenter(nodeBounds(n)) : origin,
           keepRatio,
         );
+      }
     });
   }
 
@@ -1155,8 +1226,8 @@ export class CanvasController {
       if (n.type === 'line') n.direction = dir;
       if (n.type === 'text') {
         n.autoWidth = false;
-        // Persona Mise en page : l'outil Texte trace des cadres de texte.
-        if (ui.get().persona === 'layout') n.frame = true;
+        // Outil Cadre de texte (et Persona Mise en page) : un cadre de texte.
+        if (g.tool === 'frameText' || ui.get().persona === 'layout') n.frame = true;
       }
       return [id];
     });
@@ -1179,7 +1250,7 @@ export class CanvasController {
       case 'line':
         return createLine({ ...box, direction, name: t('name.line') }, d);
       default:
-        return createText({ ...box, name: t('name.text'), autoWidth: false }, d);
+        return makeShapeNode(tool, box) ?? createText({ ...box, name: t('name.text'), autoWidth: false }, d);
     }
   }
 
@@ -1191,7 +1262,7 @@ export class CanvasController {
     const start = this.rightDown;
     this.rightDown = null;
     if (!start || Math.hypot(e.clientX - start.x, e.clientY - start.y) > 4) return;
-    if (this.gesture || this.paths.busy || this.photo.busy || this.styleTools.busy) return;
+    if (this.busy()) return;
     const r = this.canvas.getBoundingClientRect();
     const tool = this.effectiveTool();
     // Outil Nœud : clic droit sur un nœud, menu des nœuds (comme dans Affinity).
@@ -1219,11 +1290,19 @@ export class CanvasController {
     this.gesture = null;
     this.guides = [];
     if (this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+    if (!g) {
+      const r = this.canvas.getBoundingClientRect();
+      const s = { x: e.clientX - r.left, y: e.clientY - r.top };
+      const at = this.toWorld(s.x, s.y);
+      if (this.modules.some((m) => m.pointerUp?.(e, at, s))) {
+        this.requestDraw();
+        return;
+      }
+    }
     if (!g && this.photo.pointerUp()) {
       this.requestDraw();
       return;
     }
-    if (!g && this.styleTools.pointerUp()) return;
     if (!g && this.paths.pointerUp()) {
       this.requestDraw();
       return;
@@ -1238,6 +1317,8 @@ export class CanvasController {
       case 'move':
         if (!g.moved) {
           editor.cancel();
+          // Alt + clic sans glisser : l'objet de dessous.
+          if (g.clones) moveTool.altClick(this);
           break;
         }
         // Un objet glissé sur un autre plan de travail y est rattaché.
@@ -1247,12 +1328,14 @@ export class CanvasController {
           return ids;
         });
         editor.commit(g.clones ? 'history.duplicate' : 'history.move');
+        if (g.clones) moveTool.noteDuplicate(g.ids, editor.selection);
         break;
       case 'resize':
         editor.commit('history.resize');
         break;
       case 'rotate':
         editor.commit('history.rotate');
+        moveTool.keepPivot(this, g.center);
         break;
       case 'marquee':
         break;
@@ -1287,11 +1370,12 @@ export class CanvasController {
       case 'create':
         if (g.nodeId) {
           editor.commit('history.add');
-          if (g.tool === 'text') beginTextEdit(g.nodeId, false);
+          if (g.tool === 'text' || g.tool === 'frameText') beginTextEdit(g.nodeId, false);
           break;
         }
-        // Simple clic : texte artistique, ou forme de taille par défaut.
-        if (g.tool === 'text') {
+        // Simple clic : cadre de texte ou texte artistique, ou forme de taille par défaut.
+        if (g.tool === 'frameText') clickFrame(g.start, g.artboardId);
+        else if (g.tool === 'text') {
           const d = ui.get().defaults;
           const node = createText(
             {
@@ -1324,8 +1408,8 @@ export class CanvasController {
 
   private onPointerCancel = () => {
     this.paths.pointerCancel();
-    this.styleTools.cancel();
     this.photo.pointerCancel();
+    this.modules.forEach((m) => m.cancel?.());
     if (this.gesture && this.gesture.kind !== 'pan' && this.gesture.kind !== 'marquee') editor.cancel();
     this.gesture = null;
     this.guides = [];
@@ -1347,10 +1431,19 @@ export class CanvasController {
   };
 
   private onDoubleClick = (e: MouseEvent) => {
+    // Main ou Zoom maintenus : deux clics de zoom ne ferment pas un tracé en cours.
+    if (this.heldView || this.spaceDown) return;
     const tool = ui.get().tool;
-    if (tool !== 'select' && tool !== 'direct') return;
     const rect = this.canvas.getBoundingClientRect();
     const p = this.toWorld(e.clientX - rect.left, e.clientY - rect.top);
+    const s = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    for (const m of this.modules) {
+      if (m.doubleClick?.(e, p, s)) {
+        this.requestDraw();
+        return;
+      }
+    }
+    if (tool !== 'select' && tool !== 'direct') return;
     if (this.paths.doubleClick(p, { x: e.clientX - rect.left, y: e.clientY - rect.top })) return;
     const hit = this.hitTest(p, true);
     if (!hit) return;
@@ -1418,7 +1511,7 @@ export class CanvasController {
       if (guide) cursor = guide.axis === 'x' ? 'col-resize' : 'row-resize';
       else if (h === 'rotate') cursor = 'grab';
       else if (h) cursor = handleCursor(h, this.selectionFrame()?.rotation ?? 0);
-      else hover = this.hitTest(p, tool === 'direct')?.id ?? null;
+      else hover = moveTool.clickTarget(this, p, tool, null)?.id ?? null;
     }
     this.canvas.style.cursor = cursor || this.toolCursor(tool);
     if (hover !== this.hoverId) {
@@ -1450,10 +1543,14 @@ export class CanvasController {
 
   private toolCursor(tool: ToolId): string {
     if (ui.get().linkFrom) return 'copy';
+    for (const m of this.modules) {
+      const c = m.cursor?.(tool);
+      if (c) return c;
+    }
     return cursorFor(tool);
   }
 
-  private updateCursor() {
+  updateCursor(): void {
     this.canvas.style.cursor = this.toolCursor(this.effectiveTool());
   }
 
@@ -1538,8 +1635,8 @@ export class CanvasController {
     if (!editingTextId && (tool === 'select' || tool === 'direct' || SHAPE_TOOLS.includes(tool)))
       this.drawHandles();
     this.paths.draw(ctx, this.colors.sel);
-    this.styleTools.draw(ctx, this.colors.sel);
     this.photo.draw(ctx);
+    for (const m of this.modules) m.draw?.(ctx, this.colors.sel);
     const g = this.gesture;
     if (g?.kind === 'marquee' || g?.kind === 'artboardCreate') {
       const b = rectFrom(g.start, g.current);
@@ -1834,11 +1931,13 @@ export class CanvasController {
       ctx.lineWidth = 1 / v.zoom;
       ctx.setLineDash([3 / v.zoom, 3 / v.zoom]);
       ctx.strokeStyle = inSel ? this.colors.sel : 'rgba(120,120,130,0.55)';
-      ctx.strokeRect(0, 0, n.width, n.height);
+      // Cadre de forme : son contour.
+      if (n.frameShape) ctx.stroke(toPath2D(frameShapeCommands(n)));
+      else ctx.strokeRect(0, 0, n.width, n.height);
       ctx.restore();
-      // Débordement : petit carré rouge « + » en bas à droite du dernier cadre.
+      // Débordement : petit carré rouge « + » en bas à droite du dernier cadre (sauf texte en trop masqué).
       const last = chain?.nodes[chain.nodes.length - 1];
-      const overflow = last?.id === n.id && chain!.overflow;
+      const overflow = last?.id === n.id && chain!.overflow && !n.hideOverflow;
       if (overflow || linkFrom === n.id || (inSel && last?.id === n.id)) {
         const q = this.toScreen(localToWorld(n, { x: n.width, y: n.height }));
         const s = 12;

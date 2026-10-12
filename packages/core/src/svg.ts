@@ -1,7 +1,15 @@
 import { opaque, alphaOf, sampleStops, withAlpha } from './color';
 import { activeEffects, effectMargin } from './effects';
-import { linearGradientPoints, nodeBounds, pathToSvg, radialGradientRadius, shapePath } from './geometry';
-import { flowText, needsFlow, type PageFields } from './flow';
+import { nodeBounds, pathToSvg, shapePath } from './geometry';
+import {
+  isElliptical,
+  linearPoints,
+  radialFrame,
+  transparencyFrame,
+  transparencyPaint,
+} from './paintGeometry';
+import { contourReach } from './contour';
+import { chainHead, flowText, hasFields, needsFlow, type PageFields, type TextFlow } from './flow';
 import { masterOf, pageFields } from './pages';
 import {
   approximateMeasure,
@@ -12,6 +20,7 @@ import {
   type TextLayout,
 } from './text';
 import { featureSettings } from './text';
+import { frameShapeCommands } from './textWrap';
 import { hasWidthProfile, visibleStrokes, widthProfileOutline } from './strokeProfile';
 import { symbolContent } from './symbols';
 import type { Artboard, BevelEffect, Paint, PoulpeDocument, SceneNode, Stroke, TextNode } from './types';
@@ -28,6 +37,11 @@ export interface SvgExportOptions {
   background?: boolean;
   /** Fond perdu : marge ajoutée tout autour du plan de travail, en pixels du document. */
   bleed?: number;
+  /**
+   * Répartitions des chaînes de cadres liés, à partager entre les pages d'un même export (d'un
+   * même document) : chaque chaîne n'est répartie qu'une fois, et non une fois par cadre.
+   */
+  flows?: Map<string, TextFlow>;
 }
 
 const esc = (s: string) =>
@@ -77,7 +91,7 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
       return colorAttrs(attr, paint.color);
     case 'linear': {
       const id = defs.id('lg');
-      const [a, b] = linearGradientPoints(paint.angle, w, h);
+      const [a, b] = linearPoints(paint, w, h);
       defs.add(
         `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(a.x)}" y1="${n(a.y)}" x2="${n(b.x)}" y2="${n(b.y)}">${stops(paint)}</linearGradient>`,
       );
@@ -85,8 +99,13 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
     }
     case 'radial': {
       const id = defs.id('rg');
+      const f = radialFrame(paint, w, h);
+      // Dégradé elliptique : un cercle centré en 0, étiré et tourné par `gradientTransform`.
+      const ellipse = isElliptical(paint) && Math.abs(f.ratio - 1) > 1e-3;
       defs.add(
-        `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(paint.cx * w)}" cy="${n(paint.cy * h)}" r="${n(radialGradientRadius(paint, w, h))}">${stops(paint)}</radialGradient>`,
+        ellipse
+          ? `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="${n(f.r)}" gradientTransform="translate(${n(f.cx)} ${n(f.cy)}) rotate(${n(f.angle)}) scale(1 ${n(f.ratio)})">${stops(paint)}</radialGradient>`
+          : `<radialGradient id="${id}" gradientUnits="userSpaceOnUse" cx="${n(f.cx)}" cy="${n(f.cy)}" r="${n(f.r)}">${stops(paint)}</radialGradient>`,
       );
       return `${attr}="url(#${id})"`;
     }
@@ -118,9 +137,17 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
       const id = defs.id('pat');
       const tw = Math.max(1, asset.width * paint.scale),
         th = Math.max(1, asset.height * paint.scale);
+      const ox = (paint.x ?? 0) * w,
+        oy = (paint.y ?? 0) * h;
+      const tr = [
+        ox || oy ? `translate(${n(ox)} ${n(oy)})` : '',
+        paint.angle ? `rotate(${n(paint.angle)})` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
       defs.add(
         `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(tw)}" height="${n(th)}"` +
-          (paint.angle ? ` patternTransform="rotate(${n(paint.angle)})"` : '') +
+          (tr ? ` patternTransform="${tr}"` : '') +
           `><image width="${n(tw)}" height="${n(th)}" preserveAspectRatio="none" href="${asset.data}"/></pattern>`,
       );
       return `${attr}="url(#${id})"`;
@@ -152,7 +179,8 @@ function effectsFilter(node: SceneNode, defs: Defs): string | null {
   if (!effects.length) return null;
   const id = defs.id('fx');
   const b = nodeBounds(node);
-  const m = effectMargin(effects) + 2;
+  // Le décalage de l'outil Contour dépasse de la boîte : la zone du filtre le couvre.
+  const m = effectMargin(effects) + 2 + contourReach(node);
   const sd = (r: number) => n(Math.max(0, r) / 2);
   const flood = (c: string) => `<feFlood flood-color="${opaque(c)}" flood-opacity="${n(alphaOf(c))}"/>`;
   let body = '';
@@ -197,7 +225,13 @@ function effectsFilter(node: SceneNode, defs: Defs): string | null {
   return id;
 }
 
-function transformAttr(node: SceneNode): string {
+function transformAttr(node: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+}): string {
   const t = `translate(${n(node.x)} ${n(node.y)})`;
   if (!node.rotation) return t;
   return `${t} rotate(${n(node.rotation)} ${n(node.width / 2)} ${n(node.height / 2)})`;
@@ -217,15 +251,18 @@ interface Ctx {
   override?: (node: SceneNode) => string | null;
   /** Numéro de page et nombre de pages, pour les champs des textes. */
   fields: PageFields;
+  flows: Map<string, TextFlow>;
 }
 
 /** Mise en page d'un texte : seul, ou sa part d'une chaîne de cadres liés (null : rien à afficher). */
 function textLayout(node: TextNode, ctx: Ctx): TextLayout | null {
   if (!needsFlow(ctx.doc, node)) return layoutText(node, ctx.measure);
-  return (
-    flowText(ctx.doc, node.id, ctx.measure, ctx.fields).parts.find((p) => p.node.id === node.id)?.layout ??
-    null
-  );
+  const head = chainHead(ctx.doc, node.id) ?? node;
+  // Les champs changent d'une page à l'autre : ils n'entrent dans la clé que si le texte en a.
+  const key = hasFields(head.text) ? `${head.id}\n${ctx.fields.page}\n${ctx.fields.pages}` : head.id;
+  let flow = ctx.flows.get(key);
+  if (!flow) ctx.flows.set(key, (flow = flowText(ctx.doc, node.id, ctx.measure, ctx.fields)));
+  return flow.parts.find((p) => p.node.id === node.id)?.layout ?? null;
 }
 
 function nodeToSvg(node: SceneNode, ctx: Ctx): string {
@@ -242,6 +279,25 @@ function nodeToSvg(node: SceneNode, ctx: Ctx): string {
     const id = ctx.defs.id('mask');
     ctx.defs.add(
       `<mask id="${id}" maskUnits="userSpaceOnUse" style="mask-type:alpha"><image transform="${transformAttr(node)}" width="${n(node.width)}" height="${n(node.height)}" preserveAspectRatio="none" href="${mask.data}"/></mask>`,
+    );
+    body = `<g mask="url(#${id})">${body}</g>`;
+  }
+  if (body && node.transparency) {
+    // Transparence (outil Transparence) : masque de luminance, du blanc plus ou moins opaque posé
+    // dans la boîte de l'objet, assez grand pour couvrir ses contours et ses effets.
+    const f = transparencyFrame(node);
+    const id = ctx.defs.id('tm');
+    const b = nodeBounds(node);
+    const strokes = 'stroke' in node ? visibleStrokes(node).map((st) => st.width * 6) : [];
+    const m =
+      effectMargin(activeEffects(node)) +
+      Math.max(0, ...strokes) +
+      contourReach(node) +
+      Math.max(f.width, f.height);
+    const fill = paintAttr('fill', transparencyPaint(node.transparency), f.width, f.height, ctx.defs);
+    ctx.defs.add(
+      `<mask id="${id}" maskUnits="userSpaceOnUse" x="${n(b.x - m)}" y="${n(b.y - m)}" width="${n(b.width + 2 * m)}" height="${n(b.height + 2 * m)}">` +
+        `<rect transform="${transformAttr(f)}" x="${n(-m)}" y="${n(-m)}" width="${n(f.width + 2 * m)}" height="${n(f.height + 2 * m)}" ${fill}/></mask>`,
     );
     body = `<g mask="url(#${id})">${body}</g>`;
   }
@@ -325,8 +381,18 @@ function nodeContentToSvg(node: SceneNode, ctx: Ctx): string {
         .join('');
       return `${open}<g xml:space="preserve"${attrs}>${glyphs}</g></g>`;
     }
+    // Cadre de texte de forme : la forme d'origine (remplissage et contour) passe sous le texte.
+    const fs = node.frameShape;
+    const shape =
+      fs && (fs.fill || fs.stroke)
+        ? `<path d="${pathToSvg(frameShapeCommands(node))}" ${paintAttr('fill', fs.fill ?? { type: 'none' }, w, h, defs)}${fs.stroke ? strokeAttrs(fs.stroke, w, h, defs) : ''}/>`
+        : '';
     let spans = '';
     for (const line of layout!.lines) {
+      // Puce ou numéro de liste, jamais souligné ni barré.
+      const mk = line.marker;
+      if (mk)
+        spans += `<tspan x="${n(mk.x)}" y="${n(line.baseline)}"${fontAttrs({ ...mk.style, underline: false, strike: false }, st)}>${esc(mk.text)}</tspan>`;
       for (const seg of line.segments) {
         // Texte justifié : chaque mot est placé ; sinon un morceau par style.
         const re = line.gap ? /\s+|\S+/g : /[\s\S]+/g;
@@ -338,7 +404,7 @@ function nodeContentToSvg(node: SceneNode, ctx: Ctx): string {
         }
       }
     }
-    return `${open}<text xml:space="preserve"${attrs}>${spans}</text></g>`;
+    return `${open}${shape}<text xml:space="preserve"${attrs}>${spans}</text></g>`;
   }
   const cmds = shapePath(node);
   const d = pathToSvg(cmds);
@@ -372,7 +438,14 @@ export function artboardToSvg(doc: PoulpeDocument, artboard: Artboard, opts: Svg
     opts.background !== false && artboard.background.type !== 'none'
       ? `<rect x="${n(-b)}" y="${n(-b)}" width="${n(W)}" height="${n(H)}" ${paintAttr('fill', artboard.background, artboard.width, artboard.height, defs)}/>`
       : '';
-  const ctx: Ctx = { doc, defs, measure, override: opts.override, fields: pageFields(doc, artboard) };
+  const ctx: Ctx = {
+    doc,
+    defs,
+    measure,
+    override: opts.override,
+    fields: pageFields(doc, artboard),
+    flows: opts.flows ?? new Map(),
+  };
   const master = masterOf(doc, artboard);
   // Les objets de la page maître passent sous ceux de la page, au même endroit relatif.
   const under = master

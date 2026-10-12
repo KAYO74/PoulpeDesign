@@ -4,11 +4,13 @@ import {
   clearRunKeys,
   cloneWithNewIds,
   createArtboard,
+  createImage,
   findArtboard,
   findNode,
   isGradient,
   newId,
   nodeBounds,
+  putImageInFrame,
   resizeArtboard,
   scaleNode,
   topLevelIds,
@@ -377,7 +379,9 @@ export function resizeDesign(width: number, height: number, copy: boolean, name?
 
 /** Cadre photo visé : un groupe avec masque d'écrêtage sous le point, ou le cadre sélectionné. */
 export function frameTarget(doc: PoulpeDocument, at?: Vec): string | null {
-  const isFrame = (n: SceneNode) => n.type === 'group' && n.clip && n.children.length > 0 && !n.locked;
+  // Un objet recadré (Recadrage vectoriel) n'est pas un cadre photo : son contenu serait remplacé.
+  const isFrame = (n: SceneNode) =>
+    n.type === 'group' && n.clip && !n.vectorCrop && n.children.length > 0 && !n.locked;
   if (at) {
     for (let i = doc.artboards.length - 1; i >= 0; i--) {
       const ab = doc.artboards[i];
@@ -399,7 +403,10 @@ export function frameTarget(doc: PoulpeDocument, at?: Vec): string | null {
   return null;
 }
 
-/** Place une image dans un cadre : elle couvre la forme du masque, centrée, sans déformation. */
+/**
+ * Place une image dans un cadre : elle prend l'ajustement du cadre (par défaut, elle couvre la forme
+ * du masque, centrée, sans déformation). Le cadre devient un cadre d'image (voir frames.ts).
+ */
 export function fillFrame(
   frameId: string,
   assetId: string,
@@ -409,26 +416,15 @@ export function fillFrame(
 ): string | null {
   const g = findNode(d, frameId)?.node;
   if (!g || g.type !== 'group') return null;
-  const mask = g.children[0];
-  const m = nodeBounds(mask);
-  const k = Math.max(m.width / imgW, m.height / imgH);
-  const w = imgW * k,
-    h = imgH * k;
-  const image: SceneNode = {
-    id: newId(),
-    name: t('name.image'),
-    type: 'image',
+  const m = g.children[0];
+  const image = createImage({
+    x: m.x,
+    y: m.y,
+    width: m.width,
+    height: m.height,
     assetId,
-    x: m.x + (m.width - w) / 2,
-    y: m.y + (m.height - h) / 2,
-    width: w,
-    height: h,
-    rotation: 0,
-    opacity: 1,
-    blendMode: 'normal',
-    visible: true,
-    locked: false,
-  };
-  g.children = [mask, image];
+    name: t('name.image'),
+  });
+  putImageInFrame(g, image, { width: imgW, height: imgH });
   return g.id;
 }

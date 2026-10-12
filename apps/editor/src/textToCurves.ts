@@ -4,6 +4,7 @@ import {
   createGroup,
   createPath,
   exactBounds,
+  frameShapeCommands,
   localToWorld,
   layoutTextOnPath,
   pathToSvg,
@@ -11,10 +12,11 @@ import {
   type Paint,
   type PathCommand,
   type PathNode,
+  type PoulpeDocument,
   type SceneNode,
   type TextNode,
 } from '@poulpe/core';
-import { cachedLayout, measureText } from '@poulpe/render';
+import { cachedLayout, measureText, textLayoutIn } from '@poulpe/render';
 import type { Font } from 'opentype.js';
 import { fontFaceBytes } from './pdfFonts';
 
@@ -113,6 +115,7 @@ function rect(x: number, y: number, w: number, h: number): PathCommand[] {
  */
 async function textOutlines(
   node: TextNode,
+  doc?: PoulpeDocument,
 ): Promise<{ parts: { paint: Paint; cmds: PathCommand[] }[]; missing: string[] }> {
   const parts = new Map<string, { paint: Paint; cmds: PathCommand[] }>();
   const missing = new Set<string>();
@@ -135,8 +138,15 @@ async function textOutlines(
       add(g.style, glyphCommands(font, g.char, g.style.fontSize, g.x + dx, g.y + dy, g.angle));
     }
   } else {
-    const layout = cachedLayout(node, measureText);
-    for (const line of layout.lines) {
+    // Un cadre de texte prend sa part du texte, avec son alignement vertical.
+    const layout = doc ? textLayoutIn(doc, node) : cachedLayout(node, measureText);
+    for (const line of layout?.lines ?? []) {
+      const mk = line.marker;
+      if (mk) {
+        const font = await loadFont(mk.style);
+        if (font) add(mk.style, glyphCommands(font, mk.text, mk.style.fontSize, mk.x, line.baseline));
+        else missing.add(mk.style.fontFamily);
+      }
       for (const seg of line.segments) {
         const st = seg.style;
         const font = await loadFont(st);
@@ -173,8 +183,9 @@ async function textOutlines(
 export async function textToCurves(
   node: TextNode,
   name: string,
+  doc?: PoulpeDocument,
 ): Promise<{ node: SceneNode | null; missing: string[] }> {
-  const { parts, missing } = await textOutlines(node);
+  const { parts, missing } = await textOutlines(node, doc);
   if (missing.length) return { node: null, missing };
   const paths: PathNode[] = [];
   for (const part of parts) {
@@ -196,11 +207,30 @@ export async function textToCurves(
     p.stroke = cloneData(node.stroke);
     paths.push(p);
   }
+  // Cadre de texte en forme (tools/textFlow) : son fond et son contour restent sous les lettres.
+  const shape = node.path ? undefined : node.frameShape;
+  if (shape && (shape.fill || shape.stroke)) {
+    const bg = createPath({
+      x: node.x,
+      y: node.y,
+      width: node.width,
+      height: node.height,
+      d: pathToSvg(frameShapeCommands(node)),
+      viewBox: { x: 0, y: 0, width: node.width || 1, height: node.height || 1 },
+      name,
+    });
+    bg.rotation = node.rotation;
+    bg.fill = shape.fill ? cloneData(shape.fill) : { type: 'none' };
+    bg.stroke = cloneData(shape.stroke ?? { ...bg.stroke, paint: { type: 'none' } });
+    paths.unshift(bg);
+  }
   if (!paths.length) return { node: null, missing: [] };
   const finish = (n: SceneNode) => {
     n.opacity = node.opacity;
     n.blendMode = node.blendMode;
     if (node.effects) n.effects = cloneData(node.effects);
+    if (node.transparency) n.transparency = cloneData(node.transparency);
+    if (node.wrap) n.wrap = { ...node.wrap };
     return n;
   };
   if (paths.length === 1) return { node: finish(paths[0]), missing: [] };

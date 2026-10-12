@@ -18,20 +18,73 @@ export interface GradientStop {
 export type Paint =
   | { type: 'none' }
   | { type: 'solid'; color: Color }
-  /** `angle` en degrés : 0 = de gauche à droite, 90 = de haut en bas. */
-  | { type: 'linear'; stops: GradientStop[]; angle: number }
-  /** Centre et rayon en fractions de la boîte de l'objet. */
-  | { type: 'radial'; stops: GradientStop[]; cx: number; cy: number; r: number }
+  /**
+   * `angle` en degrés : 0 = de gauche à droite, 90 = de haut en bas. Début (`x1`, `y1`) et fin
+   * (`x2`, `y2`) exacts en fractions de la boîte (outil Remplissage) : s'ils sont là, ils priment
+   * sur `angle`, qui reste la direction approchée.
+   */
+  | {
+      type: 'linear';
+      stops: GradientStop[];
+      angle: number;
+      x1?: number;
+      y1?: number;
+      x2?: number;
+      y2?: number;
+    }
+  /**
+   * Centre et rayon en fractions de la boîte de l'objet (`r` : fraction de son plus grand côté).
+   * Dégradé elliptique : `ratio` (second rayon / premier rayon) est présent, et `angle` (degrés)
+   * donne la direction du premier rayon.
+   */
+  | {
+      type: 'radial';
+      stops: GradientStop[];
+      cx: number;
+      cy: number;
+      r: number;
+      ratio?: number;
+      angle?: number;
+    }
   /**
    * Dégradé conique (angulaire) : les couleurs tournent autour du centre. `angle` en degrés
-   * donne la direction du début du dégradé, le centre est en fractions de la boîte.
+   * donne la direction du début du dégradé, le centre est en fractions de la boîte. `r` : longueur
+   * de la poignée de l'outil Remplissage (sans effet sur le rendu).
    */
-  | { type: 'conic'; stops: GradientStop[]; angle: number; cx: number; cy: number }
-  /** Motif : une image répétée. `scale` de la tuile, `angle` en degrés. */
-  | { type: 'pattern'; assetId: string; scale: number; angle: number };
+  | { type: 'conic'; stops: GradientStop[]; angle: number; cx: number; cy: number; r?: number }
+  /**
+   * Motif : une image répétée. `scale` de la tuile, `angle` en degrés. Origine de la tuile (`x`,
+   * `y`) en fractions de la boîte : le coin haut gauche si absente.
+   */
+  | { type: 'pattern'; assetId: string; scale: number; angle: number; x?: number; y?: number };
 
 /** Peintures faites de couleurs échelonnées (dégradés). */
 export type GradientPaint = Extract<Paint, { stops: GradientStop[] }>;
+
+/** Arrêt d'un dégradé de transparence : opacité de 0 (transparent) à 1 (opaque). */
+export interface OpacityStop {
+  offset: number;
+  opacity: number;
+}
+
+type WithOpacityStops<P> = P extends { stops: GradientStop[] }
+  ? Omit<P, 'stops'> & { stops: OpacityStop[] }
+  : never;
+
+/**
+ * Transparence (outil Transparence) : un dégradé d'opacité posé sur tout l'objet (remplissage,
+ * contours et effets) sans toucher à ses couleurs. Même géométrie que les dégradés de couleur.
+ */
+export type Transparency = WithOpacityStops<GradientPaint>;
+
+/** Contour (outil Contour) : décalage non destructif du tracé d'une forme fermée. */
+export interface Contour {
+  /** Distance en pixels : positive vers l'extérieur, négative vers l'intérieur. */
+  radius: number;
+  join: StrokeJoin;
+  /** Limite des angles vifs (jonction `miter`), en multiples de la distance. */
+  miterLimit: number;
+}
 
 export type StrokeCap = 'butt' | 'round' | 'square';
 export type StrokeJoin = 'miter' | 'round' | 'bevel';
@@ -51,6 +104,11 @@ export interface Stroke {
   align?: 'center' | 'inside' | 'outside';
   /** Largeur variable (pinceau calligraphique) : absente = épaisseur constante. */
   profile?: WidthProfile;
+  /**
+   * Positions des valeurs de `profile` le long du tracé (0 à 1, croissantes), posées par l'outil
+   * Largeur de trait. Absentes (ou d'une autre longueur que `profile`) : réparties régulièrement.
+   */
+  profilePos?: number[];
   /** Extrémités des traits (`round` si absent). */
   cap?: StrokeCap;
   /** Jonctions des traits (`round` si absent). */
@@ -145,6 +203,26 @@ interface NodeBase {
   effects?: Effect[];
   /** Masque de calque : ce qui est opaque dans le masque reste visible, le reste est caché. */
   mask?: LayerMask;
+  /** Dégradé de transparence de tout l'objet (outil Transparence). */
+  transparency?: Transparency;
+  /** Habillage : l'objet repousse le texte des cadres de texte placés dessous. Absent : aucun. */
+  wrap?: TextWrap;
+}
+
+/**
+ * Habillage du texte, comme dans Affinity Publisher : comment un objet repousse le texte des cadres
+ * de texte placés sous lui (dans l'ordre des calques de sa page).
+ */
+export interface TextWrap {
+  /**
+   * `square` : autour de sa boîte ; `tight` : au plus près de son contour ; `jump` : aucun texte à
+   * sa gauche ni à sa droite ; `through` : le texte passe dessous sans être repoussé.
+   */
+  type: 'square' | 'tight' | 'jump' | 'through';
+  /** Côtés où le texte peut aller : les deux (absent), à gauche, à droite, le plus grand côté. */
+  side?: 'both' | 'left' | 'right' | 'largest';
+  /** Distance entre l'objet et le texte, en pixels (0 si absente). */
+  distance?: number;
 }
 
 /**
@@ -161,11 +239,33 @@ interface Styled {
   stroke: Stroke;
   /** Contours supplémentaires, dessinés sous `stroke` (du plus large au plus fin, comme Illustrator). */
   strokes?: Stroke[];
+  /** Tracé décalé (outil Contour), pour les formes fermées ; « Convertir en courbes » l'applique. */
+  contour?: Contour;
 }
+
+/** Forme d'un coin : arrondi, droit (chanfrein), concave ou en encoche (découpe carrée). */
+export type CornerType = 'round' | 'straight' | 'concave' | 'cutout';
+
+/** Coin non destructif (outil Coin) : rayon en pixels et forme (arrondi si absente). */
+export interface Corner {
+  radius: number;
+  type?: CornerType;
+}
+
+/**
+ * Coins non destructifs d'un contour, par nœud du contour de base (« sous-tracé:nœud », comme
+ * l'outil Nœud). La clé `*` vaut pour tous les coins qui n'ont pas leur propre réglage.
+ */
+export type Corners = Record<string, Corner>;
 
 export interface RectNode extends NodeBase, Styled {
   type: 'rect';
+  /** Rayon des quatre coins (ou de ceux que `radii` ne précise pas). */
   cornerRadius: number;
+  /** Rayons distincts : haut gauche, haut droit, bas droit, bas gauche. Absent : tous à `cornerRadius`. */
+  radii?: [number, number, number, number];
+  /** Forme des coins (arrondie si absente). */
+  cornerType?: CornerType;
 }
 
 export interface EllipseNode extends NodeBase, Styled {
@@ -175,6 +275,9 @@ export interface EllipseNode extends NodeBase, Styled {
 export interface PolygonNode extends NodeBase, Styled {
   type: 'polygon';
   sides: number;
+  /** Côtés courbes, de -1 (creusés) à 1 (bombés). Absent : côtés droits. */
+  curve?: number;
+  corners?: Corners;
 }
 
 export interface StarNode extends NodeBase, Styled {
@@ -182,6 +285,7 @@ export interface StarNode extends NodeBase, Styled {
   points: number;
   /** Rayon intérieur / rayon extérieur, de 0.05 à 1. */
   innerRatio: number;
+  corners?: Corners;
 }
 
 export interface LineNode extends NodeBase, Styled {
@@ -219,6 +323,15 @@ export interface TextStyle {
   features?: string[];
   /** Colonnes du bloc de texte. Absent ou `count` à 1 : une seule colonne. */
   columns?: TextColumns;
+  /**
+   * Dernière ligne de chaque paragraphe d'un texte justifié : à gauche (absent), centrée, à droite
+   * ou justifiée elle aussi (`justify`).
+   */
+  lastLine?: 'left' | 'center' | 'right' | 'justify';
+  /** Position du texte dans la hauteur d'un cadre de texte. Absent : en haut. */
+  verticalAlign?: 'top' | 'center' | 'bottom';
+  /** Liste : une puce ou un numéro devant chaque paragraphe non vide. Absent : pas de liste. */
+  list?: 'bullet' | 'number';
 }
 
 /** Réglages de caractère qui peuvent varier à l'intérieur d'un même texte. */
@@ -262,6 +375,26 @@ export interface TextNode extends NodeBase, Styled {
    * suivants affichent la suite et leur propre `text` est ignoré.
    */
   next?: string;
+  /** Marges intérieures d'un cadre de texte, en pixels : haut, droite, bas, gauche. */
+  insets?: [number, number, number, number];
+  /** Le cadre ne se laisse pas repousser par l'habillage des objets placés dessus. */
+  ignoreWrap?: boolean;
+  /** Le texte qui ne tient pas reste caché sans l'indicateur rouge de débordement. */
+  hideOverflow?: boolean;
+  /** Cadre de texte de forme : les lignes se posent à l'intérieur de ce contour. */
+  frameShape?: TextFrameShape;
+}
+
+/**
+ * Forme d'un cadre de texte (une forme convertie en cadre) : contour exprimé dans `viewBox` et
+ * étiré sur la boîte du texte, avec le remplissage et le contour de la forme d'origine, dessinés
+ * sous le texte.
+ */
+export interface TextFrameShape {
+  d: string;
+  viewBox: { x: number; y: number; width: number; height: number };
+  fill?: Paint;
+  stroke?: Stroke;
 }
 
 /** Courbe suivie par un texte, exprimée dans `viewBox` et étirée sur la boîte du texte. */
@@ -289,6 +422,23 @@ export interface PathNode extends NodeBase, Styled {
   fillRule?: 'nonzero' | 'evenodd';
   /** Nœuds intelligents (outil Nœud), repérés par leur position dans le repère `d`. */
   smartNodes?: { x: number; y: number }[];
+  /**
+   * Forme paramétrique (triangle, flèche, bulle…) : le contour est recalculé d'après ses réglages à
+   * chaque taille ; `d` en garde une copie pour les anciennes versions de l'appli.
+   */
+  shape?: ShapeSpec;
+  /** Coins non destructifs (outil Coin), appliqués au contour de base. */
+  corners?: Corners;
+}
+
+/** Formes paramétriques des outils de forme (voir `shapes.ts`). */
+export type ShapeKind =
+  'triangle' | 'arrow' | 'callout' | 'donut' | 'pie' | 'cog' | 'cloud' | 'heart' | 'spiral';
+
+export interface ShapeSpec {
+  kind: ShapeKind;
+  /** Réglages de la forme (voir `SHAPE_PARAMS`) ; un réglage absent prend sa valeur par défaut. */
+  params: Record<string, number>;
 }
 
 /** Rectangle en fractions (0 à 1) de l'image source. */
@@ -321,6 +471,45 @@ export interface GroupNode extends NodeBase {
   children: SceneNode[];
   /** Masque d'écrêtage : l'objet du dessous découpe les autres. */
   clip: boolean;
+  /** Cadre d'image (avec `clip`) : la forme du dessous est le cadre, l'image suit son ajustement. */
+  picture?: PictureFrame;
+  /** Tableau : les enfants sont ses cellules (voir `TableInfo`). */
+  table?: TableInfo;
+  /**
+   * Recadrage vectoriel (avec `clip`) : le premier enfant est un rectangle invisible qui découpe
+   * le reste ; l'outil Recadrage vectoriel règle ce cadre et peut le retirer.
+   */
+  vectorCrop?: boolean;
+}
+
+/**
+ * Ajustement de l'image dans un cadre d'image, comme dans Affinity Publisher : `fill` couvre le
+ * cadre (le surplus est caché), `fit` montre l'image entière, `stretch` la déforme pour remplir le
+ * cadre, `none` garde sa taille.
+ */
+export type FrameFit = 'fill' | 'fit' | 'stretch' | 'none';
+
+/**
+ * Cadre d'image : un groupe à masque d'écrêtage dont le premier enfant (rectangle, ellipse…) est
+ * le cadre et le suivant l'image. Sans image, le cadre est vide. L'ajustement se réapplique quand
+ * le cadre change de taille ; le zoom et le décalage de l'image se lisent dans sa position.
+ */
+export interface PictureFrame {
+  fit: FrameFit;
+}
+
+/**
+ * Tableau : un groupe dont les enfants sont, ligne par ligne, chaque cellule (un rectangle pour
+ * le fond et les bordures) suivie de son texte (un cadre de texte). Les largeurs des colonnes et
+ * les hauteurs des lignes se lisent dans les rectangles ; une ligne grandit avec son texte.
+ */
+export interface TableInfo {
+  rows: number;
+  cols: number;
+  /** Première ligne en en-tête (fond distinct, texte en gras). */
+  header?: boolean;
+  /** Marge intérieure des cellules, en pixels (6 si absent). */
+  padding?: number;
 }
 
 /** Réglage d'image (couleurs, tons) ou filtre dynamique (flou, netteté…), non destructif. */
@@ -399,6 +588,8 @@ export interface Artboard {
   master?: boolean;
   /** Page maître utilisée par cette page. */
   masterId?: string;
+  /** Objets de la page maître cachés sur cette page (détachés : la page en a une copie). */
+  masterHidden?: string[];
 }
 
 /** Marges d'une page, en pixels. Sur les pages en vis-à-vis, `inside` est du côté de la reliure. */
@@ -451,6 +642,8 @@ export interface SavedStyle {
   effects?: Effect[];
   opacity?: number;
   blendMode?: BlendMode;
+  /** Dégradé de transparence de l'objet (outil Transparence). */
+  transparency?: Transparency;
   /** Style de texte : appliqué seulement aux textes. */
   text?: Partial<TextStyle>;
 }

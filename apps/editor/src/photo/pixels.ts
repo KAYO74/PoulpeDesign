@@ -4,12 +4,15 @@ import {
   findArtboard,
   findNode,
   hitNode,
+  isStyled,
   newId,
   walkDocument,
   type Box,
   type ImageNode,
+  type Paint,
   type PoulpeDocument,
   type SceneNode,
+  type Stroke,
   type Vec,
 } from '@poulpe/core';
 import { ImageCache, drawableSize, registerBitmap, type Drawable } from '@poulpe/render';
@@ -98,12 +101,41 @@ export function maskOf(node: SceneNode, doc: PoulpeDocument = editor.doc): HTMLC
   return img ? copyDrawable(img) : null;
 }
 
-/** Retire les images que plus aucun objet n'utilise (ni comme pixels, ni comme masque). */
+/**
+ * Retire les images que plus rien n'utilise : ni comme pixels, ni comme masque, ni comme motif
+ * (remplissage ou contour d'un objet, d'un cadre de texte en forme, fond d'un plan de travail,
+ * symbole ou style enregistré).
+ */
 export function pruneAssets(d: PoulpeDocument): void {
   const used = new Set<string>();
-  for (const { node } of walkDocument(d)) {
+  const paint = (p: Paint | undefined) => {
+    if (p?.type === 'pattern') used.add(p.assetId);
+  };
+  const strokes = (st: Stroke | undefined, more: Stroke[] | undefined) => {
+    paint(st?.paint);
+    more?.forEach((s) => paint(s.paint));
+  };
+  const visit = (node: SceneNode) => {
     if (node.type === 'image') used.add(node.assetId);
     if (node.mask) used.add(node.mask.assetId);
+    if (isStyled(node)) {
+      paint(node.fill);
+      strokes(node.stroke, node.strokes);
+    }
+    if (node.type === 'text' && node.frameShape) {
+      paint(node.frameShape.fill);
+      strokes(node.frameShape.stroke, undefined);
+    }
+    if (node.type === 'group') node.children.forEach(visit);
+  };
+  for (const ab of d.artboards) {
+    paint(ab.background);
+    ab.children.forEach(visit);
+  }
+  for (const sym of Object.values(d.symbols ?? {})) sym.children.forEach(visit);
+  for (const st of d.styles ?? []) {
+    paint(st.fill);
+    strokes(st.stroke, st.strokes);
   }
   for (const id of Object.keys(d.assets)) if (!used.has(id)) delete d.assets[id];
 }

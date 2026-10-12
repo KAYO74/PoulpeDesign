@@ -1,6 +1,7 @@
 import {
   alignNodes,
   boxCenter,
+  chainHead,
   clearRunKeys,
   cloneWithNewIds,
   createArtboard,
@@ -30,6 +31,9 @@ import {
   type TextStyle,
   type ZOrder,
   isStyled,
+  isVectorCrop,
+  removeVectorCrop,
+  styledChildren,
 } from '@poulpe/core';
 import { t } from './i18n';
 import { applyEditingStyle, endTextEdit, isEditingText } from './canvas/textEdit';
@@ -141,7 +145,8 @@ export function ungroupSelection(): void {
     const out: string[] = [];
     for (const id of ids) {
       const n = findNode(d, id)?.node;
-      if (n?.type === 'group') out.push(...ungroupNode(d, id));
+      // Un recadrage vectoriel perd aussi son cadre invisible : le contenu revient entier.
+      if (n?.type === 'group') out.push(...(isVectorCrop(n) ? removeVectorCrop(d, id) : ungroupNode(d, id)));
       else out.push(id);
     }
     return out;
@@ -286,7 +291,7 @@ export function setPaint(target: 'fill' | 'stroke', paint: Paint, gesture = fals
   const recipe = (doc: PoulpeDocument) => {
     for (const id of ids) {
       const visit = (m: SceneNode) => {
-        if (m.type === 'group') return m.children.forEach(visit);
+        if (m.type === 'group') return styledChildren(m).forEach(visit);
         if (!isStyled(m)) return;
         if (target === 'fill') {
           m.fill = paint;
@@ -308,7 +313,14 @@ export function setPaint(target: 'fill' | 'stroke', paint: Paint, gesture = fals
 export function setTextStyle(patch: Partial<TextStyle>): void {
   if (applyEditingStyle(patch)) return;
   const ids = sel();
-  const texts = ids.filter((id) => findNode(editor.doc, id)?.node.type === 'text');
+  // Un cadre lié affiche le texte du premier cadre de sa chaîne : c'est lui qui porte le style.
+  const texts = [
+    ...new Set(
+      ids
+        .filter((id) => findNode(editor.doc, id)?.node.type === 'text')
+        .map((id) => chainHead(editor.doc, id)?.id ?? id),
+    ),
+  ];
   if (!texts.length) {
     const d = ui.get().defaults;
     ui.set({ defaults: { ...d, text: { ...d.text, ...patch } } });

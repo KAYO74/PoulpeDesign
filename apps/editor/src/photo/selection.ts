@@ -4,8 +4,10 @@ import {
   floodMask,
   gaussianBlurred,
   maskOutline,
+  refineMask,
   type Box,
   type ImageNode,
+  type RefineOptions,
   type Vec,
 } from '@poulpe/core';
 import { drawArtboard, type ImageCache } from '@poulpe/render';
@@ -254,8 +256,16 @@ function isEmpty(m: SelectionMask): boolean {
   return true;
 }
 
-/** Sélection rectangulaire, elliptique ou à main levée (points du document). */
-export function selectShape(kind: 'rect' | 'ellipse' | 'polygon', points: Vec[], mode: SelectionMode): void {
+/**
+ * Sélection rectangulaire, elliptique ou à main levée (points du document). Sans `antialias`, le
+ * bord est net (chaque pixel est dedans ou dehors).
+ */
+export function selectShape(
+  kind: 'rect' | 'ellipse' | 'polygon',
+  points: Vec[],
+  mode: SelectionMode,
+  antialias = true,
+): void {
   const shape = blank();
   if (!shape || points.length < 2) return;
   const ctx = docCtx(shape);
@@ -279,6 +289,13 @@ export function selectShape(kind: 'rect' | 'ellipse' | 'polygon', points: Vec[],
     else ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
   }
   ctx.fill();
+  if (!antialias) {
+    const { width: w, height: h } = shape.canvas;
+    const raw = shape.canvas.getContext('2d')!;
+    const img = raw.getImageData(0, 0, w, h);
+    for (let i = 3; i < img.data.length; i += 4) img.data[i] = img.data[i] >= 128 ? 255 : 0;
+    raw.putImageData(img, 0, 0);
+  }
   blurMask(shape, ui.get().feather);
   combine(shape, mode);
 }
@@ -360,6 +377,135 @@ export function modifySelection(kind: 'feather' | 'grow' | 'shrink', radius: num
     ctx.putImageData(img, 0, 0);
   }
   commit(isEmpty(m) ? null : m);
+}
+
+/** Aperçu d'une forme combinée à une sélection de départ, dans la toile `into` (réutilisée). */
+function mixInto(
+  into: SelectionMask,
+  base: SelectionMask | null,
+  shape: SelectionMask,
+  mode: SelectionMode,
+): void {
+  const ctx = into.canvas.getContext('2d')!;
+  ctx.globalCompositeOperation = 'copy';
+  if (base && mode !== 'replace') {
+    ctx.drawImage(base.canvas, 0, 0);
+    ctx.globalCompositeOperation =
+      mode === 'add' ? 'source-over' : mode === 'subtract' ? 'destination-out' : 'destination-in';
+  } else if (mode === 'subtract' || mode === 'intersect') {
+    // Retirer ou garder l'intersection sans sélection de départ : rien n'est sélectionné.
+    ctx.clearRect(0, 0, into.canvas.width, into.canvas.height);
+    ctx.globalCompositeOperation = 'source-over';
+    return;
+  }
+  ctx.drawImage(shape.canvas, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/**
+ * Sélection par remplissage (baguette magique, comme dans Affinity) : le clic sélectionne les
+ * pixels de couleur proche, puis glisser règle la tolérance en direct. `paint` dessine les pixels
+ * comparés (tous les calques, ou le calque choisi) en coordonnées du document. Tout le geste
+ * compte pour une seule étape d'historique.
+ */
+export class FloodSelect {
+  private before: unknown;
+  private preview: SelectionMask;
+  /** Opacité du masque, réutilisée d'une mise à jour à l'autre (le blanc ne change pas). */
+  private out: ImageData;
+
+  private constructor(
+    private base: SelectionMask | null,
+    private shape: SelectionMask,
+    private px: ImageData,
+    private at: Vec,
+    private mode: SelectionMode,
+  ) {
+    this.before = snapshot();
+    this.preview = { ...shape, canvas: makeCanvas(shape.canvas.width, shape.canvas.height) };
+    this.out = new ImageData(px.width, px.height);
+    this.out.data.fill(255);
+  }
+
+  static start(
+    p: Vec,
+    mode: SelectionMode,
+    paint: (ctx: CanvasRenderingContext2D) => void,
+  ): FloodSelect | null {
+    const shape = blank();
+    if (!shape) return null;
+    const { width: w, height: h } = shape.canvas;
+    const src = makeCanvas(w, h);
+    const sctx = src.getContext('2d', { willReadFrequently: true })!;
+    sctx.setTransform(shape.scale, 0, 0, shape.scale, -shape.x * shape.scale, -shape.y * shape.scale);
+    paint(sctx);
+    const at = { x: (p.x - shape.x) * shape.scale, y: (p.y - shape.y) * shape.scale };
+    if (at.x < 0 || at.y < 0 || at.x >= w || at.y >= h) return null;
+    return new FloodSelect(current, shape, sctx.getImageData(0, 0, w, h), at, mode);
+  }
+
+  /** Recalcule la sélection avec cette tolérance (0 à 255) et l'affiche, sans étape d'historique. */
+  update(tolerance: number, contiguous: boolean): void {
+    const mask = floodMask(this.px, this.at.x, this.at.y, tolerance, contiguous);
+    const d = this.out.data;
+    for (let i = 0; i < mask.length; i++) d[i * 4 + 3] = mask[i];
+    this.shape.canvas.getContext('2d')!.putImageData(this.out, 0, 0);
+    mixInto(this.preview, this.base, this.shape, this.mode);
+    current = this.preview;
+    changed();
+  }
+
+  /** Fin du geste : une étape d'historique. */
+  end(): void {
+    if (current && isEmpty(current)) current = null;
+    changed();
+    editor.mark('history.selection', this.before);
+  }
+
+  /** Geste interrompu : la sélection de départ revient, sans étape d'historique. */
+  cancel(): void {
+    current = this.base;
+    changed();
+  }
+}
+
+/**
+ * Affiner la sélection : aperçu en direct depuis la sélection de départ (sans historique), puis
+ * une seule étape quand on valide. Les rayons sont en pixels du document.
+ */
+export class SelectionRefine {
+  private before: unknown;
+  private constructor(private base: SelectionMask) {
+    this.before = snapshot();
+  }
+
+  static start(): SelectionRefine | null {
+    return current ? new SelectionRefine(current) : null;
+  }
+
+  preview(o: RefineOptions): void {
+    const m = cloneMask(this.base);
+    const k = m.scale;
+    if (o.adjust || o.smooth > 0 || o.feather > 0) {
+      const ctx = m.canvas.getContext('2d', { willReadFrequently: true })!;
+      const img = ctx.getImageData(0, 0, m.canvas.width, m.canvas.height);
+      refineMask(img, { adjust: o.adjust * k, smooth: o.smooth * k, feather: o.feather * k });
+      ctx.putImageData(img, 0, 0);
+    }
+    current = m;
+    changed();
+  }
+
+  apply(): void {
+    if (current && isEmpty(current)) current = null;
+    changed();
+    editor.mark('history.selectionRefine', this.before);
+  }
+
+  cancel(): void {
+    current = this.base;
+    changed();
+  }
 }
 
 /** Sélection d'après l'opacité d'un calque de pixels. */
@@ -593,4 +739,17 @@ export class QuickSelect {
     }
     editor.mark('history.selection', this.before);
   }
+}
+
+/**
+ * Masque rapide (version 1.2) : une copie modifiable de la sélection, ou un masque vide dans le
+ * cadre d'une nouvelle sélection s'il n'y en a pas.
+ */
+export function selectionForEdit(): SelectionMask | null {
+  return current ? cloneMask(current) : blank();
+}
+
+/** Remplace la sélection par un masque modifié à la main (masque rapide), en une étape d'historique. */
+export function setSelectionMask(next: SelectionMask, label = 'history.selection'): void {
+  commit(isEmpty(next) ? null : next, label);
 }

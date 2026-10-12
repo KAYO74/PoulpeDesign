@@ -1,7 +1,7 @@
 import { setPaint } from '../actions';
-import { PHOTO_TOOL_KEYS, TOOL_KEYS } from '../commands';
+import { toolKeyOf } from '../commands';
 import { useT } from '../i18n';
-import { importImage } from '../io';
+import { startPlaceImage } from '../tools/frames/frameActions';
 import { setTool, ui, useEditor, useUi, type Persona, type ToolId } from '../store';
 import { activeWorkspace, useActiveWorkspace } from '../workspaces';
 import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona, withFamilies } from '../toolCatalog';
@@ -16,7 +16,13 @@ import { dockPanel, floatPanel, startPanelDrag, usePanels } from '../panels/pane
 
 /** Outils d'une colonne personnalisée, rangés par famille dans l'ordre du catalogue. */
 function customGroups(tools: ToolId[]): ToolId[][] {
-  return TOOL_CATALOG.map((c) => c.tools.filter((id) => tools.includes(id))).filter((g) => g.length > 0);
+  const groups = TOOL_CATALOG.map((c) => c.tools.filter((id) => tools.includes(id))).filter(
+    (g) => g.length > 0,
+  );
+  // Outils hors du catalogue (anciens espaces de travail) : gardés à la fin, comme dans `smallGroups`.
+  const rest = tools.filter((id) => !TOOL_CATALOG.some((c) => c.tools.includes(id)));
+  if (rest.length) groups.push(rest);
+  return groups;
 }
 
 /**
@@ -27,19 +33,15 @@ export function pickTool(id: ToolId): void {
   const ws = activeWorkspace();
   const need = toolPersona(id);
   const persona = ui.get().persona;
-  if (ws && need === 'photo' && persona !== 'photo') setPersona('photo');
-  if (ws && need === 'draw' && persona === 'photo') setPersona(ws.base === 'photo' ? 'draw' : ws.base);
-  if (id === 'image') void importImage();
+  if (ws && need === 'photo' && persona !== 'photo') setPersona('photo', ws.tools);
+  if (ws && need === 'draw' && persona === 'photo')
+    setPersona(ws.base === 'photo' ? 'draw' : ws.base, ws.tools);
+  if (id === 'image') void startPlaceImage();
   else setTool(id);
 }
 
 /** Au-delà de ce nombre d'outils, la colonne passe sur deux rangées (comme dans Affinity). */
 const TWO_COLUMNS = 18;
-
-const KEY_OF = Object.fromEntries(Object.entries(TOOL_KEYS).map(([k, v]) => [v, k.toUpperCase()]));
-const PHOTO_KEY_OF = Object.fromEntries(
-  Object.entries(PHOTO_TOOL_KEYS).map(([k, v]) => [v, k.toUpperCase()]),
-);
 
 export function ToolColumn() {
   const t = useT();
@@ -56,7 +58,7 @@ export function ToolColumn() {
   const groups = custom ? (grouped ? smallGroups : customGroups)(custom) : toolGroupsFor(persona);
   const keyOf = (id: ToolId) => {
     const need = toolPersona(id);
-    return (need === 'photo' || (!need && photo) ? PHOTO_KEY_OF : KEY_OF)[id];
+    return toolKeyOf(id, need === 'photo' || (!need && photo) ? 'photo' : photo ? 'draw' : persona);
   };
   const columns = useUi((s) => s.settings.toolsColumns);
   const locked = useUi((s) => s.settings.toolsLocked);

@@ -108,7 +108,9 @@ test.beforeEach(async ({ page }) => {
 
 test('lasso polygonal, et la sélection s’annule avec Ctrl+Z', async ({ page }) => {
   await openTestPhoto(page);
-  await page.keyboard.press('p');
+  // L : lasso (sélection à main levée), en mode polygonal (comme dans Affinity).
+  await page.keyboard.press('l');
+  await page.getByTestId('lasso-polygonal').click();
   for (const [x, y] of [
     [20, 20],
     [120, 20],
@@ -131,7 +133,7 @@ test('lasso polygonal, et la sélection s’annule avec Ctrl+Z', async ({ page }
 
 test('la sélection rapide s’étend au carré rouge sans déborder', async ({ page }) => {
   await openTestPhoto(page);
-  await page.keyboard.press('q');
+  await page.keyboard.press('w');
   await drag(page, [190, 140], [210, 160], 6);
   expect(await selectedAt(page, 175, 125)).toBe(255);
   expect(await selectedAt(page, 225, 175)).toBe(255);
@@ -143,7 +145,9 @@ test('la sélection rapide s’étend au carré rouge sans déborder', async ({ 
 test('correcteur : recopie la texture de la source avec la lumière de la destination', async ({ page }) => {
   await openTestPhoto(page, true);
   await selectBackground(page);
-  await page.keyboard.press('y');
+  // J : gomme magique, puis correcteur au deuxième appui.
+  await page.keyboard.press('j');
+  await page.keyboard.press('j');
   await setBrushSize(page, 'heal', 30);
   // Alt + clic : source dans le bleu, à gauche du carré.
   await page.keyboard.down('Alt');
@@ -163,7 +167,7 @@ test('correcteur : recopie la texture de la source avec la lumière de la destin
 test('doigt et fluidité déplacent les pixels', async ({ page }) => {
   await openTestPhoto(page);
   await selectBackground(page);
-  await page.keyboard.press('u');
+  await page.keyboard.press('s');
   await setBrushSize(page, 'smudge', 30);
   await drag(page, [200, 150], [260, 150], 20);
   expect(await history(page)).toContain('history.smudge');
@@ -171,7 +175,7 @@ test('doigt et fluidité déplacent les pixels', async ({ page }) => {
   const smeared = await pixel(page, 0, 240, 150);
   expect(smeared[0]).toBeGreaterThan(0x33 + 20);
 
-  await page.keyboard.press('k');
+  await page.getByTestId('tool-liquify').click();
   await setBrushSize(page, 'liquify', 80);
   await drag(page, [200, 60], [200, 110], 20);
   expect(await history(page)).toContain('history.liquify');
@@ -183,7 +187,9 @@ test('doigt et fluidité déplacent les pixels', async ({ page }) => {
 test('redresse un calque et corrige la perspective', async ({ page }) => {
   await openTestPhoto(page);
   await selectBackground(page);
-  await page.getByTestId('tool-straighten').click();
+  // C : recadrage, puis redressement au deuxième appui.
+  await page.keyboard.press('c');
+  await page.keyboard.press('c');
   // Une ligne inclinée d'environ 10°.
   await drag(page, [50, 100], [350, 153]);
   let bg = (await nodes(page))[0];

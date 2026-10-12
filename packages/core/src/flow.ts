@@ -1,6 +1,8 @@
 import { adjustRuns, layoutText, type MeasureText, type TextLayout, type TextLine } from './text';
+import { layoutInRegion, type RegionLayout, type TextRegion } from './textRegion';
+import { frameRegion, wrapObstacles, wrapSources, wrapsText, type WrapObstacle } from './textWrap';
 import { walkDocument } from './tree';
-import type { PoulpeDocument, TextNode, TextRun } from './types';
+import type { PoulpeDocument, TextNode, TextRun, TextStyle } from './types';
 
 /*
  * Textes de mise en page : champs (numéro de page, nombre de pages) et cadres de texte liés.
@@ -54,6 +56,8 @@ export function resolveFields<T extends Pick<TextNode, 'text' | 'style' | 'runs'
 interface Links {
   texts: Map<string, TextNode>;
   prev: Map<string, string>;
+  /** Un objet du document habille-t-il le texte ? Sinon, inutile de chercher les obstacles. */
+  wraps: boolean;
 }
 
 const linksCache = new WeakMap<PoulpeDocument, Links>();
@@ -63,13 +67,17 @@ function links(doc: PoulpeDocument): Links {
   const hit = frozen ? linksCache.get(doc) : undefined;
   if (hit) return hit;
   const texts = new Map<string, TextNode>();
-  for (const { node } of walkDocument(doc)) if (node.type === 'text') texts.set(node.id, node);
+  let wraps = false;
+  for (const { node } of walkDocument(doc)) {
+    if (node.type === 'text') texts.set(node.id, node);
+    if (!wraps && wrapsText(node)) wraps = true;
+  }
   const prev = new Map<string, string>();
   for (const t of texts.values()) {
     // Un cadre n'a qu'un précédent : un second lien vers lui est ignoré.
     if (t.next && t.next !== t.id && texts.has(t.next) && !prev.has(t.next)) prev.set(t.next, t.id);
   }
-  const out = { texts, prev };
+  const out = { texts, prev, wraps };
   if (frozen) linksCache.set(doc, out);
   return out;
 }
@@ -138,12 +146,164 @@ function shiftLine(line: TextLine, o: number): TextLine {
   };
 }
 
+/**
+ * Liste qui continue dans un cadre lié : nombre de paragraphes numérotés avant `offset`, et le
+ * cadre commence-t-il au milieu d'un paragraphe (dont la puce est dans le cadre précédent) ?
+ */
+function listFrom(
+  text: string,
+  offset: number,
+  list: boolean,
+): { listStart?: number; listContinued?: boolean } {
+  if (!list || !offset) return {};
+  let count = 0;
+  let pos = 0;
+  for (const para of text.split('\n')) {
+    if (pos >= offset) break;
+    if (para.trim()) count++;
+    pos += para.length + 1;
+  }
+  return { listStart: count, listContinued: text[offset - 1] !== '\n' };
+}
+
+/**
+ * Alignement vertical dans un cadre de hauteur fixe : les lignes de chaque colonne descendent
+ * au milieu ou en bas du cadre.
+ */
+export function alignVertically(
+  lines: TextLine[],
+  height: number,
+  align: TextStyle['verticalAlign'],
+): TextLine[] {
+  if (!align || align === 'top' || !lines.length) return lines;
+  const k = align === 'center' ? 0.5 : 1;
+  const bottoms = new Map<number, number>();
+  for (const l of lines) {
+    const c = l.column ?? 0;
+    bottoms.set(c, Math.max(bottoms.get(c) ?? 0, l.top + l.height));
+  }
+  return lines.map((l) => {
+    const shift = Math.max(0, (height - bottoms.get(l.column ?? 0)!) * k);
+    return shift ? { ...l, top: l.top + shift, baseline: l.baseline + shift } : l;
+  });
+}
+
 function sliceRuns(runs: TextRun[] | undefined, from: number): TextRun[] | undefined {
   if (!runs?.length || !from) return runs;
   const out = runs
     .filter((r) => r.end > from)
     .map((r) => ({ ...r, start: Math.max(0, r.start - from), end: r.end - from }));
   return out.length ? out : undefined;
+}
+
+/** Texte d'une chaîne à partir de `offset`, tel qu'un cadre le met en page. */
+function textFrom(
+  src: Pick<TextNode, 'style' | 'runs'>,
+  text: string,
+  offset: number,
+  frame: TextNode,
+  autoWidth: boolean,
+) {
+  return {
+    text: text.slice(offset),
+    style: src.style,
+    runs: sliceRuns(src.runs, offset),
+    autoWidth,
+    width: frame.width,
+    // La hauteur du cadre répartit les lignes entre ses colonnes.
+    height: frame.height,
+    ...listFrom(text, offset, !!src.style.list),
+  };
+}
+
+/**
+ * Alignement vertical dans une zone habillée ou de forme : chaque colonne garde son texte et le
+ * pose aussi bas que possible (en bas), ou avec autant de place au-dessus qu'au-dessous (au
+ * milieu), tant qu'il y tient encore. Les places changent avec la hauteur : on cherche le départ
+ * par dichotomie. `relayout` pose le texte à partir de l'indice `from` dans une zone d'une colonne.
+ */
+function alignInRegion(
+  lay: RegionLayout,
+  region: TextRegion,
+  k: number,
+  relayout: (from: number, single: TextRegion, startY: number) => RegionLayout,
+): TextLine[] {
+  const { lines } = lay;
+  const out: TextLine[] = [];
+  for (let i = 0; i < lines.length;) {
+    const col = lines[i].column ?? 0;
+    let j = i;
+    while (j < lines.length && (lines[j].column ?? 0) === col) j++;
+    const from = lines[i].start;
+    const len = (j < lines.length ? lines[j].start : lay.end) - from;
+    const single: TextRegion = { ...region, columns: 1, slots: (_c, y0, y1) => region.slots(col, y0, y1) };
+    let best = lines.slice(i, j);
+    let lo = 0,
+      hi = region.bottom - region.top;
+    while (hi - lo > 0.5) {
+      const mid = (lo + hi) / 2;
+      const again = relayout(from, single, region.top + mid);
+      const kept = again.lines.filter((l) => l.start < len);
+      // Tout le texte de la colonne, sans ligne à cheval sur la suivante, pas trop bas.
+      let ok = kept.length > 0 && again.end >= len && kept.every((l) => l.stop <= len);
+      if (ok) {
+        const below = region.bottom - Math.max(...kept.map((l) => l.top + l.height));
+        ok = below >= -1e-6 && (kept[0].top - region.top) * (1 - k) <= below * k + 0.5;
+      }
+      if (!ok) {
+        hi = mid;
+        continue;
+      }
+      lo = mid;
+      best = kept.map((l) => {
+        const moved = shiftLine(l, from);
+        return region.columns > 1 ? { ...moved, column: col } : moved;
+      });
+    }
+    out.push(...best);
+    i = j;
+  }
+  return out;
+}
+
+/**
+ * Part d'un cadre de texte (hauteur fixe) : les lignes se posent dans sa zone (colonnes, marges
+ * intérieures, forme, objets qui l'habillent) à partir de l'indice `offset` du texte.
+ * `obstacles` : les objets qui l'habillent, s'ils sont déjà connus.
+ */
+export function framePart(
+  doc: PoulpeDocument,
+  frame: TextNode,
+  src: Pick<TextNode, 'style' | 'runs'>,
+  text: string,
+  offset: number,
+  measure: MeasureText,
+  obstacles: WrapObstacle[] = links(doc).wraps ? wrapObstacles(doc, frame) : [],
+): FlowPart {
+  const sub = textFrom(src, text, offset, frame, false);
+  const region = frameRegion(frame, src.style, obstacles);
+  let lay = layoutInRegion(sub, measure, region);
+  const v = src.style.verticalAlign;
+  if (v && v !== 'top' && lay.lines.length) {
+    if (!region.shaped) lay = { ...lay, lines: alignVertically(lay.lines, region.bottom, v) };
+    else {
+      // Zone habillée ou de forme : on cherche, colonne par colonne, le départ le plus bas.
+      const relayout = (from: number, single: TextRegion, startY: number) =>
+        layoutInRegion(textFrom(src, text, offset + from, frame, false), measure, single, startY);
+      lay = { ...lay, lines: alignInRegion(lay, region, v === 'center' ? 0.5 : 1, relayout) };
+    }
+  }
+  return {
+    node: frame,
+    layout: {
+      lines: lay.lines.map((l) => shiftLine(l, offset)),
+      lineHeight: lay.lineHeight,
+      width: lay.width,
+      height: frame.height,
+    },
+    start: offset,
+    end: offset + lay.end,
+  };
 }
 
 /**
@@ -162,48 +322,57 @@ export function flowText(
   const src = fields ? resolveFields(head, fields) : head;
   const text = src.text;
   const parts: FlowPart[] = [];
+  // Sur un brouillon (sans cache), on ne cherche qu'une fois si quelque chose habille.
+  const { wraps } = links(doc);
   let offset = 0;
   for (let i = 0; i < chain.length; i++) {
     const frame = chain[i];
-    const sub = {
-      text: text.slice(offset),
-      style: src.style,
-      runs: sliceRuns(src.runs, offset),
-      autoWidth: chain.length > 1 || frame.frame ? false : head.autoWidth,
-      width: frame.width,
-    };
-    const full = layoutText(sub, measure);
-    const fixed = frame.frame || chain.length > 1;
-    let count = full.lines.length;
-    if (fixed) {
-      count = 0;
-      while (count < full.lines.length) {
-        const l = full.lines[count];
-        if (l.top + l.height > frame.height + 0.5) break;
-        count++;
-      }
+    // Cadre de texte : sa hauteur est fixe, ce qui ne tient pas passe au cadre suivant.
+    if (frame.frame || chain.length > 1) {
+      const obstacles = wraps ? wrapObstacles(doc, frame) : [];
+      const part = framePart(doc, frame, src, text, offset, measure, obstacles);
+      parts.push(part);
+      offset = part.end;
+      continue;
     }
-    let lines = full.lines.slice(0, count).map((l) => shiftLine(l, offset));
+    const sub = textFrom(src, text, offset, frame, head.autoWidth);
+    const full = layoutText(sub, measure);
+    let lines = full.lines.map((l) => shiftLine(l, offset));
     // Texte artistique dont les champs ont changé la longueur : l'alignement suit sa boîte.
     const k = src.style.align === 'center' ? 0.5 : src.style.align === 'right' ? 1 : 0;
-    if (sub.autoWidth && k && frame.width !== full.width)
-      lines = lines.map((l) => ({ ...l, offset: l.offset + (frame.width - full.width) * k }));
-    const rest = full.lines[count];
-    const end = rest ? offset + rest.start : text.length;
+    if (sub.autoWidth && k && frame.width !== full.width) {
+      const dx = (frame.width - full.width) * k;
+      lines = lines.map((l) => ({
+        ...l,
+        offset: l.offset + dx,
+        marker: l.marker && { ...l.marker, x: l.marker.x + dx },
+      }));
+    }
     parts.push({
       node: frame,
-      layout: {
-        lines,
-        lineHeight: full.lineHeight,
-        width: full.width,
-        height: fixed ? frame.height : full.height,
-      },
+      layout: { lines, lineHeight: full.lineHeight, width: full.width, height: full.height },
       start: offset,
-      end,
+      end: text.length,
     });
-    offset = end;
+    offset = text.length;
   }
   // Une ligne vide en fin de texte (après un retour à la ligne) ne compte pas comme débordement.
   const overflow = offset < text.length && text.slice(offset).trim() !== '';
   return { text, parts, overflow };
+}
+
+/**
+ * Ce dont dépend la répartition d'une chaîne, hors champs et polices : ses cadres et, pour chacun,
+ * les objets qui l'habillent. Tant que la liste est la même (objets comparés par référence), la
+ * répartition déjà calculée reste bonne.
+ */
+export function flowDependencies(doc: PoulpeDocument, id: string): unknown[] {
+  const chain = textChain(doc, id);
+  const { wraps } = links(doc);
+  const out: unknown[] = [];
+  for (const f of chain) {
+    out.push(f);
+    if (wraps && (f.frame || chain.length > 1)) out.push(...wrapSources(doc, f));
+  }
+  return out;
 }

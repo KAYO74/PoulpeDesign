@@ -1,7 +1,6 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import {
-  PHOTO_TOOL_KEYS,
-  TOOL_KEYS,
+  toolKeysFor,
   allCommands,
   commandShortcut,
   commandTitle,
@@ -39,7 +38,7 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
   const [query, setQuery] = useState('');
   const [capturing, setCapturing] = useState<string | null>(null);
   const persona = ui.get().persona;
-  const tools = persona === 'photo' ? PHOTO_TOOL_KEYS : TOOL_KEYS;
+  const tools = toolKeysFor(persona);
 
   const version = useSyncExternalStore(subscribeCommands, commandsVersion);
   const rows = useMemo(
@@ -117,9 +116,9 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
         {!only && (
           <table>
             <tbody>
-              {Object.entries(tools).map(([k, tool]) => (
+              {Object.entries(tools).map(([k, list]) => (
                 <tr key={k}>
-                  <td>{t(`tool.${tool}`)}</td>
+                  <td>{list.map((tool) => t(`tool.${tool}`)).join(', ')}</td>
                   <td>
                     <kbd>{k.toUpperCase()}</kbd>
                   </td>

@@ -131,12 +131,31 @@ export function resizeArtboard(ab: Artboard, width: number, height: number): voi
   ab.height = height;
 }
 
-/** Épaisseurs de contour et arrondis suivent la mise à l'échelle. */
+/**
+ * Épaisseurs de contour, arrondis et autres distances en pixels (contour, habillage, marges et
+ * gouttière des cadres de texte) suivent la mise à l'échelle.
+ */
 function scaleDetails(node: SceneNode, k: number): void {
+  if (node.wrap?.distance) node.wrap = { ...node.wrap, distance: node.wrap.distance * k };
   if (node.type === 'group') return node.children.forEach((c) => scaleDetails(c, k));
   if (!isStyled(node)) return;
   node.stroke = { ...node.stroke, width: node.stroke.width * k };
-  if (node.type === 'rect') node.cornerRadius *= k;
+  if (node.contour) node.contour = { ...node.contour, radius: node.contour.radius * k };
+  if (node.type === 'text') {
+    if (node.insets) node.insets = node.insets.map((v) => v * k) as [number, number, number, number];
+    const cols = node.style.columns;
+    if (cols?.gap) node.style = { ...node.style, columns: { ...cols, gap: cols.gap * k } };
+  }
+  if (node.type === 'rect') {
+    node.cornerRadius *= k;
+    if (node.radii) node.radii = node.radii.map((r) => r * k) as [number, number, number, number];
+  }
+  if ((node.type === 'polygon' || node.type === 'star' || node.type === 'path') && node.corners)
+    node.corners = Object.fromEntries(
+      Object.entries(node.corners).map(([key, c]) => [key, { ...c, radius: c.radius * k }]),
+    );
+  if (node.type === 'path' && node.shape?.params.radius !== undefined)
+    node.shape = { ...node.shape, params: { ...node.shape.params, radius: node.shape.params.radius * k } };
 }
 
 function hasText(nodes: Artboard['children']): boolean {

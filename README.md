@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.1-FF5F86" alt="Version 1.1"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2-FF5F86" alt="Version 1.2"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -28,11 +28,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/dessin-modele.png" alt="L'éditeur Poulpe Design en thème sombre : un modèle « Soldes d'été » ouvert, avec la bibliothèque de modèles à gauche" width="100%">
+  <img src="docs/images/dessin-modele.png" alt="L'éditeur Poulpe Design en thème sombre : un modèle « Soldes d'été » ouvert, avec la bibliothèque de modèles à gauche et la barre de l'outil Déplacer en haut" width="100%">
 </p>
 
 > [!NOTE]
-> Voici la version 1.1 : dessin vectoriel, retouche photo, mise en page, vectorisation d'images, détourage automatique, macros et extensions, dans une appli qui se met à jour toute seule. Nouveau : la langue se choisit à l'installation, une fenêtre Préférences complète, une gestion avancée des calques, une appli plus fluide sur les gros documents et une colonne d'outils à la carte.
+> Voici la version 1.2 : chaque outil des espaces Vectoriel, Pixel et Mise en page fonctionne maintenant comme dans Affinity, avec les mêmes gestes et les mêmes raccourcis. Nouveau : une vingtaine de formes avec leurs poignées sur la toile, des outils propres à la mise en page (cadres de texte et d'image, tableaux, habillage, écoulement automatique), le recadrage et de nouveaux outils de retouche côté photo. Le détail est dans [Version 1.2](docs/version-1.2.md).
 
 > [!TIP]
 > **Fait avec l'IA.** Poulpe Design est un projet personnel, construit avec l'intelligence artificielle : le code, la documentation et les images de cette page ont été écrits par Claude (Anthropic) à partir des demandes de son créateur, pour offrir à tous une vraie application de design, libre et gratuite. Rien n'est repris de logiciels propriétaires ; voir [Licences et origine du contenu](docs/licences.md).
@@ -41,8 +41,8 @@
 
 Choisissez votre système, le téléchargement démarre directement.
 
-| Système                          | Télécharger                                                                                                                                                                                                                                          |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Système                          | Télécharger                                                                                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Windows** 10 et 11             | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_windows_x64-setup.exe"><img src="https://img.shields.io/badge/Windows-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour Windows"></a>                |
 | **macOS**, puces Apple (M1 à M4) | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_darwin_aarch64.dmg"><img src="https://img.shields.io/badge/macOS%20Apple-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (puces Apple)"></a> |
 | **macOS**, processeur Intel      | <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest/download/Poulpe_darwin_x64.dmg"><img src="https://img.shields.io/badge/macOS%20Intel-T%C3%A9l%C3%A9charger-FF5F86?style=for-the-badge" alt="Télécharger pour macOS (Intel)"></a>           |
@@ -59,20 +59,28 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
 
 <table>
   <tr>
+    <td width="50%"><img src="docs/images/formes.png" alt="Neuf des nouvelles formes de la version 1.2 sur un plan de travail ; l'engrenage sélectionné montre ses poignées rouges"></td>
+    <td width="50%"><img src="docs/images/habillage.png" alt="La Persona Mise en page : un texte sur deux colonnes contourne un cadre d'image en ellipse"></td>
+  </tr>
+  <tr>
+    <td align="center">Une vingtaine de formes, réglables sur la toile</td>
+    <td align="center">Le texte contourne les images</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/recadrage.png" alt="La Persona Photo : l'outil Recadrage avec sa grille des tiers et le bouton Redresser"></td>
     <td width="50%"><img src="docs/images/bienvenue-modeles.png" alt="L'écran d'accueil avec les modèles prêts à l'emploi, filtrables par format"></td>
-    <td width="50%"><img src="docs/images/photo-reglages.png" alt="La Persona Photo : une photo de coucher de soleil avec un calque de réglage Courbes et son histogramme"></td>
   </tr>
   <tr>
+    <td align="center">Recadrage avec redressement et grilles</td>
     <td align="center">Modèles prêts à l'emploi, façon Canva</td>
-    <td align="center">Retouche photo avec calques de réglage</td>
   </tr>
   <tr>
+    <td width="50%"><img src="docs/images/photo-reglages.png" alt="La Persona Photo : une photo de coucher de soleil avec un calque de réglage Courbes et son histogramme"></td>
     <td width="50%"><img src="docs/images/mise-en-page.png" alt="La Persona Mise en page : panneau Pages avec pages maîtres et miniatures"></td>
-    <td width="50%"><img src="docs/images/choix-langue.png" alt="La fenêtre du premier lancement qui demande la langue : Français ou English"></td>
   </tr>
   <tr>
+    <td align="center">Retouche photo avec calques de réglage</td>
     <td align="center">Mise en page sur plusieurs pages</td>
-    <td align="center">Français ou anglais, choisi à l'installation</td>
   </tr>
   <tr>
     <td width="50%"><img src="docs/images/vectoriser.png" alt="La fenêtre « Vectoriser l'image » : une illustration de poulpe et son aperçu en tracés de six couleurs"></td>
@@ -96,9 +104,9 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 **Dessin**
 
-- **Formes et tracés** : rectangles, ellipses, polygones, étoiles, lignes, plume, crayon et outil Nœud, opérations de géométrie (union, soustraction, intersection…), ciseaux, cutter, outil Coin et constructeur de formes.
+- **Formes et tracés** : une vingtaine de formes (rectangle arrondi, flèche, bulle, engrenage, cœur, spirale…) réglables par leurs poignées sur la toile, plume en modes Intelligent, Polygone et Ligne, crayon, pinceau vectoriel, remplissage de zone et outil Nœud, opérations de géométrie (union, soustraction, intersection…), ciseaux, cutter, outil Coin et constructeur de formes.
 - **Contours** pointillés, flèches, contours multiples et à largeur variable.
-- **Texte** : polices fournies et polices de l'ordinateur, styles différents dans un même texte, texte sur un tracé, colonnes, fonctions OpenType (petites capitales, ligatures…), conversion en courbes.
+- **Texte** : cadres de texte et tableaux, polices fournies et polices de l'ordinateur, styles différents dans un même texte, texte sur un tracé, colonnes, fonctions OpenType (petites capitales, ligatures…), conversion en courbes.
 - **Couleurs et effets** : dégradés linéaires, radiaux et coniques, motifs, nuancier, palettes, ombres, lueurs, flou, biseau et estampage.
 - **Symboles et styles enregistrés** : modifier un symbole met à jour toutes ses copies.
 - **Vectoriser une image** : un logo ou un dessin devient des tracés modifiables, comme dans Illustrator.
@@ -111,14 +119,15 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 **Photo**
 
-- **Pinceaux, gomme, sélections** (rectangle, ellipse, lasso, lasso polygonal, baguette magique, sélection rapide) et **gomme magique** qui efface un objet en reconstruisant le fond, sans connexion.
+- **Pinceaux, gommes, sélections** (rectangle, ellipse, lasso main levée, polygonal ou magnétique, baguette magique, sélection rapide, masque rapide), **recadrage** avec redressement et **gomme magique** qui efface un objet en reconstruisant le fond, sans connexion.
 - **Supprimer l'arrière-plan** et **sélectionner le sujet** d'un clic, grâce à une IA qui tourne sur l'ordinateur, sans connexion.
-- **Correcteur, doigt, fluidité**, redressement de l'horizon et de la perspective, taille de l'image et de la zone de travail.
+- **Correcteur, correctif, yeux rouges, éponge, doigt, fluidité**, redressement de l'horizon et de la perspective, taille de l'image et de la zone de travail.
 - **Calques de réglage** (courbes, niveaux, teinte et saturation, balance des blancs, looks LUT…), **filtres** (flou, netteté, bruit, vignettage…), **masques de calque** et histogramme.
 
 **Mise en page et impression**
 
-- **Pages, pages maîtres, numéros de page** et cadres de texte liés d'une page à l'autre.
+- **Pages, pages maîtres, numéros de page**, cadres de texte liés d'une page à l'autre et **écoulement automatique** qui ajoute les pages qu'il faut.
+- **Cadres d'image** (remplir, contenir, étirer) et **habillage** : le texte contourne les images et les formes.
 - **CMJN**, épreuvage à l'écran, **PDF pour l'imprimerie** (PDF/X-4, fond perdu, traits de coupe).
 
 **Fichiers**
@@ -148,6 +157,7 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 | v0.6    | Outils Photoshop et Affinity manquants : correcteur, fluidité, cutter, symboles, LUT…              | ✅ Disponible |
 | v1.0    | Vectorisation, détourage par IA locale, macros, extensions, mises à jour automatiques              | ✅ Disponible |
 | v1.1    | Langue choisie à l'installation, Préférences, calques avancés, appli plus fluide, colonne d'outils | ✅ Disponible |
+| v1.2    | Chaque outil au niveau d'Affinity : formes, plume, texte, cadres, tableaux, recadrage, retouche    | ✅ Disponible |
 | v1.x    | Appli signée (Windows, macOS), Flathub, accessibilité, documentation en anglais                    | 🚧 À venir    |
 
 Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-route.md).
@@ -174,13 +184,13 @@ pnpm desktop:dev    # appli de bureau (Rust et dépendances Tauri requis)
 | `apps/editor`      | Interface façon Affinity (React + Vite)                                 |
 | `apps/desktop`     | Appli de bureau Tauri 2                                                 |
 
-Pour publier une nouvelle version, on change le numéro de version (dans `apps/desktop/src-tauri/tauri.conf.json`, `Cargo.toml` et les `package.json`), puis on ouvre l'onglet **Actions > Installeurs de bureau > Run workflow** et on indique l'étiquette (par exemple `v1.1.1`) ; pousser l'étiquette avec git marche aussi. GitHub fabrique les installeurs et les publie, et les boutons de téléchargement ci-dessus pointent tout seuls vers la nouvelle version.
+Pour publier une nouvelle version, on change le numéro de version (dans `apps/desktop/src-tauri/tauri.conf.json`, `Cargo.toml` et les `package.json`), puis on ouvre l'onglet **Actions > Installeurs de bureau > Run workflow** et on indique l'étiquette (par exemple `v1.2.0`) ; pousser l'étiquette avec git marche aussi. GitHub fabrique les installeurs et les publie, et les boutons de téléchargement ci-dessus pointent tout seuls vers la nouvelle version.
 
 ### Documentation
 
 - [Guide d'installation](docs/installer.md)
 - [Licences et origine du contenu](docs/licences.md)
-- [Moteur d'édition v0.1](docs/moteur-v0.1.md), [Côté Canva v0.2](docs/cote-canva-v0.2.md), [Vectoriel pro v0.3](docs/vectoriel-pro-v0.3.md), [Retouche photo v0.4](docs/retouche-photo-v0.4.md), [Mise en page v0.5](docs/mise-en-page-v0.5.md), [Impression v0.5](docs/impression-v0.5.md), [Outils manquants v0.6](docs/outils-manquants-v0.6.md) [Version 1.0](docs/version-1.0.md) et [Version 1.1](docs/version-1.1.md) : état et organisation du code
+- [Moteur d'édition v0.1](docs/moteur-v0.1.md), [Côté Canva v0.2](docs/cote-canva-v0.2.md), [Vectoriel pro v0.3](docs/vectoriel-pro-v0.3.md), [Retouche photo v0.4](docs/retouche-photo-v0.4.md), [Mise en page v0.5](docs/mise-en-page-v0.5.md), [Impression v0.5](docs/impression-v0.5.md), [Outils manquants v0.6](docs/outils-manquants-v0.6.md), [Version 1.0](docs/version-1.0.md), [Version 1.1](docs/version-1.1.md) et [Version 1.2](docs/version-1.2.md) : état et organisation du code
 - [Panneaux libres et espaces de travail](docs/panneaux-libres.md), [Écrire une extension](docs/extensions.md)
 - [Signature des installeurs et mises à jour automatiques](docs/signature-et-mises-a-jour.md)
 - [Moteur Rust et carte graphique](docs/moteur-rust.md), [Performances](docs/performances.md)

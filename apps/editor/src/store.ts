@@ -54,7 +54,35 @@ export type ToolId =
   | 'smudge'
   | 'liquify'
   | 'straighten'
-  | 'perspective';
+  | 'perspective'
+  // Version 1.2 : outils repris d'Affinity
+  | 'roundRect'
+  | 'triangle'
+  | 'arrow'
+  | 'callout'
+  | 'donut'
+  | 'pie'
+  | 'cog'
+  | 'cloud'
+  | 'heart'
+  | 'spiral'
+  | 'vectorBrush'
+  | 'vectorFill'
+  | 'vectorCrop'
+  | 'stylePicker'
+  | 'frameText'
+  | 'table'
+  | 'pictureFrameRect'
+  | 'pictureFrameEllipse'
+  | 'crop'
+  | 'pixelGradient'
+  | 'sponge'
+  | 'backgroundEraser'
+  | 'floodEraser'
+  | 'colorReplace'
+  | 'patch'
+  | 'blemish'
+  | 'redEye';
 
 /** Espaces de travail, comme les Personas d'Affinity. */
 export type Persona = 'draw' | 'photo' | 'layout';
@@ -155,9 +183,6 @@ export interface UiState {
    * aimantation de construction des poignées, sens du tracé.
    */
   nodeOptions: { transform: boolean; alignNodes: boolean; snapHandles: boolean; orientation: boolean };
-  /** Outil Coin : rayon appliqué d'un simple clic, et forme de l'angle. */
-  cornerRadiusTool: number;
-  cornerKind: 'round' | 'chamfer';
   /** Lissage du crayon, de 0 à 100. */
   pencilSmoothing: number;
   /** Réglages des pinceaux, par outil (pinceau, gomme, tampon…). */
@@ -235,7 +260,7 @@ function loadSettings(): Settings {
 }
 
 /** Petit magasin d'état observable, lu par React via `useSyncExternalStore`. */
-class Store<T> {
+export class Store<T> {
   private listeners = new Set<() => void>();
   constructor(private state: T) {}
   get = () => this.state;
@@ -270,8 +295,6 @@ export const ui = new Store<UiState>({
   cropId: null,
   nodeSelection: [],
   nodeOptions: { transform: false, alignNodes: true, snapHandles: true, orientation: true },
-  cornerRadiusTool: 12,
-  cornerKind: 'round',
   pencilSmoothing: 50,
   brushes: {},
   brushColor: '#1a1a1d',
@@ -331,6 +354,11 @@ export function useUi<T>(select: (s: UiState) => T): T {
   return useSyncExternalStore(ui.subscribe, () => select(ui.get()));
 }
 
+/** Lit un petit magasin d'état (réglages propres à un outil) dans un composant React. */
+export function useStore<S, T>(store: Store<S>, select: (s: S) => T): T {
+  return useSyncExternalStore(store.subscribe, () => select(store.get()));
+}
+
 const BRUSH_DEFAULTS: Partial<Record<ToolId, BrushSettings>> = {
   brush: { size: 24, hardness: 80, opacity: 100, flow: 100 },
   eraser: { size: 40, hardness: 80, opacity: 100, flow: 100 },
@@ -344,6 +372,12 @@ const BRUSH_DEFAULTS: Partial<Record<ToolId, BrushSettings>> = {
   heal: { size: 40, hardness: 50, opacity: 100, flow: 100 },
   smudge: { size: 40, hardness: 40, opacity: 60, flow: 100 },
   liquify: { size: 120, hardness: 0, opacity: 50, flow: 100 },
+  // Version 1.2 (tools/pixel)
+  sponge: { size: 60, hardness: 20, opacity: 50, flow: 40 },
+  backgroundEraser: { size: 60, hardness: 80, opacity: 100, flow: 100 },
+  colorReplace: { size: 40, hardness: 60, opacity: 100, flow: 100 },
+  blemish: { size: 24, hardness: 50, opacity: 100, flow: 100 },
+  redEye: { size: 40, hardness: 100, opacity: 100, flow: 100 },
 };
 
 /** Réglages du pinceau de l'outil (ceux du pinceau par défaut pour les autres outils). */

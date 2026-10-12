@@ -3,7 +3,9 @@ import {
   adjustmentReach,
   applyAdjustment,
   chainHead,
+  flowDependencies,
   flowText,
+  frameShapeCommands,
   masterOf,
   needsFlow,
   pageFields,
@@ -28,8 +30,12 @@ import {
   strokeCap,
   strokeJoin,
   layoutText,
-  linearGradientPoints,
-  radialGradientRadius,
+  contourReach,
+  isElliptical,
+  linearPoints,
+  radialFrame,
+  transparencyFrame,
+  transparencyPaint,
   rgbaToCss,
   shapePath,
   type AdjustmentNode,
@@ -207,6 +213,16 @@ export function cachedLayout(node: TextNode, measure: MeasureText = measureText)
 }
 
 let flowCache = new WeakMap<PoulpeDocument, Map<string, TextFlow>>();
+/**
+ * Répartitions par chaîne (clé : son premier cadre), avec ce dont elles dépendent : quand une
+ * autre partie du document change, une chaîne dont les cadres et les objets qui l'habillent sont
+ * les mêmes garde sa répartition.
+ */
+let chainCache = new WeakMap<TextNode, Map<string, { deps: unknown[]; flow: TextFlow }>>();
+
+function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
 
 /**
  * Répartition d'un texte de mise en page (cadre, chaîne de cadres liés ou champs), mémorisée tant
@@ -224,7 +240,18 @@ export function cachedFlow(
   let map = flowCache.get(doc);
   if (!map) flowCache.set(doc, (map = new Map()));
   let flow = map.get(key);
-  if (!flow) map.set(key, (flow = flowText(doc, id, measure, fields)));
+  if (!flow) {
+    const deps = flowDependencies(doc, id);
+    let per = head && Object.isFrozen(head) ? chainCache.get(head) : undefined;
+    if (head && Object.isFrozen(head) && !per) chainCache.set(head, (per = new Map()));
+    const hit = per?.get(key);
+    if (hit && sameDeps(hit.deps, deps)) flow = hit.flow;
+    else {
+      flow = flowText(doc, id, measure, fields);
+      per?.set(key, { deps, flow });
+    }
+    map.set(key, flow);
+  }
   return flow;
 }
 
@@ -248,6 +275,7 @@ export function textLayoutIn(
 export function clearLayoutCache(): void {
   layoutCache = new WeakMap();
   flowCache = new WeakMap();
+  chainCache = new WeakMap();
   renderRevision++;
   sharedRevision++;
   layoutRevision++;
@@ -294,20 +322,18 @@ export function canvasPaint(
     case 'solid':
       return rgbaToCss(paint.color);
     case 'linear': {
-      const [a, b] = linearGradientPoints(paint.angle, w, h);
+      const [a, b] = linearPoints(paint, w, h);
+      // Début et fin confondus : la toile ne peindrait rien.
+      if (Math.hypot(b.x - a.x, b.y - a.y) < 1e-6) b.x += 1e-3;
       const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
       for (const s of paint.stops) g.addColorStop(Math.min(1, Math.max(0, s.offset)), rgbaToCss(s.color));
       return g;
     }
     case 'radial': {
-      const g = ctx.createRadialGradient(
-        paint.cx * w,
-        paint.cy * h,
-        0,
-        paint.cx * w,
-        paint.cy * h,
-        Math.max(0.001, radialGradientRadius(paint, w, h)),
-      );
+      if (isElliptical(paint) && Math.abs((paint.ratio ?? 1) - 1) > 1e-3)
+        return ellipticalPattern(ctx, paint, w, h);
+      const f = radialFrame(paint, w, h);
+      const g = ctx.createRadialGradient(f.cx, f.cy, 0, f.cx, f.cy, f.r);
       for (const s of paint.stops) g.addColorStop(Math.min(1, Math.max(0, s.offset)), rgbaToCss(s.color));
       return g;
     }
@@ -330,10 +356,124 @@ export function canvasPaint(
       const pat = ctx.createPattern(img as CanvasImageSource, 'repeat');
       if (!pat) return null;
       const k = Math.max(0.01, paint.scale);
-      pat.setTransform(new DOMMatrix().rotate(paint.angle).scale(k, k));
+      pat.setTransform(
+        new DOMMatrix()
+          .translate((paint.x ?? 0) * w, (paint.y ?? 0) * h)
+          .rotate(paint.angle)
+          .scale(k, k),
+      );
       return pat;
     }
   }
+}
+
+type RadialPaint = Extract<Paint, { type: 'radial' }>;
+
+/** Repère d'un dégradé elliptique : le cercle de rayon `r` centré en 0 devient l'ellipse dans la boîte. */
+function ellipseMatrix(f: ReturnType<typeof radialFrame>): DOMMatrix {
+  return new DOMMatrix().translate(f.cx, f.cy).rotate(f.angle).scale(1, f.ratio);
+}
+
+function radialStops(g: CanvasGradient, paint: RadialPaint): CanvasGradient {
+  for (const s of paint.stops) g.addColorStop(Math.min(1, Math.max(0, s.offset)), rgbaToCss(s.color));
+  return g;
+}
+
+/** Images des dégradés elliptiques, gardées tant que la peinture et la taille ne changent pas. */
+const ellipseCache = new WeakMap<RadialPaint, { key: string; canvas: AnyCanvas }>();
+
+/**
+ * Dégradé elliptique : la toile ne sait faire que des cercles. Le cercle est peint dans une image
+ * qui couvre la boîte (et une marge pour les contours), puis étiré en ellipse par un motif.
+ */
+function ellipticalPattern(ctx: Ctx, paint: RadialPaint, w: number, h: number): CanvasPattern | null {
+  const f = radialFrame(paint, w, h);
+  const m = ellipseMatrix(f);
+  const inv = m.inverse();
+  // Zone à couvrir, ramenée dans le repère du cercle.
+  const pad = Math.max(w, h) * 0.5 + 4;
+  let k = f.r * 1.01;
+  for (const [x, y] of [
+    [-pad, -pad],
+    [w + pad, -pad],
+    [w + pad, h + pad],
+    [-pad, h + pad],
+  ]) {
+    const q = inv.transformPoint(new DOMPoint(x, y));
+    k = Math.max(k, Math.abs(q.x), Math.abs(q.y));
+  }
+  const t = ctx.getTransform();
+  const scale = Math.sqrt(Math.abs(t.a * t.d - t.b * t.c)) || 1;
+  const n = Math.max(16, Math.min(1024, Math.ceil(2 * k * scale * Math.max(1, f.ratio))));
+  const key = `${w}|${h}|${n}|${k}`;
+  let hit = Object.isFrozen(paint) ? ellipseCache.get(paint) : undefined;
+  if (!hit || hit.key !== key) {
+    const tile = makeCanvas(n, n);
+    const px = n / (2 * k);
+    tile.ctx.fillStyle = radialStops(
+      tile.ctx.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, f.r * px),
+      paint,
+    );
+    tile.ctx.fillRect(0, 0, n, n);
+    hit = { key, canvas: tile.canvas };
+    if (Object.isFrozen(paint)) ellipseCache.set(paint, hit);
+  }
+  const pat = ctx.createPattern(hit.canvas as CanvasImageSource, 'no-repeat');
+  if (!pat) return null;
+  pat.setTransform(m.translate(-k, -k).scale((2 * k) / n));
+  return pat;
+}
+
+/**
+ * Peint toute la zone visible avec une peinture exprimée dans le repère courant (boîte w × h) :
+ * sert au masque de transparence, qui doit couvrir l'objet et ses effets. Les dégradés
+ * elliptiques y sont exacts (repère étiré au lieu d'une image).
+ */
+function fillEverywhere(ctx: AnyCtx, paint: Paint, w: number, h: number): void {
+  if (paint.type === 'radial' && isElliptical(paint)) {
+    const f = radialFrame(paint, w, h);
+    const e = ellipseMatrix(f);
+    ctx.transform(e.a, e.b, e.c, e.d, e.e, e.f);
+    ctx.fillStyle = radialStops(ctx.createRadialGradient(0, 0, 0, 0, 0, f.r), paint);
+  } else {
+    const style = canvasPaint(ctx, paint, w, h);
+    if (!style) return;
+    ctx.fillStyle = style;
+  }
+  // Coins de la toile ramenés dans le repère courant : le rectangle les couvre tous.
+  const inv = ctx.getTransform().inverse();
+  const W = ctx.canvas.width,
+    H = ctx.canvas.height;
+  const pts = [
+    [0, 0],
+    [W, 0],
+    [W, H],
+    [0, H],
+  ].map(([x, y]) => inv.transformPoint(new DOMPoint(x, y)));
+  const x0 = Math.min(...pts.map((p) => p.x)),
+    y0 = Math.min(...pts.map((p) => p.y));
+  const x1 = Math.max(...pts.map((p) => p.x)),
+    y1 = Math.max(...pts.map((p) => p.y));
+  ctx.fillRect(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2);
+}
+
+/**
+ * Transparence de l'objet (outil Transparence) : le calque déjà composé (contenu et effets) ne
+ * garde que l'opacité du dégradé. `m` est la transformation du monde vers la toile d'origine,
+ * décalée de (x0, y0) dans le calque.
+ */
+function applyTransparency(c: AnyCtx, node: SceneNode, m: DOMMatrix, x0: number, y0: number): void {
+  const t = node.transparency;
+  if (!t) return;
+  const f = transparencyFrame(node);
+  c.save();
+  c.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
+  c.translate(f.x + f.width / 2, f.y + f.height / 2);
+  if (f.rotation) c.rotate((f.rotation * Math.PI) / 180);
+  c.translate(-f.width / 2, -f.height / 2);
+  c.globalCompositeOperation = 'destination-in';
+  fillEverywhere(c, transparencyPaint(t), f.width, f.height);
+  c.restore();
 }
 
 /** Dégradé conique dessiné en secteurs, pour les navigateurs sans `createConicGradient`. */
@@ -404,6 +544,7 @@ export function paintBounds(node: SceneNode): Box {
     pad += Math.max(node.width, node.height) / 2;
   } else if ('stroke' in node) {
     for (const st of visibleStrokes(node)) pad = Math.max(pad, 2 + st.width * 6);
+    pad += contourReach(node);
   }
   if (node.type === 'text') {
     let size = node.style.fontSize;
@@ -433,6 +574,7 @@ function drawText(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOpt
     node.stroke.paint.type !== 'none' && node.stroke.width > 0
       ? canvasPaint(ctx, node.stroke.paint, node.width, node.height, doc, opts.images)
       : null;
+  if (node.frameShape && !node.path) drawFrameShape(ctx, doc, node, opts);
   ctx.textBaseline = 'alphabetic';
   ctx.lineJoin = 'round';
   applyFeatures(ctx, node.style.features);
@@ -461,6 +603,21 @@ function drawText(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOpt
   if (!layout) return;
   for (const line of layout.lines) {
     const y = line.baseline;
+    // Puce ou numéro d'un paragraphe de liste, dans la couleur de son premier caractère.
+    const mk = line.marker;
+    if (mk) {
+      ctx.font = mk.font;
+      const mkFill = mk.style.color ? rgbaToCss(mk.style.color) : fill;
+      if (mkFill) {
+        ctx.fillStyle = mkFill;
+        ctx.fillText(mk.text, mk.x, y);
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = node.stroke.width;
+        ctx.strokeText(mk.text, mk.x, y);
+      }
+    }
     for (const seg of line.segments) {
       const st = seg.style;
       const segFill = st.color ? rgbaToCss(st.color) : fill;
@@ -495,14 +652,44 @@ function drawText(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOpt
   }
 }
 
+const frameShapeCache = new WeakMap<TextNode, Path2D>();
+
+/** Cadre de texte de forme : le remplissage et le contour de la forme d'origine, sous le texte. */
+function drawFrameShape(ctx: Ctx, doc: PoulpeDocument, node: TextNode, opts: RenderOptions): void {
+  const s = node.frameShape!;
+  let path = frameShapeCache.get(node);
+  if (!path) {
+    path = toPath2D(frameShapeCommands(node));
+    if (Object.isFrozen(node)) frameShapeCache.set(node, path);
+  }
+  const fill = s.fill ? canvasPaint(ctx, s.fill, node.width, node.height, doc, opts.images) : null;
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill(path);
+  }
+  const st = s.stroke;
+  const paint =
+    st && st.paint.type !== 'none' && st.width > 0
+      ? canvasPaint(ctx, st.paint, node.width, node.height, doc, opts.images)
+      : null;
+  if (st && paint) {
+    ctx.save();
+    ctx.strokeStyle = paint;
+    applyStrokeStyle(ctx, st);
+    ctx.stroke(path);
+    ctx.restore();
+  }
+}
+
 export function drawNode(ctx: Ctx, doc: PoulpeDocument, node: SceneNode, opts: RenderOptions): void {
   if (!node.visible || opts.hidden?.has(node.id)) return;
   // Un réglage agit sur les calques du dessous : c'est son parent qui l'applique (drawChildren).
   if (node.type === 'adjustment') return;
   const mask = node.mask?.enabled ? opts.images.get(doc, node.mask.assetId) : null;
-  if (node.effects?.length || mask) {
+  if (node.effects?.length || mask || node.transparency) {
     const effects = activeEffects(node);
-    if ((effects.length || mask) && drawWithEffects(ctx, doc, node, opts, effects, mask)) return;
+    if ((effects.length || mask || node.transparency) && drawWithEffects(ctx, doc, node, opts, effects, mask))
+      return;
   }
   ctx.save();
   ctx.globalAlpha *= node.opacity;
@@ -710,8 +897,10 @@ function drawWithEffects(
 ): boolean {
   const m = ctx.getTransform();
   const scale = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
-  const b = nodeBounds(node);
-  const margin = effectMargin(effects) + 2;
+  // Avec une transparence, le calque couvre aussi les contours qui débordent de la boîte ; le
+  // décalage de l'outil Contour aussi.
+  const b = node.transparency ? paintBounds(node) : nodeBounds(node);
+  const margin = effectMargin(effects) + 2 + (node.transparency ? 0 : contourReach(node));
   const pts = [
     [b.x - margin, b.y - margin],
     [b.x + b.width + margin, b.y - margin],
@@ -744,6 +933,7 @@ function drawWithEffects(
     layer.ctx.restore();
   }
   if (!effects.length) {
+    applyTransparency(layer.ctx, node, m, x0, y0);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha *= node.opacity;
@@ -799,6 +989,8 @@ function drawWithEffects(
       castInner(e.color, dx, dy, e.blur * scale);
     }
   }
+  // La transparence s'applique à tout l'objet, effets compris.
+  applyTransparency(o, node, m, x0, y0);
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha *= node.opacity;
