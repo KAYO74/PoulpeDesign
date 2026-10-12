@@ -81,6 +81,10 @@ export function brushesDelegate(c: CanvasController): ToolDelegate {
     c.requestDraw();
   };
   window.addEventListener('poulpe:toolchange', dropMagnetic);
+  // Un autre mode du lasso abandonne aussi le contour magnétique (sinon il garderait le pointeur).
+  const unsubOptions = brushOptions.subscribe(() => {
+    if (brushOptions.get().lassoMode !== 'magnetic') dropMagnetic();
+  });
 
   const pick = (p: Vec) => {
     if (gesture?.kind !== 'pick') return;
@@ -301,6 +305,8 @@ export function brushesDelegate(c: CanvasController): ToolDelegate {
         }
       }
       if (!isBrushTool(tool) || !e.shiftKey || e.altKey) return false;
+      // En AZERTY, Maj + & é " ' donne 1 à 4 : les modes de la Fluidité passent avant le flux.
+      if (tool === 'liquify' && ['1', '2', '3', '4'].includes(e.key)) return false;
       if (flowKey(e)) return true;
       // Maj + [ et ] : dureté du pinceau, par pas de 10 %.
       if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
@@ -401,6 +407,7 @@ export function brushesDelegate(c: CanvasController): ToolDelegate {
     dispose() {
       cancelAnimationFrame(moveFrame);
       window.removeEventListener('poulpe:toolchange', dropMagnetic);
+      unsubOptions();
     },
   };
 }

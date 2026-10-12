@@ -228,16 +228,25 @@ export class PhotoTools {
   private lastStrokePoint: { nodeId: string; p: Vec } | null = null;
   private timer: ReturnType<typeof setInterval> | undefined;
   private unsub: () => void;
+  private unsubOptions: () => void;
   private tmp = makeCanvas(64, 64);
   private tmp2 = makeCanvas(64, 64);
 
   constructor(private readonly c: CanvasController) {
     // Les fourmis de la sélection bougent : on redessine régulièrement tant qu'il y en a.
     this.unsub = ui.subscribe(() => this.updateTimer());
+    // Un autre mode du lasso abandonne le polygone en cours (sinon il garderait le pointeur).
+    this.unsubOptions = brushOptions.subscribe(() => {
+      if (!this.poly || brushOptions.get().lassoMode === 'polygonal') return;
+      this.poly = null;
+      this.updateTimer();
+      this.c.requestDraw();
+    });
   }
 
   dispose(): void {
     this.unsub();
+    this.unsubOptions();
     clearInterval(this.timer);
   }
 

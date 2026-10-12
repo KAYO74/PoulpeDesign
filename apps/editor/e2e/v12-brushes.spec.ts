@@ -370,6 +370,66 @@ test('lasso : polygonal et magnétique, l’ancien Lasso polygonal ouvre le mode
   await expect(page.getByTestId('lasso-polygonal')).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('lasso : changer de mode abandonne le contour en cours ; Maj + 1 à 4 en AZERTY règle la Fluidité', async ({
+  page,
+}) => {
+  await openTestPhoto(page);
+  const busy = () => page.evaluate(() => (window as any).poulpe.controller().busy());
+  const loop = async () => {
+    await page.mouse.move(...(await screen(page, 250, 40)));
+    await page.mouse.down();
+    for (const [x, y] of [
+      [350, 40],
+      [350, 120],
+      [250, 120],
+    ] as const)
+      await page.mouse.move(...(await screen(page, x, y)), { steps: 5 });
+    await page.mouse.up();
+  };
+
+  // Un polygone ouvert, puis le mode Main levée : le lasso suivant sélectionne normalement.
+  await setUi(page, { tool: 'marqueeRect' });
+  await drag(page, [20, 20], [120, 100]);
+  expect(await selectedAt(page, 60, 60)).toBe(255);
+  await page.keyboard.press('l');
+  expect(await uiValue(page, 'tool')).toBe('lasso');
+  await page.getByTestId('lasso-polygonal').click();
+  for (const [x, y] of [
+    [200, 200],
+    [300, 200],
+    [300, 280],
+  ] as const)
+    await click(page, x, y);
+  await page.getByTestId('lasso-freehand').click();
+  expect(await busy()).toBe(false);
+  await loop();
+  expect(await selectedAt(page, 300, 80)).toBe(255);
+  expect(await selectedAt(page, 60, 60)).toBe(0);
+  expect(await busy()).toBe(false);
+  await page.keyboard.press('Control+d');
+
+  // Un contour magnétique ouvert, puis le mode Main levée : même chose.
+  await page.getByTestId('lasso-magnetic').click();
+  await click(page, 173, 123);
+  await page.mouse.move(...(await screen(page, 227, 123)), { steps: 5 });
+  await page.getByTestId('lasso-freehand').click();
+  expect(await busy()).toBe(false);
+  await loop();
+  expect(await selectedAt(page, 300, 80)).toBe(255);
+  expect(await busy()).toBe(false);
+
+  // Fluidité : en AZERTY, Maj + & donne « 1 » et choisit le mode Pousser (pas le flux).
+  await setUi(page, { tool: 'liquify', liquifyMode: 'pinch' });
+  const flow = (await brush(page, 'liquify'))?.flow;
+  await page.evaluate(() =>
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { key: '1', code: 'Digit1', shiftKey: true, bubbles: true }),
+    ),
+  );
+  expect(await uiValue(page, 'liquifyMode')).toBe('push');
+  expect((await brush(page, 'liquify'))?.flow).toBe(flow);
+});
+
 test('baguette magique : glisser règle la tolérance, puis affiner la sélection', async ({ page }) => {
   await openTestPhoto(page);
   await page.keyboard.press('w');
