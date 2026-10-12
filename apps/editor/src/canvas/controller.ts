@@ -396,11 +396,9 @@ export class CanvasController {
   }
 
   zoomAt(zoom: number, sx = this.width / 2, sy = this.height / 2): void {
-    const v = this.view;
     const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
     const w = this.toWorld(sx, sy);
     ui.set({ view: { zoom: z, panX: sx - w.x * z, panY: sy - w.y * z } });
-    void v;
   }
 
   zoomToFit = (): void => {
@@ -1058,7 +1056,7 @@ export class CanvasController {
     const target = e.target as Element;
     target.setPointerCapture?.(e.pointerId);
     editor.begin();
-    let idx = index;
+    const idx = index;
     const pos = (ev: PointerEvent) => {
       const r = this.canvas.getBoundingClientRect();
       const p = this.toWorld(ev.clientX - r.left, ev.clientY - r.top);

@@ -56,13 +56,12 @@ describe('sélection automatique et objet de dessous', () => {
   };
 
   it('choisit l’objet du plan de travail, le groupe le plus proche ou l’objet lui-même', () => {
-    const { doc, back, b, inner, outer } = build();
+    const { doc, back, inner, outer } = build();
     const p = { x: 150, y: 150 };
     expect(nodesAt(doc, p, 0, 'layer').map((n) => n.id)).toEqual([outer.id, back.id]);
     expect(nodesAt(doc, p, 0, 'group').map((n) => n.id)).toEqual([inner.id, back.id]);
     expect(nodesAt(doc, p, 0, 'object').map((n) => n.name)).toEqual(['b', 'a', 'fond']);
     expect(nodesAt(doc, { x: 2000, y: 2000 }, 0, 'object')).toEqual([]);
-    void b;
   });
 
   it('un objet recadré se choisit d’un bloc', () => {

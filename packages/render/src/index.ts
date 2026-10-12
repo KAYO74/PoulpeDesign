@@ -16,7 +16,6 @@ import {
   charX,
   dashPattern,
   effectMargin,
-  featureSettings,
   hasWidthProfile,
   sampleStops,
   symbolContent,
@@ -24,7 +23,6 @@ import {
   widthProfileOutline,
   withAlpha,
   alphaOf,
-  CANVAS_FEATURES,
   layoutTextOnPath,
   nodeBounds,
   strokeCap,
@@ -49,7 +47,6 @@ import {
   type SceneNode,
   type ShapeNode,
   type Stroke,
-  type SymbolNode,
   type TextLayout,
   type TextNode,
 } from '@poulpe/core';
@@ -733,13 +730,10 @@ function applyFeatures(ctx: Ctx, features?: string[]): void {
         ? 'small-caps'
         : 'normal';
   if ('fontKerning' in c) c.fontKerning = features && !list.includes('kern') ? 'none' : 'auto';
-  void CANVAS_FEATURES;
-  void featureSettings;
 }
 
 /** Dessine un objet sans son opacité, son mode de fusion ni ses effets. */
 function drawContent(ctx: Ctx, doc: PoulpeDocument, node: SceneNode, opts: RenderOptions): void {
-  const measure = opts.measure ?? measureText;
   if (node.type === 'group') {
     const kids = node.children;
     if (node.clip && kids.length > 1 && kids[0].type !== 'group') {

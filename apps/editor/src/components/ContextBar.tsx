@@ -90,7 +90,6 @@ export function ContextBar() {
   const t = useT();
   const { doc, selection, activeArtboardId } = useEditor();
   const tool = useUi((s) => s.tool);
-  const defaults = useUi((s) => s.defaults);
   const cropId = useUi((s) => s.cropId);
   const node = selection.length === 1 ? (findNode(doc, selection[0])?.node ?? null) : null;
   const ab = findArtboard(doc, activeArtboardId);
@@ -160,7 +159,6 @@ export function ContextBar() {
     );
   } else if (node || SHAPES.includes(tool) || tool === 'text' || (!selection.length && tool === 'select')) {
     const showNew = !selection.length;
-    const kind: string = node?.type ?? (tool === 'text' ? 'text' : tool);
     const shape = node ?? null;
     content = (
       <>

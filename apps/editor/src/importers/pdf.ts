@@ -84,7 +84,7 @@ function familyOf(name: string): string {
 /** Dégradé pdf.js (« RadialAxial ») → peinture Poulpe, dans la boîte de l'objet. */
 function shadingPaint(ir: unknown[], m: Matrix): Paint | null {
   if (!Array.isArray(ir) || ir[0] !== 'RadialAxial') return null;
-  const [, type, , colorStops, p0, p1, , r1] = ir as [
+  const [, type, , colorStops, p0, p1] = ir as [
     string,
     string,
     unknown,
@@ -102,7 +102,6 @@ function shadingPaint(ir: unknown[], m: Matrix): Paint | null {
     const angle = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
     return { type: 'linear', angle: Math.round(angle * 10) / 10, stops };
   }
-  void r1;
   return { type: 'radial', cx: 0.5, cy: 0.5, r: 0.5, stops };
 }
 
@@ -599,7 +598,7 @@ export async function pdfToDocument(bytes: Uint8Array, name: string, maxPages = 
       name: count > 1 ? `Page ${n}` : name,
     });
     doc.artboards.push(ab);
-    let nodes: SceneNode[] | null = null;
+    let nodes: SceneNode[] | null;
     try {
       nodes = await pageNodes(doc, page, OPS, ab);
     } catch (e) {

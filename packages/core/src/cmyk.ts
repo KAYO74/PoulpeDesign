@@ -146,7 +146,7 @@ function rgbToInk(r: number, g: number, b: number): [number, number, number, num
   const solve = (k: number) => {
     let x = [clamp01(1 - r - k * 0.5), clamp01(1 - g - k * 0.5), clamp01(1 - b - k * 0.5)];
     const f = (p: number[]) => inkToLinear(p[0], p[1], p[2], k).map((v) => v ** (1 / YN));
-    let err = [1, 1, 1];
+    let err: number[];
     for (let it = 0; it < 24; it++) {
       const cur = f(x);
       err = cur.map((v, i) => v - target[i]);

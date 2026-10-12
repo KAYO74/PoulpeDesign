@@ -1,4 +1,4 @@
-import { commandsToCubics, cubicPoint, splitCubic } from './bezier';
+import { cubicPoint, splitCubic } from './bezier';
 import type { Cubic } from './bezier';
 import {
   anchorKey,
@@ -199,6 +199,5 @@ export function cornerKeys(cmds: PathCommand[]): string[] {
       if (!a.in && !a.out) out.push(anchorKey(si, ai));
     }),
   );
-  void commandsToCubics;
   return out;
 }

@@ -173,11 +173,10 @@ export function arrangePages(doc: PoulpeDocument): void {
   const gap = Math.max(40, Math.round(Math.max(ref.width, ref.height) * 0.08));
   const x0 = pages[0].x,
     y0 = pages[0].y;
-  let x = x0,
-    y = y0;
+  let y = y0;
   if (!facing) {
     for (const p of pages) {
-      moveArtboard(p, x, y);
+      moveArtboard(p, x0, y);
       y += p.height + gap;
     }
   } else {

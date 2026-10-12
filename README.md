@@ -170,6 +170,7 @@ Poulpe Design est écrit en TypeScript (React, Vite) et en Rust, et embarqué da
 pnpm install
 pnpm dev            # éditeur dans le navigateur : http://localhost:5173
 pnpm test           # tests du moteur
+pnpm lint           # analyse du code (ESLint)
 pnpm e2e            # tests de bout en bout
 pnpm desktop:dev    # appli de bureau (Rust et dépendances Tauri requis)
 ```

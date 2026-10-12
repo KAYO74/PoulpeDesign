@@ -585,7 +585,7 @@ export function preparePrintPdf(input: Uint8Array, opts: PrintPdfOptions = {}): 
       stream: null,
     });
     const docId = uuid(title + 'doc' + date.getTime());
-    const xmp = `<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+    const xmp = `<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <rdf:Description rdf:about=""
@@ -626,6 +626,8 @@ export function preparePrintPdf(input: Uint8Array, opts: PrintPdfOptions = {}): 
     const root = objects.get(rootNum)!;
     root.text = set(set(root.text, 'OutputIntents', `[${intentNum} 0 R]`), 'Metadata', `${metaNum} 0 R`);
     if (infoNum === null) {
+      // Le compteur avance comme pour les autres objets : un objet ajouté plus loin prendra le suivant.
+      // eslint-disable-next-line no-useless-assignment
       infoNum = next++;
       objects.set(infoNum, { num: infoNum, text: '<<>>', stream: null });
     }

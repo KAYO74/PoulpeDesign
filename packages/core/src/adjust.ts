@@ -246,11 +246,10 @@ function boxBlurH(src: Float32Array, dst: Float32Array, w: number, h: number, r:
   for (let y = 0; y < h; y++) {
     const row = y * w * 4;
     for (let c = 0; c < 4; c++) {
-      let acc = 0;
       // Bords : on prolonge le premier et le dernier pixel.
       const first = src[row + c],
         last = src[row + (w - 1) * 4 + c];
-      acc = first * (r + 1);
+      let acc = first * (r + 1);
       for (let x = 0; x < r; x++) acc += src[row + Math.min(x, w - 1) * 4 + c];
       for (let x = 0; x < w; x++) {
         const add = x + r < w ? src[row + (x + r) * 4 + c] : last;
@@ -294,7 +293,7 @@ export function gaussianBlurred(px: Pixels, sigma: number): Uint8ClampedArray {
     out.set(data);
     if (engine.blur({ data: out, width: w, height: h }, sigma)) return out;
   }
-  let a = new Float32Array(data.length);
+  const a = new Float32Array(data.length);
   for (let i = 0; i < data.length; i += 4) {
     const al = data[i + 3] / 255;
     a[i] = data[i] * al;

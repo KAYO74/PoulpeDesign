@@ -973,7 +973,6 @@ export class PathTools {
     const a = this.subpathsOf(n)[si].anchors[ai];
     ui.set({ nodeSelection: [hit.key] });
     this.editNodes(a.in || a.out ? 'sharp' : 'smooth');
-    void p;
     return true;
   }
 

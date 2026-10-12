@@ -2,7 +2,7 @@ import { setPaint } from '../actions';
 import { toolKeyOf } from '../commands';
 import { useT } from '../i18n';
 import { startPlaceImage } from '../tools/frames/frameActions';
-import { setTool, ui, useEditor, useUi, type Persona, type ToolId } from '../store';
+import { setTool, ui, useEditor, useUi, type ToolId } from '../store';
 import { activeWorkspace, useActiveWorkspace } from '../workspaces';
 import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona, withFamilies } from '../toolCatalog';
 import { setPersona } from '../photo/persona';
