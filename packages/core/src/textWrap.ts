@@ -59,40 +59,44 @@ interface WrapEntry {
 }
 
 interface WrapIndex {
-  order: Map<string, number>;
-  page: Map<string, string>;
+  /** Page et rang dans l'ordre de dessin des cadres de texte, sur les pages où un objet habille. */
+  texts: Map<string, { page: string; order: number }>;
   /** Objets qui habillent, par page, dans l'ordre de dessin. */
   wraps: Map<string, WrapEntry[]>;
 }
 
 const indexCache = new WeakMap<PoulpeDocument, WrapIndex>();
 
-/** Ordre de dessin de chaque objet et objets qui habillent, page par page (mémorisé). */
+/**
+ * Objets qui habillent, page par page, et rang des textes de ces pages (mémorisé). Un seul
+ * parcours sans rien retenir des pages où rien n'habille : le cas courant reste rapide.
+ */
 function wrapIndex(doc: PoulpeDocument): WrapIndex {
   const frozen = Object.isFrozen(doc);
   const hit = frozen ? indexCache.get(doc) : undefined;
   if (hit) return hit;
-  const order = new Map<string, number>();
-  const page = new Map<string, string>();
+  const texts = new Map<string, { page: string; order: number }>();
   const wraps = new Map<string, WrapEntry[]>();
   for (const ab of doc.artboards) {
     let i = 0;
     const list: WrapEntry[] = [];
+    const found: [string, number][] = [];
     // `blocked` : dans un objet caché ou dans un groupe qui habille déjà en entier.
     const visit = (nodes: SceneNode[], blocked: boolean) => {
       for (const n of nodes) {
         const at = i++;
-        order.set(n.id, at);
-        page.set(n.id, ab.id);
+        if (n.type === 'text') found.push([n.id, at]);
         const active = !blocked && n.visible && wrapsText(n);
         if (active) list.push({ node: n, order: at });
         if (n.type === 'group') visit(n.children, blocked || active || !n.visible);
       }
     };
     visit(ab.children, false);
-    if (list.length) wraps.set(ab.id, list);
+    if (!list.length) continue;
+    wraps.set(ab.id, list);
+    for (const [id, order] of found) texts.set(id, { page: ab.id, order });
   }
-  const out = { order, page, wraps };
+  const out = { texts, wraps };
   if (frozen) indexCache.set(doc, out);
   return out;
 }
@@ -111,21 +115,18 @@ function wrapReach(n: SceneNode): number {
 export function wrapSources(doc: PoulpeDocument, frame: TextNode): SceneNode[] {
   if (frame.ignoreWrap || frame.path) return [];
   const idx = wrapIndex(doc);
-  const pageId = idx.page.get(frame.id);
-  const list = pageId ? idx.wraps.get(pageId) : undefined;
+  const at = idx.texts.get(frame.id);
+  const list = at && idx.wraps.get(at.page);
   if (!list) return [];
-  const at = idx.order.get(frame.id)!;
   const fb = nodeBounds(frame);
   const out: SceneNode[] = [];
   for (const e of list) {
-    if (e.order <= at || e.node.id === frame.id) continue;
+    if (e.order <= at.order || e.node.id === frame.id) continue;
     const r = wrapReach(e.node);
     const b = nodeBounds(e.node);
     const grown = { x: b.x - r, y: b.y - r, width: b.width + 2 * r, height: b.height + 2 * r };
-    // Un objet qui saute le texte agit sur toute la largeur : seule sa hauteur compte.
-    const jump = e.node.wrap?.type === 'jump';
-    if (jump ? grown.y <= fb.y + fb.height && fb.y <= grown.y + grown.height : boxesIntersect(grown, fb))
-      out.push(e.node);
+    // Comme dans Publisher, un objet n'agit que sur les cadres qu'il touche (« sauter » compris).
+    if (boxesIntersect(grown, fb)) out.push(e.node);
   }
   return out;
 }
@@ -285,8 +286,7 @@ function blocked(o: WrapObstacle, y0: number, y1: number, c0: number, c1: number
   const d = o.distance;
   if (y1 <= o.box.y - d || y0 >= o.box.y + o.box.height + d) return null;
   let a: number, b: number;
-  if (o.type === 'jump') return [-Infinity, Infinity];
-  if (o.type === 'square') {
+  if (o.type === 'square' || o.type === 'jump') {
     a = o.box.x - d;
     b = o.box.x + o.box.width + d;
   } else {
@@ -296,6 +296,8 @@ function blocked(o: WrapObstacle, y0: number, y1: number, c0: number, c1: number
     b = e[1] + d;
   }
   if (b <= c0 || a >= c1) return null;
+  // « Sauter » : toute la colonne qu'il touche, ni à gauche ni à droite de l'objet.
+  if (o.type === 'jump') return [-Infinity, Infinity];
   switch (o.side) {
     case 'left':
       return [a, Infinity];

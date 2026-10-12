@@ -3,7 +3,7 @@ import { flowText, framePart, textChain } from './flow';
 import { arrangePages, documentPages, insertPage, moveArtboard } from './pages';
 import type { MeasureText } from './text';
 import { findNode } from './tree';
-import type { PoulpeDocument, TextNode } from './types';
+import type { PoulpeDocument } from './types';
 
 export interface AutoFlowOptions {
   /** Nom de la n-ième page du document (à partir de 1). */
@@ -69,14 +69,15 @@ export function autoFlowText(
     if (tail.ignoreWrap) frame.ignoreWrap = true;
     if (tail.hideOverflow) frame.hideOverflow = true;
     ab.children.push(frame);
-    const prev = findNode(doc, tail.id)!.node as TextNode;
-    prev.frame = true;
-    prev.next = frame.id;
-    const part = framePart(doc, frame, head, text, offset, measure);
+    // `tail` est l'objet du document (brouillon compris) : pas besoin de le rechercher.
+    tail.frame = true;
+    tail.next = frame.id;
+    // La nouvelle page ne porte que ce cadre : rien ne l'habille.
+    const part = framePart(doc, frame, head, text, offset, measure, []);
     if (part.end <= offset) {
       // Rien ne tient dans un cadre de cette taille (police trop grande) : on n'insiste pas.
       doc.artboards.splice(doc.artboards.indexOf(ab), 1);
-      delete prev.next;
+      delete tail.next;
       break;
     }
     made.push(frame.id);

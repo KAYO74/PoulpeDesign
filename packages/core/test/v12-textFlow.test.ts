@@ -1,3 +1,4 @@
+import { produce } from 'immer';
 import { describe, expect, it } from 'vitest';
 import {
   approximateMeasure,
@@ -6,6 +7,7 @@ import {
   createDocument,
   createEllipse,
   createGroup,
+  createPolygon,
   createRect,
   createText,
   decodePoulpe,
@@ -114,6 +116,29 @@ describe('habillage du texte', () => {
     const ls = lines(doc, t);
     expect(ls.some((l) => l.top + l.height > 45 && l.top < 115)).toBe(false);
     expect(ls.some((l) => l.top >= 115)).toBe(true);
+  });
+
+  it('sauter : seulement les cadres et les colonnes que l’objet touche', () => {
+    const left = frame(LOREM, 0, 0, 300, 300);
+    const right = frame(LOREM, 400, 0, 300, 300);
+    const r = rect(50, 100, 200, 100);
+    r.wrap = { type: 'jump' };
+    const doc = setup(left, right, r);
+    expect(wrapSources(doc, left)).toHaveLength(1);
+    expect(wrapSources(doc, right)).toHaveLength(0);
+    const tops = lines(doc, right).map((l) => l.top);
+    expect(tops.length).toBeGreaterThan(10);
+    expect(tops).toEqual(tops.map((_, i) => i * 10));
+    // Deux colonnes : l'objet au-dessus de la première ne vide pas la seconde.
+    const t = frame(`${LOREM} ${LOREM} ${LOREM}`);
+    t.style = { ...t.style, columns: { count: 2, gap: 20 } };
+    const j = rect(0, 100, 100, 50);
+    j.wrap = { type: 'jump' };
+    const ls = lines(setup(t, j), t);
+    const beside = (c: number) =>
+      ls.filter((l) => (l.column ?? 0) === c && l.top + l.height > 100 && l.top < 150);
+    expect(beside(0)).toHaveLength(0);
+    expect(beside(1).length).toBeGreaterThan(3);
   });
 
   it('côtés : à gauche, à droite ou du plus grand côté seulement', () => {
@@ -226,6 +251,61 @@ describe('cadres de texte', () => {
     expect(ls.map((l) => l.text).join(' ')).toBe(t.text);
   });
 
+  it('coupent un long mot quand aucune place plus large ne vient', () => {
+    const text = 'un deux trois quatre cinq six sept huit neuf internationalisation dix onze douze treize';
+    // Une bande de 100 px à gauche d'une image sur toute la hauteur : comme un cadre de 100 px.
+    const t = frame(text);
+    const r = rect(100, 0, 200, 300);
+    r.wrap = { type: 'square' };
+    const doc = setup(t, r);
+    const flow = flowText(doc, t.id, approximateMeasure, null);
+    expect(flow.overflow).toBe(false);
+    const letters = (ls: TextLine[]) => ls.map((l) => l.text.replace(/ /g, '')).join('');
+    expect(letters(lines(doc, t))).toBe(text.replace(/ /g, ''));
+    // Triangle : un titre plus large que toutes ses bandes de 48 px est coupé, pas perdu.
+    const tri = shapeToTextFrame(
+      createPolygon({ x: 0, y: 0, width: 300, height: 300 }, undefined, 3),
+      'Cadre',
+    );
+    tri.style = { ...tri.style, fontSize: 48, lineHeight: 1 };
+    tri.text = 'Bienvenue';
+    const d2 = setup(tri);
+    expect(flowText(d2, tri.id, approximateMeasure, null).overflow).toBe(false);
+    expect(letters(lines(d2, tri))).toBe('Bienvenue');
+  });
+
+  it('descendent en bas ou au milieu malgré l’habillage, colonne par colonne', () => {
+    const text = Array.from({ length: 30 }, (_, i) => `mot${i % 10}`).join(' ');
+    const bottomOf = (ls: TextLine[]) => Math.max(...ls.map((l) => l.top + l.height));
+    // Logo en bas à gauche : le texte descend à côté de lui, jusqu'en bas du cadre.
+    const t = frame(text);
+    t.style = { ...t.style, verticalAlign: 'bottom' };
+    const logo = rect(0, 240, 80, 60);
+    logo.wrap = { type: 'square', distance: 5 };
+    const ls = lines(setup(t, logo), t);
+    expect(ls.map((l) => l.text).join(' ')).toBe(text);
+    expect(bottomOf(ls)).toBeGreaterThan(299);
+    expect(bottomOf(ls)).toBeLessThanOrEqual(300);
+    // Objet sauté en bas : le texte finit juste au-dessus.
+    const j = rect(0, 260, 300, 40);
+    j.wrap = { type: 'jump' };
+    const lj = lines(setup(t, j), t);
+    expect(bottomOf(lj)).toBeGreaterThan(259);
+    expect(bottomOf(lj)).toBeLessThanOrEqual(260);
+    // Au milieu : autant de place au-dessus qu'au-dessous (l'objet ne touche pas le texte).
+    t.style = { ...t.style, verticalAlign: 'center' };
+    const lc = lines(setup(t, j), t);
+    expect(Math.abs(lc[0].top - (300 - bottomOf(lc)))).toBeLessThan(1);
+    // Deux colonnes et un objet qui habille : l'alignement reste.
+    const c = frame(text);
+    c.style = { ...c.style, verticalAlign: 'bottom', columns: { count: 2, gap: 20 } };
+    const dot = rect(250, 0, 10, 10);
+    dot.wrap = { type: 'square' };
+    const lcol = lines(setup(c, dot), c);
+    expect(bottomOf(lcol)).toBeGreaterThan(299);
+    expect(lcol.map((l) => l.text).join(' ')).toBe(text);
+  });
+
   it('se mettent en page comme avant sans habillage ni marges', () => {
     const t = frame(LOREM, 0, 0, 170, 1000);
     const region = frameRegion(t, t.style);
@@ -277,6 +357,26 @@ describe('coulée automatique', () => {
     }
     // Plus rien à faire ensuite.
     expect(autoFlowText(doc, t.id, approximateMeasure, { pageName: (n) => `${n}` })).toEqual([]);
+  });
+
+  it('marche dans une étape d’annulation (brouillon du document)', () => {
+    const base = createDocument({ width: 400, height: 400 });
+    const page = base.artboards[0];
+    const t = frame(
+      Array.from({ length: 300 }, (_, i) => `mot${i}`).join(' '),
+      page.x + 50,
+      page.y + 60,
+      200,
+      100,
+    );
+    page.children.push(t);
+    let made: string[] = [];
+    const doc = produce(base, (d) => {
+      made = autoFlowText(d, t.id, approximateMeasure, { pageName: (n) => `Page ${n}` });
+    });
+    expect(made.length).toBeGreaterThan(0);
+    expect(textChain(doc, t.id)).toHaveLength(made.length + 1);
+    expect(flowText(doc, t.id, approximateMeasure, null).overflow).toBe(false);
   });
 });
 

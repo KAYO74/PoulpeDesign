@@ -1,6 +1,6 @@
 import { adjustRuns, layoutText, type MeasureText, type TextLayout, type TextLine } from './text';
-import { layoutInRegion } from './textRegion';
-import { frameRegion, wrapObstacles, wrapSources } from './textWrap';
+import { layoutInRegion, type RegionLayout, type TextRegion } from './textRegion';
+import { frameRegion, wrapObstacles, wrapSources, wrapsText, type WrapObstacle } from './textWrap';
 import { walkDocument } from './tree';
 import type { PoulpeDocument, TextNode, TextRun, TextStyle } from './types';
 
@@ -56,6 +56,8 @@ export function resolveFields<T extends Pick<TextNode, 'text' | 'style' | 'runs'
 interface Links {
   texts: Map<string, TextNode>;
   prev: Map<string, string>;
+  /** Un objet du document habille-t-il le texte ? Sinon, inutile de chercher les obstacles. */
+  wraps: boolean;
 }
 
 const linksCache = new WeakMap<PoulpeDocument, Links>();
@@ -65,13 +67,17 @@ function links(doc: PoulpeDocument): Links {
   const hit = frozen ? linksCache.get(doc) : undefined;
   if (hit) return hit;
   const texts = new Map<string, TextNode>();
-  for (const { node } of walkDocument(doc)) if (node.type === 'text') texts.set(node.id, node);
+  let wraps = false;
+  for (const { node } of walkDocument(doc)) {
+    if (node.type === 'text') texts.set(node.id, node);
+    if (!wraps && wrapsText(node)) wraps = true;
+  }
   const prev = new Map<string, string>();
   for (const t of texts.values()) {
     // Un cadre n'a qu'un précédent : un second lien vers lui est ignoré.
     if (t.next && t.next !== t.id && texts.has(t.next) && !prev.has(t.next)) prev.set(t.next, t.id);
   }
-  const out = { texts, prev };
+  const out = { texts, prev, wraps };
   if (frozen) linksCache.set(doc, out);
   return out;
 }
@@ -211,8 +217,59 @@ function textFrom(
 }
 
 /**
+ * Alignement vertical dans une zone habillée ou de forme : chaque colonne garde son texte et le
+ * pose aussi bas que possible (en bas), ou avec autant de place au-dessus qu'au-dessous (au
+ * milieu), tant qu'il y tient encore. Les places changent avec la hauteur : on cherche le départ
+ * par dichotomie. `relayout` pose le texte à partir de l'indice `from` dans une zone d'une colonne.
+ */
+function alignInRegion(
+  lay: RegionLayout,
+  region: TextRegion,
+  k: number,
+  relayout: (from: number, single: TextRegion, startY: number) => RegionLayout,
+): TextLine[] {
+  const { lines } = lay;
+  const out: TextLine[] = [];
+  for (let i = 0; i < lines.length;) {
+    const col = lines[i].column ?? 0;
+    let j = i;
+    while (j < lines.length && (lines[j].column ?? 0) === col) j++;
+    const from = lines[i].start;
+    const len = (j < lines.length ? lines[j].start : lay.end) - from;
+    const single: TextRegion = { ...region, columns: 1, slots: (_c, y0, y1) => region.slots(col, y0, y1) };
+    let best = lines.slice(i, j);
+    let lo = 0,
+      hi = region.bottom - region.top;
+    while (hi - lo > 0.5) {
+      const mid = (lo + hi) / 2;
+      const again = relayout(from, single, region.top + mid);
+      const kept = again.lines.filter((l) => l.start < len);
+      // Tout le texte de la colonne, sans ligne à cheval sur la suivante, pas trop bas.
+      let ok = kept.length > 0 && again.end >= len && kept.every((l) => l.stop <= len);
+      if (ok) {
+        const below = region.bottom - Math.max(...kept.map((l) => l.top + l.height));
+        ok = below >= -1e-6 && (kept[0].top - region.top) * (1 - k) <= below * k + 0.5;
+      }
+      if (!ok) {
+        hi = mid;
+        continue;
+      }
+      lo = mid;
+      best = kept.map((l) => {
+        const moved = shiftLine(l, from);
+        return region.columns > 1 ? { ...moved, column: col } : moved;
+      });
+    }
+    out.push(...best);
+    i = j;
+  }
+  return out;
+}
+
+/**
  * Part d'un cadre de texte (hauteur fixe) : les lignes se posent dans sa zone (colonnes, marges
  * intérieures, forme, objets qui l'habillent) à partir de l'indice `offset` du texte.
+ * `obstacles` : les objets qui l'habillent, s'ils sont déjà connus.
  */
 export function framePart(
   doc: PoulpeDocument,
@@ -221,24 +278,19 @@ export function framePart(
   text: string,
   offset: number,
   measure: MeasureText,
+  obstacles: WrapObstacle[] = links(doc).wraps ? wrapObstacles(doc, frame) : [],
 ): FlowPart {
   const sub = textFrom(src, text, offset, frame, false);
-  const region = frameRegion(frame, src.style, wrapObstacles(doc, frame));
+  const region = frameRegion(frame, src.style, obstacles);
   let lay = layoutInRegion(sub, measure, region);
   const v = src.style.verticalAlign;
   if (v && v !== 'top' && lay.lines.length) {
     if (!region.shaped) lay = { ...lay, lines: alignVertically(lay.lines, region.bottom, v) };
-    else if (region.columns === 1) {
-      // Zone habillée ou de forme : on recommence plus bas, tant que le même texte y tient.
-      const k = v === 'center' ? 0.5 : 1;
-      let shift = (region.bottom - Math.max(...lay.lines.map((l) => l.top + l.height))) * k;
-      for (let n = 0; n < 4 && shift > 0.5; n++, shift /= 2) {
-        const again = layoutInRegion(sub, measure, region, region.top + shift);
-        if (again.end === lay.end) {
-          lay = again;
-          break;
-        }
-      }
+    else {
+      // Zone habillée ou de forme : on cherche, colonne par colonne, le départ le plus bas.
+      const relayout = (from: number, single: TextRegion, startY: number) =>
+        layoutInRegion(textFrom(src, text, offset + from, frame, false), measure, single, startY);
+      lay = { ...lay, lines: alignInRegion(lay, region, v === 'center' ? 0.5 : 1, relayout) };
     }
   }
   return {
@@ -270,12 +322,15 @@ export function flowText(
   const src = fields ? resolveFields(head, fields) : head;
   const text = src.text;
   const parts: FlowPart[] = [];
+  // Sur un brouillon (sans cache), on ne cherche qu'une fois si quelque chose habille.
+  const { wraps } = links(doc);
   let offset = 0;
   for (let i = 0; i < chain.length; i++) {
     const frame = chain[i];
     // Cadre de texte : sa hauteur est fixe, ce qui ne tient pas passe au cadre suivant.
     if (frame.frame || chain.length > 1) {
-      const part = framePart(doc, frame, src, text, offset, measure);
+      const obstacles = wraps ? wrapObstacles(doc, frame) : [];
+      const part = framePart(doc, frame, src, text, offset, measure, obstacles);
       parts.push(part);
       offset = part.end;
       continue;
@@ -313,10 +368,11 @@ export function flowText(
  */
 export function flowDependencies(doc: PoulpeDocument, id: string): unknown[] {
   const chain = textChain(doc, id);
+  const { wraps } = links(doc);
   const out: unknown[] = [];
   for (const f of chain) {
     out.push(f);
-    if (f.frame || chain.length > 1) out.push(...wrapSources(doc, f));
+    if (wraps && (f.frame || chain.length > 1)) out.push(...wrapSources(doc, f));
   }
   return out;
 }

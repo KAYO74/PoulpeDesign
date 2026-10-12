@@ -119,11 +119,41 @@ export function layoutInRegion(
     }
   };
 
+  // Place assez large trouvée plus loin pour le mot en attente : cherchée une fois par mot (les
+  // places sautées ensuite suivent les mêmes hauteurs, jusqu'à la prochaine ligne posée).
+  let ahead: { need: number; h: number; col: number; y: number } | null = null;
+
+  /**
+   * Une place d'au moins `need` de large viendra-t-elle plus loin pour une ligne de hauteur `h`
+   * (dans la bande en cours, puis plus bas, puis dans les colonnes suivantes) ?
+   */
+  const roomAhead = (need: number, h: number): boolean => {
+    if (band?.queue.some(([a, b]) => b - a >= need)) return true;
+    let c = col;
+    let yy = band ? band.top + (band.used ? band.height : Math.max(0.5, h / 5)) : y;
+    if (ahead && ahead.h === h && need <= ahead.need && (c < ahead.col || (c === ahead.col && yy <= ahead.y)))
+      return true;
+    for (;;) {
+      if (yy + h > region.bottom + 0.5) {
+        if (c >= region.columns - 1) return false;
+        c++;
+        yy = region.top;
+        continue;
+      }
+      if (region.slots(c, yy, yy + h).some(([a, b]) => b - a >= need)) {
+        ahead = { need, h, col: c, y: yy };
+        return true;
+      }
+      yy += Math.max(0.5, h / 5);
+    }
+  };
+
   /**
    * Fin de la ligne qui commence en `cur` dans une place de largeur `avail` (mêmes règles que
-   * `layoutText`), ou null si son premier mot n'y tient pas et tiendra dans une place plus large.
+   * `layoutText`), ou null si son premier mot n'y tient pas et tiendra dans une place plus large
+   * plus loin (sinon il est coupé ici, comme dans une colonne étroite).
    */
-  const fit = (cur: number, paraStart: number, paraEnd: number, avail: number, full: boolean) => {
+  const fit = (cur: number, paraStart: number, paraEnd: number, avail: number, full: boolean, h: number) => {
     const re = /\s+|\S+/g;
     const s = text.slice(cur, paraEnd);
     let m: RegExpExecArray | null;
@@ -134,7 +164,7 @@ export function layoutInRegion(
       if (w(cur, te) <= avail) continue;
       if (ts > cur) return ts;
       // Le premier mot de la ligne est trop large pour cette place.
-      if (!full && w(ts, te) <= region.widest - indent) return null;
+      if (!full && w(ts, te) <= region.widest - indent && roomAhead(w(ts, te) + indent, h)) return null;
       if (cur === paraStart && full) {
         // Premier mot d'un paragraphe : gardé entier, comme `layoutText`.
         let e = te;
@@ -164,7 +194,7 @@ export function layoutInRegion(
       const full = room >= region.widest - 0.5;
       let stop = cur;
       if (cur < paraEnd) {
-        const r = fit(cur, paraStart, paraEnd, avail, full);
+        const r = fit(cur, paraStart, paraEnd, avail, full, size * lh);
         if (r === null) continue;
         stop = r;
       }
@@ -224,6 +254,7 @@ export function layoutInRegion(
         };
       }
       lines.push(line);
+      ahead = null;
       b.used = true;
       b.height = Math.max(b.height, height);
       return stop;
