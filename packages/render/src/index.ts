@@ -897,9 +897,10 @@ function drawWithEffects(
 ): boolean {
   const m = ctx.getTransform();
   const scale = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
-  // Avec une transparence, le calque couvre aussi les contours qui débordent de la boîte.
+  // Avec une transparence, le calque couvre aussi les contours qui débordent de la boîte ; le
+  // décalage de l'outil Contour aussi.
   const b = node.transparency ? paintBounds(node) : nodeBounds(node);
-  const margin = effectMargin(effects) + 2;
+  const margin = effectMargin(effects) + 2 + (node.transparency ? 0 : contourReach(node));
   const pts = [
     [b.x - margin, b.y - margin],
     [b.x + b.width + margin, b.y - margin],

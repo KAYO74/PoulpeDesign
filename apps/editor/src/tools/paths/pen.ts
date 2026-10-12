@@ -46,8 +46,11 @@ import { pathsState } from './state';
  */
 
 type PenDrag =
-  /** Poignée de sortie du nœud posé (Plume) ; `free` : sans toucher à la poignée d'entrée. */
-  | { kind: 'handle'; index: number; free: boolean }
+  /**
+   * Poignée de sortie du nœud posé (Plume) ; `free` : sans toucher à la poignée d'entrée ;
+   * `pulled` : le pointeur est sorti de la zone morte autour du nœud.
+   */
+  | { kind: 'handle'; index: number; free: boolean; pulled?: boolean }
   /** Le nœud posé suit le pointeur (Polygone, Ligne). */
   | { kind: 'move'; index: number }
   /** Ctrl : nœud ou poignée du tracé en cours. */
@@ -90,7 +93,8 @@ export class PenTool implements SubTool {
   /** Extrémité de courbe sélectionnée sous le pointeur (avant de commencer). */
   private endHover: OpenEnd | null = null;
   private ctrl = false;
-  private lines: { doc: unknown; id: string | null; lines: SnapLines } | null = null;
+  /** Repères d'aimantation, pour ce tracé en cours (ou ce document, sans tracé en cours). */
+  private lines: { key: unknown; lines: SnapLines } | null = null;
 
   constructor(private readonly c: CanvasController) {
     window.addEventListener('poulpe:toolchange', this.finish);
@@ -122,10 +126,11 @@ export class PenTool implements SubTool {
     const last = from ?? d?.anchors[d.anchors.length - 1];
     if (shift && last) return constrain45(this.toWorld(last), p);
     if (!this.c.snapping() || alt) return p;
-    const id = d?.id ?? null;
-    // Repères des autres objets : ils ne changent pas pendant le tracé.
-    if (!this.lines || this.lines.id !== id || (!d && this.lines.doc !== editor.doc))
-      this.lines = { doc: editor.doc, id, lines: collectSnapLines(editor.doc, new Set(id ? [id] : [])) };
+    // Repères des autres objets : ils ne changent pas pendant le tracé. Chaque tracé (même la
+    // reprise d'une courbe déjà tracée) les relit dans le document du moment.
+    const key = d ?? editor.doc;
+    if (this.lines?.key !== key)
+      this.lines = { key, lines: collectSnapLines(editor.doc, new Set(d ? [d.id] : [])) };
     return snapPoint(p, this.lines.lines, this.c.snapThreshold(), this.c.gridStep());
   }
 
@@ -371,7 +376,12 @@ export class PenTool implements SubTool {
     }
     const a = d.anchors[g.index];
     if (g.kind === 'handle') {
-      if (screenDist(this.c, this.toWorld(a), p) < 3 && !a.out) return true;
+      // Zone morte de 3 px : un clic un peu tremblé ne change pas les poignées, même celles que le
+      // nœud a déjà (fermeture sur le premier nœud, reprise d'une courbe).
+      if (!g.pulled) {
+        if (screenDist(this.c, this.toWorld(a), p) < 3) return true;
+        g.pulled = true;
+      }
       const q = this.toPath(e.shiftKey ? constrain45(this.toWorld(a), p) : p);
       // Tirer une poignée fait d'un nœud intelligent un nœud lisse ; Alt casse la symétrie.
       delete a.smart;

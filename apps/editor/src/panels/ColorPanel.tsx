@@ -47,6 +47,12 @@ export function useCurrentPaint(): { paint: Paint; target: 'fill' | 'stroke'; ha
   return { paint: target === 'fill' ? defaults.fill : defaults.stroke.paint, target, hasSelection: false };
 }
 
+/**
+ * Un autre geste était ouvert au début du glissement (tracé en cours à la Plume) : la couleur n'en
+ * prend pas la base (l'historique mêlerait les deux) ; elle s'applique d'un coup au relâchement.
+ */
+let foreign = false;
+
 /** Applique une peinture ; pendant un glissement, un seul pas d'historique pour tout le geste. */
 export function applyPaint(target: 'fill' | 'stroke', paint: Paint, phase: Phase): void {
   if (ui.get().persona === 'photo') {
@@ -57,9 +63,16 @@ export function applyPaint(target: 'fill' | 'stroke', paint: Paint, phase: Phase
   }
   // Pendant l'édition d'un texte, la session d'édition forme déjà un seul pas d'historique.
   const live = editor.selection.length > 0 && !isEditingText();
-  if (live && phase === 'start') editor.begin();
-  setPaint(target, paint, live && (phase === 'start' || phase === 'move' || phase === 'end'));
-  if (live && phase === 'end') editor.commit('history.style');
+  if (phase === 'start') foreign = live && editor.inGesture;
+  if (foreign) {
+    if (phase === 'end') foreign = false;
+    if (phase === 'start' || phase === 'move') return;
+    setPaint(target, paint);
+  } else {
+    if (live && phase === 'start') editor.begin();
+    setPaint(target, paint, live && (phase === 'start' || phase === 'move' || phase === 'end'));
+    if (live && phase === 'end') editor.commit('history.style');
+  }
   if (phase === 'end' || phase === 'set') {
     const c = paint.type === 'solid' ? paint.color : null;
     if (c) pushRecentColor(c);

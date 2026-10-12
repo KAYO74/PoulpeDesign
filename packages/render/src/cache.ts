@@ -164,6 +164,11 @@ function assetsOf(n: SceneNode): readonly string[] | null {
     pattern((n as { fill?: unknown }).fill);
     pattern((n as { stroke?: { paint?: unknown } }).stroke?.paint);
     for (const st of (n as { strokes?: { paint?: unknown }[] }).strokes ?? []) pattern(st.paint);
+    // Cadre de texte en forme : son fond et son contour.
+    if (n.type === 'text' && n.frameShape) {
+      pattern(n.frameShape.fill);
+      pattern(n.frameShape.stroke?.paint);
+    }
     if (n.type === 'group')
       for (const c of n.children) {
         const a = assetsOf(c);

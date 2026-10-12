@@ -290,13 +290,26 @@ export class PhotoTools {
       this.updateTimer();
       this.c.requestDraw();
     });
+    // Un autre outil (ou une autre Persona) abandonne la sélection en cours de tracé : sinon le
+    // polygone garderait le pointeur et l'outil temporaire ne reviendrait plus.
+    window.addEventListener('poulpe:toolchange', this.dropSelection);
   }
 
   dispose(): void {
     this.unsub();
     this.unsubOptions();
+    window.removeEventListener('poulpe:toolchange', this.dropSelection);
     clearInterval(this.timer);
   }
+
+  private dropSelection = () => {
+    if (!this.poly && !this.lasso && !this.marquee) return;
+    this.poly = null;
+    this.lasso = null;
+    this.marquee = null;
+    this.updateTimer();
+    this.c.requestDraw();
+  };
 
   private updateTimer() {
     const need = ui.get().hasPixelSelection || !!this.lasso || !!this.poly || !!ui.get().busy;
@@ -516,6 +529,7 @@ export class PhotoTools {
   pointerCancel(): void {
     this.marquee = null;
     this.lasso = null;
+    this.poly = null;
     this.straight = null;
     if (this.quick) {
       this.quick.session.end();
@@ -525,6 +539,7 @@ export class PhotoTools {
       this.showLive(this.stroke, null);
       this.stroke = null;
     }
+    this.updateTimer();
     this.c.requestDraw();
   }
 

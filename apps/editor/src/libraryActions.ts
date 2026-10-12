@@ -379,7 +379,9 @@ export function resizeDesign(width: number, height: number, copy: boolean, name?
 
 /** Cadre photo visé : un groupe avec masque d'écrêtage sous le point, ou le cadre sélectionné. */
 export function frameTarget(doc: PoulpeDocument, at?: Vec): string | null {
-  const isFrame = (n: SceneNode) => n.type === 'group' && n.clip && n.children.length > 0 && !n.locked;
+  // Un objet recadré (Recadrage vectoriel) n'est pas un cadre photo : son contenu serait remplacé.
+  const isFrame = (n: SceneNode) =>
+    n.type === 'group' && n.clip && !n.vectorCrop && n.children.length > 0 && !n.locked;
   if (at) {
     for (let i = doc.artboards.length - 1; i >= 0; i--) {
       const ab = doc.artboards[i];

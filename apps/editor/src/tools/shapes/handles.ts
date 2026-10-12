@@ -63,6 +63,21 @@ function polar(n: SceneNode, a: number, r: number): Vec {
   };
 }
 
+/**
+ * Comme `polar`, mais à au moins `d` (repère local) du centre : une poignée au rayon 0 (trou nul)
+ * ne se cache pas sous le point d'origine de la transformation, dessiné au centre.
+ */
+function polarOff(n: SceneNode, a: number, r: number, d: number): Vec {
+  const q = polar(n, a, r);
+  const cx = n.width / 2,
+    cy = n.height / 2;
+  if (Math.hypot(q.x - cx, q.y - cy) >= d) return q;
+  const ux = (Math.sin(a) * n.width) / 2,
+    uy = (-Math.cos(a) * n.height) / 2;
+  const len = Math.hypot(ux, uy) || 1;
+  return { x: cx + (ux / len) * d, y: cy + (uy / len) * d };
+}
+
 /** Déplacement (repère de l'ellipse) le long de la direction de l'angle `a`. */
 function radialDelta(n: SceneNode, l: Vec, l0: Vec, a: number): number {
   const p = norm(n, l),
@@ -155,7 +170,12 @@ function kindHandles(n: SceneNode, spec: ShapeSpec, min: number): ShapeHandle[] 
     }
     case 'donut':
       return [
-        param('hole', polar(n, 0, p('hole')), 'hole', (g, l) => v0(g, 'hole') + radialDelta(n, l, g.l0, 0)),
+        param(
+          'hole',
+          polarOff(n, 0, p('hole'), min),
+          'hole',
+          (g, l) => v0(g, 'hole') + radialDelta(n, l, g.l0, 0),
+        ),
       ];
     case 'pie': {
       const a0 = (p('start') * Math.PI) / 180;
@@ -167,7 +187,7 @@ function kindHandles(n: SceneNode, spec: ShapeSpec, min: number): ShapeHandle[] 
         param('end', polar(n, (p('end') * Math.PI) / 180, 1), 'end', (g, l) => pieAngle(n, l, g.shift)),
         param(
           'hole',
-          polar(n, mid, p('hole')),
+          polarOff(n, mid, p('hole'), min),
           'hole',
           (g, l) => v0(g, 'hole') + radialDelta(n, l, g.l0, mid),
         ),
@@ -186,7 +206,7 @@ function kindHandles(n: SceneNode, spec: ShapeSpec, min: number): ShapeHandle[] 
         ),
         param(
           'hole',
-          polar(n, 0, Math.min(p('hole'), ri - 0.05)),
+          polarOff(n, 0, Math.min(p('hole'), ri - 0.05), min),
           'hole',
           (g, l) => v0(g, 'hole') + radialDelta(n, l, g.l0, 0),
         ),
@@ -229,7 +249,7 @@ function kindHandles(n: SceneNode, spec: ShapeSpec, min: number): ShapeHandle[] 
         },
         param(
           'inner',
-          polar(n, start, p('inner')),
+          polarOff(n, start, p('inner'), min),
           'inner',
           (g, l) => v0(g, 'inner') + radialDelta(n, l, g.l0, start),
         ),

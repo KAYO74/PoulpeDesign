@@ -75,7 +75,8 @@ export function withFamilies(tools: ToolId[]): ToolId[][] {
   for (const id of tools) {
     if (done.has(id)) continue;
     const family = TOOL_FAMILIES.find((f) => f.includes(id));
-    const slot = family ? family.filter((m) => tools.includes(m)) : [id];
+    // Dans l'ordre de la liste : Texte artistique d'abord en Dessin et en Photo, Cadre de texte en Mise en page.
+    const slot = family ? tools.filter((m) => family.includes(m)) : [id];
     slot.forEach((m) => done.add(m));
     slots.push(slot);
   }

@@ -351,7 +351,8 @@ export function framesDelegate(c: CanvasController): ToolDelegate {
 
     key(e) {
       if (e.key !== 'Escape') return false;
-      if (framesState.get().pending) {
+      // Image en attente de placement : seulement avec l'outil Image (sinon Échap désélectionne).
+      if (framesState.get().pending && ui.get().tool === 'image') {
         cancelPlaceImage();
         c.requestDraw();
         return true;

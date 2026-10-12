@@ -275,7 +275,12 @@ export function brushesDelegate(c: CanvasController): ToolDelegate {
     },
 
     cancel() {
-      if (gesture?.kind === 'wand') endWand();
+      // Geste interrompu : la sélection et la tolérance de départ reviennent.
+      if (gesture?.kind === 'wand') {
+        cancelAnimationFrame(gesture.raf);
+        gesture.session.cancel();
+        ui.set({ tolerance: gesture.t0 });
+      }
       gesture = null;
       c.requestDraw();
     },
@@ -307,16 +312,17 @@ export function brushesDelegate(c: CanvasController): ToolDelegate {
       if (!isBrushTool(tool) || !e.shiftKey || e.altKey) return false;
       // En AZERTY, Maj + & é " ' donne 1 à 4 : les modes de la Fluidité passent avant le flux.
       if (tool === 'liquify' && ['1', '2', '3', '4'].includes(e.key)) return false;
-      if (flowKey(e)) return true;
-      // Maj + [ et ] : dureté du pinceau, par pas de 10 %.
-      if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
+      // Maj + [ et ] : dureté du pinceau, par pas de 10 %. D'après le caractère, comme la taille :
+      // en AZERTY, [ et ] sont sur les touches 5 et ), avant le flux (Maj + chiffres).
+      const harder = e.key === ']' || e.key === '}';
+      if (harder || e.key === '[' || e.key === '{') {
         const h = brushSettings(tool).hardness;
-        const next = e.code === 'BracketRight' ? Math.floor(h / 10) * 10 + 10 : Math.ceil(h / 10) * 10 - 10;
+        const next = harder ? Math.floor(h / 10) * 10 + 10 : Math.ceil(h / 10) * 10 - 10;
         setBrush({ hardness: Math.max(0, Math.min(100, next)) });
         c.requestDraw();
         return true;
       }
-      return false;
+      return flowKey(e);
     },
 
     draw(ctx) {

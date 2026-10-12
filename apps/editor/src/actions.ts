@@ -33,6 +33,7 @@ import {
   isStyled,
   isVectorCrop,
   removeVectorCrop,
+  styledChildren,
 } from '@poulpe/core';
 import { t } from './i18n';
 import { applyEditingStyle, endTextEdit, isEditingText } from './canvas/textEdit';
@@ -290,7 +291,7 @@ export function setPaint(target: 'fill' | 'stroke', paint: Paint, gesture = fals
   const recipe = (doc: PoulpeDocument) => {
     for (const id of ids) {
       const visit = (m: SceneNode) => {
-        if (m.type === 'group') return m.children.forEach(visit);
+        if (m.type === 'group') return styledChildren(m).forEach(visit);
         if (!isStyled(m)) return;
         if (target === 'fill') {
           m.fill = paint;

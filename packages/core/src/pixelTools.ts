@@ -521,20 +521,39 @@ export function removeBlemish(px: Pixels, cx: number, cy: number, r: number): bo
   const off = blemishOffset(px, cx, cy, r);
   if (!off) return false;
   const { data: d, width: w, height: h } = px;
-  const src = new Uint8ClampedArray(d);
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const sx = x + off.x,
-        sy = y + off.y;
-      if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
-      const p = (y * w + x) * 4,
-        q = (sy * w + sx) * 4;
-      src[p] = d[q];
-      src[p + 1] = d[q + 1];
-      src[p + 2] = d[q + 2];
-      src[p + 3] = d[q + 3];
+  // Seuls le défaut et l'entourage qui règle sa lumière (la portée du flou du fondu) comptent : le
+  // fondu se calcule dans cette fenêtre, pas dans toute la zone où l'on a cherché le morceau.
+  const sigma = Math.max(2, r * 0.7);
+  const reach = Math.ceil(r * 1.15 + 3 * sigma) + 2;
+  const x0 = Math.max(0, Math.floor(cx - reach)),
+    y0 = Math.max(0, Math.floor(cy - reach));
+  const x1 = Math.min(w, Math.ceil(cx + reach)),
+    y1 = Math.min(h, Math.ceil(cy + reach));
+  const sw = x1 - x0,
+    sh = y1 - y0;
+  if (sw <= 0 || sh <= 0) return false;
+  const dest = new Uint8ClampedArray(sw * sh * 4);
+  const src = new Uint8ClampedArray(sw * sh * 4);
+  for (let y = 0; y < sh; y++)
+    for (let x = 0; x < sw; x++) {
+      const p = (y * sw + x) * 4,
+        g = ((y + y0) * w + x + x0) * 4;
+      const sx = x + x0 + off.x,
+        sy = y + y0 + off.y;
+      // Hors de l'image, la source reste le pixel lui-même.
+      const q = sx < 0 || sy < 0 || sx >= w || sy >= h ? g : (sy * w + sx) * 4;
+      for (let c = 0; c < 4; c++) {
+        dest[p + c] = d[g + c];
+        src[p + c] = d[q + c];
+      }
     }
-  const mask = discMask(w, h, cx, cy, r);
-  d.set(patchBlend(px, { data: src, width: w, height: h }, mask, Math.max(2, r * 0.7)));
+  const mask = discMask(sw, sh, cx - x0, cy - y0, r);
+  const out = patchBlend(
+    { data: dest, width: sw, height: sh },
+    { data: src, width: sw, height: sh },
+    mask,
+    sigma,
+  );
+  for (let y = 0; y < sh; y++) d.set(out.subarray(y * sw * 4, (y + 1) * sw * 4), ((y + y0) * w + x0) * 4);
   return true;
 }

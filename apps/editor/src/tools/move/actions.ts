@@ -1,4 +1,5 @@
 import {
+  ancestors,
   applyPickedStyle,
   findNode,
   isVectorCrop,
@@ -42,11 +43,18 @@ export function duplicateWithRepeat(): void {
     moveState.set({ lastDup: { sources, copies, base: findNode(editor.doc, copies[0])?.node } });
 }
 
-/** Recadrage vectoriel sélectionné, s'il y en a un seul. */
+/**
+ * Recadrage vectoriel sélectionné, s'il y en a un seul : l'objet recadré, ou celui qui contient
+ * l'objet sélectionné (son contenu, choisi dans les calques ou par un double-clic).
+ */
 export function selectedVectorCrop(): string | null {
   const sel = editor.selection;
   if (sel.length !== 1) return null;
-  return isVectorCrop(findNode(editor.doc, sel[0])?.node) ? sel[0] : null;
+  const doc = editor.doc;
+  if (isVectorCrop(findNode(doc, sel[0])?.node)) return sel[0];
+  const up = ancestors(doc, sel[0]);
+  for (let i = up.length - 1; i >= 0; i--) if (isVectorCrop(up[i])) return up[i].id;
+  return null;
 }
 
 /** Retire le recadrage vectoriel sélectionné : l'objet retrouve sa forme entière. */

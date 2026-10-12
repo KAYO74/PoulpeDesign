@@ -17,6 +17,7 @@ import {
   setTableHeader,
   solid,
   styleTableCells,
+  untouched,
   type Box,
   type CellRange,
   type PoulpeDocument,
@@ -47,19 +48,28 @@ import { framesState } from './state';
 
 const heights = new Map<string, number>();
 let heightsRevision = -1;
+/** Hauteurs des cellules restées telles quelles (objets figés du document), sans clé à calculer. */
+let cellHeights = new WeakMap<TextNode, number>();
+/** Tableaux déjà ajustés (objets figés du document), avec la révision des polices de l'ajustement. */
+const fitted = new WeakMap<TableNode, number>();
 
 /** Hauteur du texte d'une cellule (mémorisée par contenu, comme normalize.ts). */
 function contentHeight(n: TextNode): number {
-  if (heightsRevision !== getLayoutRevision() || heights.size > 4000) {
+  if (heightsRevision !== getLayoutRevision()) {
+    cellHeights = new WeakMap();
     heights.clear();
     heightsRevision = getLayoutRevision();
-  }
+  } else if (heights.size > 4000) heights.clear();
+  const base = untouched(n);
+  const known = base ? cellHeights.get(base) : undefined;
+  if (known !== undefined) return known;
   const key = JSON.stringify([n.text, n.runs, n.style, Math.round(n.width * 100)]);
   let h = heights.get(key);
   if (h === undefined) {
     h = n.text ? layoutText({ ...n, autoWidth: false }, measureText).height : 0;
     heights.set(key, h);
   }
+  if (base) cellHeights.set(base, h);
   return h;
 }
 
@@ -68,11 +78,20 @@ function contentHeight(n: TextNode): number {
  * grandissent avec leur texte et les cellules restent sur la grille, même après un redimensionnement.
  */
 export function normalizeTables(doc: PoulpeDocument): void {
+  const rev = getLayoutRevision();
   const visit = (nodes: SceneNode[]) => {
     for (const n of nodes) {
       if (n.type !== 'group') continue;
-      if (isTable(n)) fitTableRows(n, contentHeight);
-      else visit(n.children);
+      if (!isTable(n)) {
+        visit(n.children);
+        continue;
+      }
+      // Un tableau que la modification n'a pas touché, déjà ajusté avec ces polices, est sauté.
+      const base = untouched(n);
+      if (base && fitted.get(base) === rev) continue;
+      fitTableRows(n, contentHeight);
+      // L'ajustement n'a rien changé : l'objet figé est à jour.
+      if (base && untouched(n) === base) fitted.set(base, rev);
     }
   };
   for (const ab of doc.artboards) visit(ab.children);

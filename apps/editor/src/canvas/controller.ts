@@ -456,7 +456,8 @@ export class CanvasController {
     return localToWorld(f, { x: f.width / 2, y: -ROTATE_OFFSET / z });
   }
 
-  private hitHandle(sx: number, sy: number): HandleId | 'rotate' | null {
+  /** Poignée de redimensionnement ou de rotation de la sélection sous le point écran. */
+  hitHandle(sx: number, sy: number): HandleId | 'rotate' | null {
     // Outil Nœud sur un tracé : pas de poignées de transformation, on modifie les nœuds.
     if (this.paths.editablePath()) return null;
     const f = this.selectionFrame();
@@ -546,13 +547,29 @@ export class CanvasController {
     return false;
   }
 
+  /** Main ou Zoom maintenus (touche H ou Z) : la vue seulement, l'outil choisi ne change pas. */
+  private heldView: 'hand' | 'zoom' | null = null;
+
+  setHeldView(tool: 'hand' | 'zoom' | null): void {
+    if (this.heldView === tool) return;
+    this.heldView = tool;
+    this.updateCursor();
+  }
+
   private effectiveTool(): ToolId {
-    return this.spaceDown ? 'hand' : ui.get().tool;
+    return this.spaceDown ? 'hand' : (this.heldView ?? ui.get().tool);
   }
 
   private onPointerDown = (e: PointerEvent) => {
     if (e.button === 1 || (e.button === 0 && this.effectiveTool() === 'hand')) {
       this.startPan(e);
+      return;
+    }
+    if (e.button === 0 && this.effectiveTool() === 'zoom' && this.heldView) {
+      // Zoom maintenu : avant les outils, qui ne voient pas le clic (leur travail en cours reste).
+      const r = this.canvas.getBoundingClientRect();
+      const z = this.view.zoom;
+      this.zoomAt(e.altKey ? z / 1.5 : z * 1.5, e.clientX - r.left, e.clientY - r.top);
       return;
     }
     if (e.button === 2) {
@@ -930,7 +947,10 @@ export class CanvasController {
     const pivot = fromCenter ? (moveTool.pivotLocal(f) ?? { x: f.width / 2, y: f.height / 2 }) : null;
     const ax = pivot ? pivot.x : (1 - hx) * f.width;
     const ay = pivot ? pivot.y : (1 - hy) * f.height;
-    const ratio = (a: number, b: number) => (Math.abs(b) > 1e-9 ? Math.abs(a / b) : 1);
+    // Rapport d'échelle depuis l'origine sur un axe (null : l'origine est sur l'axe de la poignée).
+    const ratio = (a: number, b: number) => (Math.abs(b) > 1e-9 ? Math.abs(a / b) : null);
+    const kx = pivot ? ratio(l.x - ax, hx * f.width - ax) : null;
+    const ky = pivot ? ratio(l.y - ay, hy * f.height - ay) : null;
     let x0 = 0,
       x1 = f.width,
       y0 = 0,
@@ -938,7 +958,7 @@ export class CanvasController {
     if (hx !== 0.5) {
       const edge = l.x;
       if (pivot) {
-        const k = ratio(edge - ax, hx * f.width - ax);
+        const k = kx ?? 1;
         x0 = ax - ax * k;
         x1 = ax + (f.width - ax) * k;
       } else [x0, x1] = hx === 1 ? [ax, edge] : [edge, ax];
@@ -946,7 +966,7 @@ export class CanvasController {
     if (hy !== 0.5) {
       const edge = l.y;
       if (pivot) {
-        const k = ratio(edge - ay, hy * f.height - ay);
+        const k = ky ?? 1;
         y0 = ay - ay * k;
         y1 = ay + (f.height - ay) * k;
       } else [y0, y1] = hy === 1 ? [ay, edge] : [edge, ay];
@@ -954,7 +974,10 @@ export class CanvasController {
     let sx = f.width ? (x1 - x0) / f.width : 1;
     let sy = f.height ? (y1 - y0) / f.height : 1;
     if (keepRatio) {
-      const k = corner ? Math.max(Math.abs(sx), Math.abs(sy)) : hx !== 0.5 ? Math.abs(sx) : Math.abs(sy);
+      let k = corner ? Math.max(Math.abs(sx), Math.abs(sy)) : hx !== 0.5 ? Math.abs(sx) : Math.abs(sy);
+      // Origine sur l'axe de la poignée : cet axe ne mesure rien (l'objet ne ferait que grandir),
+      // le rapport de l'autre axe décide.
+      if (pivot && (kx === null || ky === null)) k = (hx !== 0.5 ? kx : ky) ?? (hx !== 0.5 ? ky : kx) ?? k;
       sx = Math.sign(sx || 1) * k;
       sy = Math.sign(sy || 1) * k;
       const w = f.width * sx,
@@ -1408,6 +1431,8 @@ export class CanvasController {
   };
 
   private onDoubleClick = (e: MouseEvent) => {
+    // Main ou Zoom maintenus : deux clics de zoom ne ferment pas un tracé en cours.
+    if (this.heldView || this.spaceDown) return;
     const tool = ui.get().tool;
     const rect = this.canvas.getBoundingClientRect();
     const p = this.toWorld(e.clientX - rect.left, e.clientY - rect.top);

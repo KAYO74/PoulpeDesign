@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { FORMAT_PRESETS, findArtboard, findNode, isStyled, localToWorld, type SceneNode } from '@poulpe/core';
 import { setPaint, updateArtboard, updateSelected } from '../actions';
 import { useT } from '../i18n';
@@ -63,6 +64,28 @@ export function PaintSwatches({ node }: { node: SceneNode | null }) {
   );
 }
 
+/**
+ * La barre déborde sans barre de défilement visible : la molette (verticale) la fait défiler
+ * horizontalement. Les fenêtres et listes ouvertes depuis la barre gardent leur défilement.
+ */
+function useWheelScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || el.scrollWidth <= el.clientWidth) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if ((e.target as Element).closest?.('[role="dialog"], [role="listbox"]')) return;
+      el.scrollLeft += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+  return ref;
+}
+
 export function ContextBar() {
   const t = useT();
   const { doc, selection, activeArtboardId } = useEditor();
@@ -73,6 +96,7 @@ export function ContextBar() {
   const ab = findArtboard(doc, activeArtboardId);
 
   const toolName = t(`tool.${tool}`);
+  const bar = useWheelScroll();
   let content: React.ReactNode;
   const Own = contextFor(tool);
 
@@ -229,7 +253,7 @@ export function ContextBar() {
   }
 
   return (
-    <div className="contextbar" role="region" aria-label={toolName}>
+    <div className="contextbar" role="region" aria-label={toolName} ref={bar}>
       <b className="ctx-tool">{toolName}</b>
       {content}
       {CONTEXT_EXTRAS.map((Extra, i) => (

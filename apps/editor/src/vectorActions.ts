@@ -1,4 +1,5 @@
 import {
+  activeContour,
   applyBoolean,
   applyOffset,
   applyOutlineStroke,
@@ -24,6 +25,7 @@ import {
   type StrokeJoin,
   pathToSvg,
   isStyled,
+  styledChildren,
 } from '@poulpe/core';
 import { t } from './i18n';
 import { editor, toast, ui } from './store';
@@ -61,7 +63,9 @@ export function booleanOp(op: BooleanOp): void {
 /** Formes de la sélection (y compris dans les groupes) qui peuvent devenir des courbes. */
 function convertible(n: SceneNode): boolean {
   if (n.type === 'group') return n.children.some(convertible);
-  return n.type !== 'image' && n.type !== 'path';
+  // Un tracé n'a à convertir que sa forme paramétrique, ses coins ou son contour (outil Contour).
+  if (n.type === 'path') return !!n.shape || !!n.corners || !!activeContour(n);
+  return n.type !== 'image';
 }
 
 export function canConvertToCurves(): boolean {
@@ -165,7 +169,7 @@ export function setStroke(patch: Partial<Stroke>): void {
   editor.apply('history.style', (d) => {
     for (const id of sel()) {
       const visit = (m: SceneNode) => {
-        if (m.type === 'group') m.children.forEach(visit);
+        if (m.type === 'group') styledChildren(m).forEach(visit);
         else if (STROKED(m)) {
           const next = { ...m.stroke, ...patch };
           for (const k of Object.keys(next) as (keyof Stroke)[]) if (next[k] === undefined) delete next[k];
@@ -196,7 +200,7 @@ function updateExtras(label: string, fn: (list: Stroke[]) => Stroke[]): void {
   editor.apply(label, (d) => {
     for (const id of sel()) {
       const visit = (m: SceneNode) => {
-        if (m.type === 'group') m.children.forEach(visit);
+        if (m.type === 'group') styledChildren(m).forEach(visit);
         else if (STROKED(m)) {
           const next = fn(m.strokes ?? []);
           if (next.length) m.strokes = next;
@@ -390,7 +394,7 @@ export async function pickPatternImage(): Promise<void> {
     const paint: Paint = { type: 'pattern', assetId, scale: 1, angle: 0 };
     for (const id of sel()) {
       const visit = (m: SceneNode) => {
-        if (m.type === 'group') m.children.forEach(visit);
+        if (m.type === 'group') styledChildren(m).forEach(visit);
         else if (STROKED(m)) {
           if (target === 'stroke') m.stroke = { ...m.stroke, paint };
           else m.fill = paint;

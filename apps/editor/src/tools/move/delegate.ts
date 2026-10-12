@@ -27,6 +27,8 @@ import { nodePath } from '@poulpe/render';
 import type { CanvasController } from '../../canvas/controller';
 import { t } from '../../i18n';
 import { editor, setTool, ui, type ToolId } from '../../store';
+import { toolGroupsFor } from '../../toolCatalog';
+import { activeWorkspace } from '../../workspaces';
 import type { ToolDelegate } from '../types';
 import { applyLoadedStyle, finishVectorCrop, loadStyle, selectedVectorCrop, unloadStyle } from './actions';
 import { noteAltDown, pivotLocal, setPivot } from './hooks';
@@ -76,6 +78,13 @@ function localMatrix(n: Frame): DOMMatrix {
 }
 
 const cropNames = () => ({ group: t('vcrop.name'), mask: t('vcrop.mask') });
+
+/** La colonne d'outils affichée propose l'outil Nœud (jamais en Persona Photo). */
+function nodeToolShown(): boolean {
+  const persona = ui.get().persona;
+  if (persona === 'photo') return false;
+  return (activeWorkspace()?.tools ?? toolGroupsFor(persona).flat()).includes('direct');
+}
 
 /** Cadre invisible d'un recadrage vectoriel (son premier enfant) : jamais visé par un clic. */
 function isCropFrame(id: string): boolean {
@@ -408,7 +417,7 @@ export function moveDelegate(c: CanvasController): ToolDelegate {
           return true;
         }
       }
-      if (!isStyled(hit) || hit.type === 'text') return false;
+      if (!isStyled(hit) || hit.type === 'text' || !nodeToolShown()) return false;
       editor.select([hit.id]);
       setTool('direct');
       return true;

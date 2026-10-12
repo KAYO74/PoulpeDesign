@@ -230,7 +230,8 @@ class CropTool implements ToolDelegate {
     if (Math.abs(angle) < 0.005) this.stopPreview();
     else {
       this.previewing = true;
-      editor.preview((d) => rotateContent(d, session.abId, -angle, center));
+      // Aperçu passager : une autre commande (calque masqué, historique…) ne l'enregistre pas.
+      editor.preview((d) => rotateContent(d, session.abId, -angle, center), { transient: true });
     }
     const rect = this.rect();
     const ratio = this.ratio() ?? (rect ? rect.width / rect.height : session.ab.width / session.ab.height);
@@ -277,11 +278,9 @@ class CropTool implements ToolDelegate {
     };
     // La sélection de pixels ne correspond plus à rien après le recadrage.
     clearSelection(false);
-    if (this.previewing) {
-      editor.preview(recipe);
-      this.previewing = false;
-      editor.commit('history.crop');
-    } else editor.apply('history.crop', recipe);
+    // L'aperçu de la rotation est retiré : la commande la refait, dans la même étape.
+    this.stopPreview();
+    editor.apply('history.crop', recipe);
     // Le contenu gardé reste à sa place à l'écran.
     const v = ui.get().view;
     ui.set({ view: { ...v, panX: v.panX + (R.x - ab.x) * v.zoom, panY: v.panY + (R.y - ab.y) * v.zoom } });
@@ -407,6 +406,16 @@ class CropTool implements ToolDelegate {
       this.reset();
       return true;
     }
+    // Pendant l'aperçu de la rotation, les flèches, les chiffres (opacité) et Suppr ne touchent pas
+    // aux calques : la rotation et le cadre attendent Entrée ou Échap.
+    if (
+      this.previewing &&
+      (e.key.startsWith('Arrow') ||
+        /^(Digit|Numpad)\d$/.test(e.code) ||
+        e.key === 'Delete' ||
+        e.key === 'Backspace')
+    )
+      return true;
     return false;
   }
 

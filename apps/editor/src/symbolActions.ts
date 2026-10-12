@@ -1,5 +1,6 @@
 import {
   applyStyle,
+  styledChildren,
   cloneSymbolNodes,
   createSymbolInstance,
   findArtboard,
@@ -186,7 +187,7 @@ export function applySavedStyle(styleId: string): void {
   editor.apply('history.applyStyle', (d) => {
     // Le style s'applique aussi au contenu des groupes : c'est ce qu'on attend d'un clic dessus.
     const visit = (n: SceneNode) => {
-      if (n.type === 'group') n.children.forEach(visit);
+      if (n.type === 'group') styledChildren(n).forEach(visit);
       else applyStyle(n, plain);
     };
     for (const id of ids) {

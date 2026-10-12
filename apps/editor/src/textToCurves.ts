@@ -229,6 +229,8 @@ export async function textToCurves(
     n.opacity = node.opacity;
     n.blendMode = node.blendMode;
     if (node.effects) n.effects = cloneData(node.effects);
+    if (node.transparency) n.transparency = cloneData(node.transparency);
+    if (node.wrap) n.wrap = { ...node.wrap };
     return n;
   };
   if (paths.length === 1) return { node: finish(paths[0]), missing: [] };

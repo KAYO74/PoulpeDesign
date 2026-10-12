@@ -2,6 +2,7 @@ import {
   chainHead,
   clearRunKeys,
   findNode,
+  findNodes,
   findStyle,
   scaleTextSize,
   styleAt,
@@ -29,10 +30,10 @@ import { editor, ui } from '../../store';
 export function selectedTexts(): TextNode[] {
   const doc = editor.doc;
   const out = new Map<string, TextNode>();
-  for (const id of editor.selection) {
-    const n = findNode(doc, id)?.node;
-    if (n?.type !== 'text') continue;
-    const head = chainHead(doc, id) ?? n;
+  // Un seul parcours du document pour toute la sélection (la barre le demande à chaque changement).
+  for (const n of findNodes(doc, editor.selection)) {
+    if (n.type !== 'text') continue;
+    const head = chainHead(doc, n.id) ?? n;
     out.set(head.id, head);
   }
   return [...out.values()];

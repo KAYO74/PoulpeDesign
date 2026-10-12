@@ -331,12 +331,19 @@ export function frameShapeOf(shape: SceneNode): NonNullable<TextNode['frameShape
   return out;
 }
 
+const closedCache = new WeakMap<SceneNode, boolean>();
+
 /** La forme est-elle fermée (elle peut devenir un cadre de texte) ? */
 export function isClosedShape(n: SceneNode): boolean {
   if (n.type === 'rect' || n.type === 'ellipse' || n.type === 'polygon' || n.type === 'star') return true;
   if (n.type !== 'path') return false;
+  const hit = closedCache.get(n);
+  if (hit !== undefined) return hit;
   const subs = flattenCommands(shapePath(n), 1);
-  return subs.length > 0 && subs.every((s) => s.closed && s.points.length > 2);
+  const out = subs.length > 0 && subs.every((s) => s.closed && s.points.length > 2);
+  // Un tracé figé ne change plus : la réponse resservira (barre contextuelle redessinée souvent).
+  if (Object.isFrozen(n)) closedCache.set(n, out);
+  return out;
 }
 
 /**
@@ -357,6 +364,7 @@ export function shapeToTextFrame(shape: SceneNode, name: string, defaults?: Defa
   t.visible = shape.visible;
   if (shape.effects?.length) t.effects = shape.effects;
   if (shape.wrap) t.wrap = shape.wrap;
+  if (shape.transparency) t.transparency = shape.transparency;
   return t;
 }
 

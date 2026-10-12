@@ -461,6 +461,12 @@ export class FloodSelect {
     changed();
     editor.mark('history.selection', this.before);
   }
+
+  /** Geste interrompu : la sélection de départ revient, sans étape d'historique. */
+  cancel(): void {
+    current = this.base;
+    changed();
+  }
 }
 
 /**

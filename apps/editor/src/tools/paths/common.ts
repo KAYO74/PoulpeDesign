@@ -67,11 +67,12 @@ export function strokePaint(): Paint {
 }
 
 /**
- * Le pointeur donne une vraie pression : un stylet, ou des valeurs qui varient (une souris donne
- * toujours 0,5 bouton enfoncé, parfois 0).
+ * Le pointeur donne une vraie pression : des valeurs qui varient (une souris, comme un stylet sans
+ * capteur, donne toujours 0,5 bouton enfoncé, parfois 0).
  */
 export function realPressure(pen: boolean, pressures: number[]): boolean {
-  return pen || pressures.some((v) => v > 0 && Math.abs(v - 0.5) > 1e-3);
+  // 0 n'est une vraie mesure qu'au stylet (effleuré) ; la souris le donne bouton relâché.
+  return pressures.some((v) => (pen ? v >= 0 : v > 0) && Math.abs(v - 0.5) > 1e-3);
 }
 
 /** Couleur CSS approchée d'une peinture, pour les aperçus pendant le geste. */

@@ -5,6 +5,7 @@ import {
   createText,
   findArtboard,
   findNode,
+  findNodes,
   flattenCommands,
   hitNode,
   isClosedShape,
@@ -34,11 +35,16 @@ import { editor, toast, ui } from '../../store';
 
 // ————— Habillage —————
 
+const targetsCache = new WeakMap<PoulpeDocument, { ids: readonly string[]; nodes: SceneNode[] }>();
+
 /** Objets sélectionnés dont on règle l'habillage (les premiers niveaux de la sélection). */
 export function wrapTargets(doc: PoulpeDocument = editor.doc, ids = editor.selection): SceneNode[] {
-  return topLevelIds(doc, ids)
-    .map((id) => findNode(doc, id)?.node)
-    .filter((n): n is SceneNode => !!n && n.type !== 'adjustment');
+  // La barre contextuelle le demande à chaque changement : une réponse par document et sélection.
+  const hit = targetsCache.get(doc);
+  if (hit?.ids === ids) return hit.nodes;
+  const nodes = findNodes(doc, topLevelIds(doc, ids)).filter((n) => n.type !== 'adjustment');
+  if (Object.isFrozen(doc)) targetsCache.set(doc, { ids, nodes });
+  return nodes;
 }
 
 /** Change l'habillage des objets sélectionnés ; `type: 'none'` le retire. */
@@ -77,9 +83,7 @@ export function isTextFrame(doc: PoulpeDocument, n: SceneNode | null | undefined
 /** Cadres de texte sélectionnés (hors édition du texte, qui est un geste en cours). */
 export function targetFrames(doc: PoulpeDocument = editor.doc): TextNode[] {
   if (editedTextId()) return [];
-  return editor.selection
-    .map((id) => findNode(doc, id)?.node)
-    .filter((n): n is TextNode => isTextFrame(doc, n));
+  return findNodes(doc, editor.selection).filter((n): n is TextNode => isTextFrame(doc, n));
 }
 
 export interface FrameSettings {

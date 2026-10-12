@@ -1,4 +1,4 @@
-import { current, isDraft } from 'immer';
+import { current, isDraft, original } from 'immer';
 import {
   boxCenter,
   boxContains,
@@ -100,10 +100,50 @@ export function ancestors(doc: PoulpeDocument, id: string): GroupNode[] {
   return [];
 }
 
+/**
+ * Objet figé qu'est encore cet objet du brouillon : la recette en cours ne l'a pas modifié, ni
+ * lui ni ses descendants (null s'il a changé ou vient d'être créé). Les passes de normalisation
+ * s'en servent pour sauter ce qui n'a pas bougé.
+ */
+export function untouched<T extends object>(value: T): T | null {
+  if (!isDraft(value)) return Object.isFrozen(value) ? value : null;
+  const base = original(value) as T;
+  return current(value) === base && Object.isFrozen(base) ? base : null;
+}
+
 /** Retire de la liste les objets dont un ancêtre est déjà dans la liste. */
 export function topLevelIds(doc: PoulpeDocument, ids: string[]): string[] {
   const set = new Set(ids);
-  return ids.filter((id) => !ancestors(doc, id).some((g) => set.has(g.id)) && findNode(doc, id));
+  // Un seul parcours (et non un par objet) : les grandes sélections restent rapides.
+  const keep = new Set<string>();
+  const visit = (nodes: SceneNode[], covered: boolean) => {
+    for (const n of nodes) {
+      const picked = set.has(n.id);
+      if (picked && !covered) keep.add(n.id);
+      if (n.type === 'group') visit(n.children, covered || picked);
+    }
+  };
+  for (const ab of doc.artboards) visit(ab.children, false);
+  return ids.filter((id) => keep.has(id));
+}
+
+const nodesCache = new WeakMap<PoulpeDocument, { ids: readonly string[]; nodes: SceneNode[] }>();
+
+/** Objets de ces identifiants, dans leur ordre (sans les absents), en un seul parcours du document. */
+export function findNodes(doc: PoulpeDocument, ids: readonly string[]): SceneNode[] {
+  const frozen = Object.isFrozen(doc);
+  const hit = frozen ? nodesCache.get(doc) : undefined;
+  if (hit?.ids === ids) return hit.nodes;
+  let nodes: SceneNode[];
+  if (ids.length < 2) nodes = ids.map((id) => findNode(doc, id)?.node).filter((n): n is SceneNode => !!n);
+  else {
+    const set = new Set(ids);
+    const byId = new Map<string, SceneNode>();
+    for (const { node } of walkDocument(doc)) if (set.has(node.id)) byId.set(node.id, node);
+    nodes = ids.map((id) => byId.get(id)).filter((n): n is SceneNode => !!n);
+  }
+  if (frozen) nodesCache.set(doc, { ids, nodes });
+  return nodes;
 }
 
 export function selectionBounds(doc: PoulpeDocument, ids: string[]): Box | null {

@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from 'react';
-import { findNode, isVectorCrop, type AutoSelect, type StyleParts } from '@poulpe/core';
+import { findNode, type AutoSelect, type StyleParts } from '@poulpe/core';
 import { align, distribute, groupSelection, ungroupSelection } from '../../actions';
 import { Icon, type IconName } from '../../components/Icon';
 import { Select, paintPreview } from '../../components/fields';
 import { useT } from '../../i18n';
 import { editor, ui, useStore, useUi } from '../../store';
-import { finishVectorCrop, resetVectorCrop, unloadStyle } from './actions';
+import { finishVectorCrop, resetVectorCrop, selectedVectorCrop, unloadStyle } from './actions';
 import { moveState } from './state';
 
 /* Barres contextuelles : options de l'outil Déplacer, Recadrage vectoriel et Pipette de style. */
@@ -20,7 +20,7 @@ function useSelectionInfo(): { count: number; group: boolean; crop: boolean } {
     if (tool !== 'select' && tool !== 'vectorCrop') return '0';
     const sel = editor.selection;
     const only = sel.length === 1 ? findNode(editor.doc, sel[0])?.node : null;
-    return `${sel.length}|${only?.type === 'group' ? 'g' : ''}${isVectorCrop(only) ? 'c' : ''}`;
+    return `${sel.length}|${only?.type === 'group' ? 'g' : ''}${selectedVectorCrop() ? 'c' : ''}`;
   });
   const [count, kind = ''] = key.split('|');
   return { count: Number(count), group: kind.includes('g'), crop: kind.includes('c') };

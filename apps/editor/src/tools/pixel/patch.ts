@@ -22,6 +22,25 @@ interface Drag {
   /** Fenêtre recalculée au dernier aperçu (à remettre d'origine au suivant). */
   last: { x: number; y: number; w: number; h: number } | null;
   raf: number;
+  /** Toiles de l'aperçu réduit, gardées d'une image à l'autre. */
+  scratch: HTMLCanvasElement[];
+}
+
+/**
+ * Côté maximal (pixels) de la fenêtre calculée pendant le glissement : l'aperçu est calculé en
+ * réduction (un grand correctif sur une grande photo prendrait des secondes à chaque image), le
+ * correctif définitif à pleine taille, une seule fois au relâchement.
+ */
+const PREVIEW_SIZE = 512;
+
+/** Toile de travail `i` de l'aperçu, à la taille donnée (vide). */
+function scratch(d: Drag, i: number, w: number, h: number): CanvasRenderingContext2D {
+  let cv = d.scratch[i];
+  if (!cv || cv.width !== w || cv.height !== h) cv = d.scratch[i] = makeCanvas(w, h);
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  return ctx;
 }
 
 function inside(p: Vec, poly: Vec[]): boolean {
@@ -56,8 +75,8 @@ function soften(m: Uint8Array, w: number, h: number): void {
   }
 }
 
-/** Recalcule le correctif pour le décalage courant, dans `work`. */
-function compute(d: Drag, region: Vec[]): void {
+/** Recalcule le correctif pour le décalage courant, dans `work` (`preview` : aperçu réduit). */
+function compute(d: Drag, region: Vec[], preview = false): void {
   const { tg, work } = d;
   const W = work.width,
     H = work.height;
@@ -95,27 +114,52 @@ function compute(d: Drag, region: Vec[]): void {
   const w = x1 - x0,
     h = y1 - y0;
   if (w <= 0 || h <= 0) return;
+  // Aperçu : la fenêtre est calculée en réduction (facteur k), puis étirée dans la zone.
+  const k = preview ? Math.min(1, PREVIEW_SIZE / Math.max(w, h)) : 1;
+  const sw = Math.max(1, Math.round(w * k)),
+    sh = Math.max(1, Math.round(h * k));
   const bctx = tg.base.getContext('2d', { willReadFrequently: true })!;
-  const destPx = bctx.getImageData(x0, y0, w, h);
+  const read = (sx: number, sy: number, slot: number): ImageData => {
+    if (k === 1) return bctx.getImageData(sx, sy, w, h);
+    const ctx = scratch(d, slot, sw, sh);
+    ctx.drawImage(tg.base, sx, sy, w, h, 0, 0, sw, sh);
+    return ctx.getImageData(0, 0, sw, sh);
+  };
+  const destPx = read(x0, y0, 0);
   // Hors de l'image, la source est transparente : elle ne compte pas.
-  const srcPx = bctx.getImageData(x0 + shift.x, y0 + shift.y, w, h);
-  const mc = makeCanvas(w, h);
-  const mctx = mc.getContext('2d', { willReadFrequently: true })!;
+  const srcPx = read(x0 + shift.x, y0 + shift.y, 1);
+  const mctx =
+    k === 1 ? makeCanvas(w, h).getContext('2d', { willReadFrequently: true })! : scratch(d, 2, sw, sh);
+  mctx.setTransform(k, 0, 0, k, 0, 0);
   mctx.fillStyle = '#fff';
   mctx.beginPath();
   dest.forEach((q, i) => (i ? mctx.lineTo(q.x - x0, q.y - y0) : mctx.moveTo(q.x - x0, q.y - y0)));
   mctx.closePath();
   mctx.fill();
-  const md = mctx.getImageData(0, 0, w, h).data;
-  const mask = new Uint8Array(w * h);
+  const md = mctx.getImageData(0, 0, sw, sh).data;
+  const mask = new Uint8Array(sw * sh);
   for (let i = 0; i < mask.length; i++) mask[i] = md[i * 4 + 3];
-  soften(mask, w, h);
+  soften(mask, sw, sh);
   const out = patchBlend(
-    { data: destPx.data, width: w, height: h },
-    { data: srcPx.data, width: w, height: h },
+    { data: destPx.data, width: sw, height: sh },
+    { data: srcPx.data, width: sw, height: sh },
     mask,
   );
-  wc.putImageData(new ImageData(out as Uint8ClampedArray<ArrayBuffer>, w, h), x0, y0);
+  const img = new ImageData(out as Uint8ClampedArray<ArrayBuffer>, sw, sh);
+  if (k === 1) wc.putImageData(img, x0, y0);
+  else {
+    const small = scratch(d, 3, sw, sh);
+    small.putImageData(img, 0, 0);
+    // Seule la zone change : le reste de la fenêtre garde ses pixels nets.
+    wc.save();
+    wc.beginPath();
+    dest.forEach((q, i) => (i ? wc.lineTo(q.x, q.y) : wc.moveTo(q.x, q.y)));
+    wc.closePath();
+    wc.clip();
+    wc.clearRect(x0, y0, w, h);
+    wc.drawImage(small.canvas, 0, 0, sw, sh, x0, y0, w, h);
+    wc.restore();
+  }
   d.last = { x: x0, y: y0, w, h };
 }
 
@@ -142,7 +186,7 @@ export function patchDelegate(c: CanvasController): ToolDelegate {
   const render = () => {
     if (!drag || !region) return;
     drag.raf = 0;
-    compute(drag, region);
+    compute(drag, region, true);
     drag.tg.live(drag.work);
     c.requestDraw();
   };
@@ -172,7 +216,15 @@ export function patchDelegate(c: CanvasController): ToolDelegate {
       if (region && inside(p, region)) {
         const tg = pixelTarget(p);
         if (!tg) return true;
-        drag = { tg, start: p, off: { x: 0, y: 0 }, work: copyDrawable(tg.base), last: null, raf: 0 };
+        drag = {
+          tg,
+          start: p,
+          off: { x: 0, y: 0 },
+          work: copyDrawable(tg.base),
+          last: null,
+          raf: 0,
+          scratch: [],
+        };
         return true;
       }
       setRegion(null);

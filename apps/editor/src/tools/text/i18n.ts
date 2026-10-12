@@ -10,7 +10,7 @@ export const fr: Record<string, string> = {
   'tip.text.how':
     '**Cliquer** pour écrire, **Glisser** vers le bas pour choisir la taille de la police. **Cliquer** sur le contour d’une forme pour écrire le long de ce tracé, sur un texte pour le modifier.',
   'tip.frameText.how':
-    '**Glisser** pour tracer un cadre de texte, **+Maj** pour un carré, **+Alt** depuis le centre. **Cliquer** pour un cadre de taille par défaut. Le texte qui ne tient pas passe dans un cadre lié.',
+    '**Glisser** pour tracer un cadre de texte, **+Maj** pour un carré, **+Ctrl** depuis le centre, **+Alt** sans magnétisme. **Cliquer** pour un cadre de taille par défaut. Le texte qui ne tient pas passe dans un cadre lié.',
 
   // Commandes (menu Texte et raccourcis).
   'text.bold': 'Gras',
@@ -66,7 +66,7 @@ export const en: Record<string, string> = {
   'tip.text.how':
     '**Click** to type, **Drag** down to set the font size. **Click** a shape’s outline to type along that path, or a text to edit it.',
   'tip.frameText.how':
-    '**Drag** to draw a text frame, **+Shift** for a square, **+Alt** from the center. **Click** for a frame of default size. Text that doesn’t fit flows into a linked frame.',
+    '**Drag** to draw a text frame, **+Shift** for a square, **+Ctrl** from the center, **+Alt** to ignore snapping. **Click** for a frame of default size. Text that doesn’t fit flows into a linked frame.',
 
   'text.bold': 'Bold',
   'text.italic': 'Italic',

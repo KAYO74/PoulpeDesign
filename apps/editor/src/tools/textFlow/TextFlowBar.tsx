@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { type PoulpeDocument, type SceneNode, type TextWrap } from '@poulpe/core';
 import { NumberField, Select } from '../../components/fields';
 import { useT } from '../../i18n';
-import { useEditor, useUi } from '../../store';
+import { editor, useEditor, useUi } from '../../store';
 import {
   DEFAULT_DISTANCE,
   autoFlow,
@@ -283,21 +283,40 @@ function hasFrames(doc: PoulpeDocument): boolean {
   return out;
 }
 
+/** Objets que règlent les contrôles de la barre, pour cet outil. */
+function findTargets(tool: string) {
+  const targets = tool === 'select' ? wrapTargets() : [];
+  const frame = targetFrames()[0] ?? null;
+  const convert = tool === 'select' && convertibleShapes().length > 0;
+  return { targets, frame, convert };
+}
+
 /** Ajouté à la fin de la barre contextuelle (outils Déplacer, Texte artistique et Cadre de texte). */
 export function TextFlowExtra() {
   const t = useT();
   // La sélection et le document changent ce qui est montré : la barre suit l'éditeur.
-  const { doc } = useEditor();
+  const { doc, selection } = useEditor();
   const tool = useUi((s) => s.tool);
   const persona = useUi((s) => s.persona);
   const editing = useUi((s) => s.editingTextId);
+  const memo = useRef<{ selection: string[]; tool: string; found: ReturnType<typeof findTargets> } | null>(
+    null,
+  );
   if (persona === 'photo' || editing) return null;
   if (tool !== 'select' && tool !== 'text' && tool !== 'frameText') return null;
-  const targets = tool === 'select' ? wrapTargets() : [];
+  // Pendant un geste (glissement, flèches), la sélection ne change pas : on garde la dernière réponse.
+  const last = memo.current;
+  const same =
+    !!last &&
+    editor.inGesture &&
+    last.tool === tool &&
+    last.selection.length === selection.length &&
+    last.selection.every((id, i) => id === selection[i]);
+  const found = same ? last.found : findTargets(tool);
+  memo.current = { selection, tool, found };
+  const { targets, frame, convert } = found;
   const showWrap =
     targets.length > 0 && (persona === 'layout' || hasFrames(doc) || targets.some((n) => n.wrap));
-  const frame = targetFrames()[0] ?? null;
-  const convert = tool === 'select' && convertibleShapes().length > 0;
   if (!showWrap && !frame && !convert) return null;
   const node = targets[0];
   return (

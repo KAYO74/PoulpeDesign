@@ -222,4 +222,44 @@ describe('retouches', () => {
     // Trop près du bord : rien à faire.
     expect(removeBlemish(solid(10, 10, [0, 0, 0, 255]), 5, 5, 4)).toBe(false);
   });
+
+  it('imperfections : le fondu, calculé près du défaut, donne le même résultat que sur toute la zone', () => {
+    // Image texturée de 220 × 220 (la zone de recherche d'un rayon de 20) ; défaut au centre.
+    const w = 220,
+      r = 20;
+    const px: Pixels = { data: new Uint8ClampedArray(w * w * 4), width: w, height: w };
+    for (let y = 0; y < w; y++)
+      for (let x = 0; x < w; x++)
+        px.data.set([(x * 7 + y * 3) % 256, (x * y) % 256, (x + y * 5) % 256, 255], (y * w + x) * 4);
+    for (let y = 105; y < 115; y++)
+      for (let x = 105; x < 115; x++) px.data.set([0, 0, 0, 255], (y * w + x) * 4);
+    // Calcul d'avant : source décalée et fondu sur toute la fenêtre.
+    const before = new Uint8ClampedArray(px.data);
+    const off = blemishOffset(px, 110, 110, r)!;
+    const src = new Uint8ClampedArray(before);
+    for (let y = 0; y < w; y++)
+      for (let x = 0; x < w; x++) {
+        const sx = x + off.x,
+          sy = y + off.y;
+        if (sx < 0 || sy < 0 || sx >= w || sy >= w) continue;
+        src.set(before.subarray((sy * w + sx) * 4, (sy * w + sx) * 4 + 4), (y * w + x) * 4);
+      }
+    const mask = new Uint8Array(w * w);
+    for (let y = 0; y < w; y++)
+      for (let x = 0; x < w; x++) {
+        const d = Math.hypot(x + 0.5 - 110, y + 0.5 - 110);
+        if (d < r * 1.15)
+          mask[y * w + x] = d <= r * 0.85 ? 255 : Math.round((255 * (r * 1.15 - d)) / (r * 0.3));
+      }
+    const expected = patchBlend(
+      { data: before, width: w, height: w },
+      { data: src, width: w, height: w },
+      mask,
+      r * 0.7,
+    );
+    expect(removeBlemish(px, 110, 110, r)).toBe(true);
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) diff = Math.max(diff, Math.abs(expected[i] - px.data[i]));
+    expect(diff).toBeLessThanOrEqual(1);
+  });
 });

@@ -131,16 +131,23 @@ test('les poignées rouges règlent la forme, le double-clic les remet à zéro'
   [r] = await nodes(page);
   expect(r.cornerRadius).toBe(0);
 
-  // Triangle : la poignée du sommet le déplace.
+  // Triangle : la poignée du sommet le déplace. Elle est rapprochée du centre : la poignée de
+  // redimensionnement du milieu du haut, au même endroit, garde la priorité.
   await setTool(page, 'triangle');
   await drag([300, 600], [500, 760]);
   await page.keyboard.press('v');
   const tri = (await nodes(page))[1];
-  const apex = await toScreen(tri.x + tri.width / 2, tri.y);
+  const top = await toScreen(tri.x + tri.width / 2, tri.y);
+  await drag(top, [top[0], top[1] - 40]);
+  const taller = (await nodes(page))[1];
+  expect(taller.height).toBeCloseTo(tri.height + 40 / z, 0);
+  expect(taller.shape.params.apex).toBe(0.5);
+  const apex = await toScreen(taller.x + taller.width / 2, taller.y + 14 / z);
   await drag(apex, [apex[0] - 50, apex[1]]);
   const moved = (await nodes(page))[1];
   expect(moved.shape.params.apex).toBeLessThan(0.4);
-  expect(moved.x).toBeCloseTo(tri.x, 3);
+  expect(moved.x).toBeCloseTo(taller.x, 3);
+  expect(moved.height).toBeCloseTo(taller.height, 3);
 });
 
 test('coins distincts et formes de coins d’un rectangle', async ({ page }) => {

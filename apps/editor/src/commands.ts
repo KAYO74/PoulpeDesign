@@ -175,6 +175,7 @@ export const COMMANDS = {
     shortcut: 'Q',
     persona: 'photo',
     run: toggleQuickMask,
+    enabled: () => ui.get().persona === 'photo',
   },
   'select.fromLayer': {
     label: 'select.fromLayer',
@@ -687,24 +688,61 @@ function toolForKey(tools: ToolId[], current: ToolId): ToolId {
 }
 
 /**
- * Touche d'outil maintenue : si l'on se sert de l'outil pendant qu'elle est enfoncée, on revient
- * à l'outil précédent en la lâchant (outil temporaire, comme dans Affinity).
+ * Touche d'outil maintenue : si l'on se sert de l'outil sur le canevas pendant qu'elle est
+ * enfoncée, on revient à l'outil précédent en la lâchant (outil temporaire, comme dans Affinity).
+ * Lâchée pendant un geste, l'outil précédent revient à la fin du geste (`released`). Main et Zoom
+ * maintenus ne changent que la vue (`view`, comme Espace) : l'outil en cours garde son travail
+ * (contour magnétique, tracé, pièce, aperçu du recadrage).
  */
-let held: { key: string; prev: ToolId; used: boolean } | null = null;
-if (typeof window !== 'undefined')
+let held: {
+  key: string;
+  prev: ToolId;
+  used: boolean;
+  released: boolean;
+  view: 'hand' | 'zoom' | null;
+} | null = null;
+
+function restoreHeld(): void {
+  if (!held?.released || getController()?.busy()) return;
+  const { prev } = held;
+  held = null;
+  setTool(prev);
+}
+
+function dropHeldView(): void {
+  if (!held?.view) return;
+  held = null;
+  getController()?.setHeldView(null);
+}
+
+if (typeof window !== 'undefined') {
   window.addEventListener(
     'pointerdown',
-    () => {
-      if (held) held.used = true;
+    (e) => {
+      if (held && e.target === getController()?.canvas) held.used = true;
     },
     true,
   );
+  // Fin du geste en cours (dessiné juste après) : l'outil lâché pendant le geste revient.
+  window.addEventListener('poulpe:drawn', restoreHeld);
+  window.addEventListener('blur', dropHeldView);
+}
 
 export function handleKeyUp(e: KeyboardEvent): void {
-  if (!held || e.key.toLowerCase() !== held.key) return;
-  const { prev, used } = held;
-  held = null;
-  if (used && !getController()?.busy()) setTool(prev);
+  if (!held || held.released || e.key.toLowerCase() !== held.key) return;
+  const h = held;
+  if (h.view) {
+    dropHeldView();
+    // Simple appui : l'outil Main ou Zoom reste choisi.
+    if (!h.used) setTool(h.view);
+    return;
+  }
+  if (!h.used) {
+    held = null;
+    return;
+  }
+  h.released = true;
+  restoreHeld();
 }
 
 /**
@@ -714,6 +752,8 @@ export function handleKeyUp(e: KeyboardEvent): void {
 let lastDigit: { digit: string; at: number } | null = null;
 function opacityKey(e: KeyboardEvent): boolean {
   if (e.shiftKey || !/^(Digit|Numpad)\d$/.test(e.code)) return false;
+  // Touche maintenue : la répétition ne combine pas deux chiffres et n'ajoute pas d'étapes.
+  if (e.repeat) return true;
   const d = e.code.slice(-1);
   const now = performance.now();
   const quick = lastDigit && now - lastDigit.at < 600;
@@ -849,8 +889,13 @@ export function handleKeyDown(e: KeyboardEvent): void {
     if (e.repeat) return;
     const current = ui.get().tool;
     const tool = toolForKey(tools, current);
-    held = tools.includes(current) ? null : { key, prev: current, used: false };
-    if (tool === 'image') void startPlaceImage();
+    dropHeldView();
+    held = tools.includes(current) ? null : { key, prev: current, used: false, released: false, view: null };
+    const c = getController();
+    if (held && c && (tool === 'hand' || tool === 'zoom')) {
+      held.view = tool;
+      c.setHeldView(tool);
+    } else if (tool === 'image') void startPlaceImage();
     else setTool(tool);
   }
 }

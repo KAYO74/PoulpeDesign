@@ -24,9 +24,35 @@ import type { GroupNode, PoulpeDocument, SavedStyle, SceneNode } from './types';
 /** Ce qu'un clic sélectionne : l'objet du plan de travail, le groupe le plus proche, ou l'objet lui-même. */
 export type AutoSelect = 'layer' | 'group' | 'object';
 
-/** Recadrage vectoriel : groupe à masque dont le premier enfant est le cadre. */
+/**
+ * Recadrage vectoriel : groupe à masque dont le premier enfant est le cadre, le rectangle invisible
+ * posé par `setVectorCrop`. Un groupe dont le cadre a été supprimé, déplacé ou peint n'en est plus
+ * un (c'est un simple masque d'écrêtage) : son contenu n'est jamais pris pour le cadre.
+ */
 export function isVectorCrop(n: SceneNode | null | undefined): n is GroupNode {
-  return !!n && n.type === 'group' && !!n.vectorCrop && n.clip && n.children.length > 1;
+  return (
+    !!n &&
+    n.type === 'group' &&
+    !!n.vectorCrop &&
+    n.clip &&
+    n.children.length > 1 &&
+    isCropMask(n.children[0])
+  );
+}
+
+/**
+ * Enfants d'un groupe que touchent les commandes de style (couleur, contour, style enregistré) :
+ * ni le cadre invisible d'un recadrage vectoriel, ni les textes des cellules d'un tableau.
+ */
+export function styledChildren(g: GroupNode): SceneNode[] {
+  const crop = isVectorCrop(g),
+    table = isTable(g);
+  return g.children.filter((c, i) => !(crop && i === 0) && !(table && c.type === 'text'));
+}
+
+/** Cadre d'un recadrage vectoriel : un rectangle sans remplissage ni contour. */
+function isCropMask(n: SceneNode): boolean {
+  return n.type === 'rect' && n.fill.type === 'none' && n.stroke.paint.type === 'none';
 }
 
 /** Groupes choisis d'un bloc, comme un seul objet : cadres d'image, tableaux, objets recadrés. */
@@ -392,11 +418,16 @@ export function applyPickedStyle(node: SceneNode, style: SavedStyle, parts: Styl
     s.opacity = style.opacity;
     s.blendMode = style.blendMode;
     if (style.effects?.length) s.effects = style.effects;
+    if (style.transparency) s.transparency = style.transparency;
   }
   if (parts.text && style.text) s.text = style.text;
   let changed = applyStyle(node, s);
   if (parts.effects && !style.effects?.length && node.effects) {
     delete node.effects;
+    changed = true;
+  }
+  if (parts.effects && !style.transparency && node.transparency) {
+    delete node.transparency;
     changed = true;
   }
   return changed;

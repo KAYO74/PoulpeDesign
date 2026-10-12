@@ -183,9 +183,6 @@ export interface UiState {
    * aimantation de construction des poignées, sens du tracé.
    */
   nodeOptions: { transform: boolean; alignNodes: boolean; snapHandles: boolean; orientation: boolean };
-  /** Outil Coin : rayon appliqué d'un simple clic, et forme de l'angle. */
-  cornerRadiusTool: number;
-  cornerKind: 'round' | 'chamfer';
   /** Lissage du crayon, de 0 à 100. */
   pencilSmoothing: number;
   /** Réglages des pinceaux, par outil (pinceau, gomme, tampon…). */
@@ -298,8 +295,6 @@ export const ui = new Store<UiState>({
   cropId: null,
   nodeSelection: [],
   nodeOptions: { transform: false, alignNodes: true, snapHandles: true, orientation: true },
-  cornerRadiusTool: 12,
-  cornerKind: 'round',
   pencilSmoothing: 50,
   brushes: {},
   brushColor: '#1a1a1d',

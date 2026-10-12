@@ -204,9 +204,13 @@ export function toPathNode(node: SceneNode): PathNode | null {
     visible: node.visible,
     locked: node.locked,
     ...(node.effects ? { effects: cloneData(node.effects) } : {}),
+    ...(node.mask ? { mask: { ...node.mask } } : {}),
+    ...(node.transparency ? { transparency: cloneData(node.transparency) } : {}),
+    ...(node.wrap ? { wrap: { ...node.wrap } } : {}),
     type: 'path',
     fill: node.type === 'line' ? { type: 'none' } : node.fill,
     stroke: node.stroke,
+    ...(node.strokes ? { strokes: cloneData(node.strokes) } : {}),
     d: '',
     viewBox: { x: 0, y: 0, width: node.width, height: node.height },
   };

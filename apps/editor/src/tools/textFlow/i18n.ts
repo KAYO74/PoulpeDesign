@@ -4,7 +4,7 @@ export const fr: Record<string, string> = {
   'hint.frameText':
     'glisser pour tracer un cadre de texte, clic pour un cadre de taille par défaut, clic dans une forme pour un cadre de sa forme. Échap termine l’édition.',
   'tip.frameText.how':
-    '**Glisser** pour tracer un cadre de texte, **+Maj** pour un carré, **+Alt** depuis le centre. **Cliquer** pour un cadre de taille par défaut, **Cliquer** dans une forme fermée pour écrire dans sa forme. Le texte qui ne tient pas passe dans un cadre lié : **Cliquer** sur le « + » rouge puis cliquer ou glisser pour le nouveau cadre, **Maj+clic** pour la coulée automatique.',
+    '**Glisser** pour tracer un cadre de texte, **+Maj** pour un carré, **+Ctrl** depuis le centre, **+Alt** sans magnétisme. **Cliquer** pour un cadre de taille par défaut, **Cliquer** dans une forme fermée pour écrire dans sa forme. Le texte qui ne tient pas passe dans un cadre lié : **Cliquer** sur le « + » rouge puis cliquer ou glisser pour le nouveau cadre, **Maj+clic** pour la coulée automatique.',
 
   'history.textWrap': 'Habillage du texte',
   'history.textFrame': 'Réglages du cadre de texte',
@@ -49,7 +49,7 @@ export const en: Record<string, string> = {
   'hint.frameText':
     'drag to draw a text frame, click for a frame of default size, click inside a shape for a frame of its shape. Esc ends editing.',
   'tip.frameText.how':
-    '**Drag** to draw a text frame, **+Shift** for a square, **+Alt** from the center. **Click** for a frame of default size, **Click** inside a closed shape to type inside its outline. Text that doesn’t fit flows into a linked frame: **Click** the red “+” then click or drag for the new frame, **Shift+click** to autoflow.',
+    '**Drag** to draw a text frame, **+Shift** for a square, **+Ctrl** from the center, **+Alt** to ignore snapping. **Click** for a frame of default size, **Click** inside a closed shape to type inside its outline. Text that doesn’t fit flows into a linked frame: **Click** the red “+” then click or drag for the new frame, **Shift+click** to autoflow.',
 
   'history.textWrap': 'Text wrap',
   'history.textFrame': 'Text frame settings',

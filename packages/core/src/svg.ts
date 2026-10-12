@@ -9,7 +9,7 @@ import {
   transparencyPaint,
 } from './paintGeometry';
 import { contourReach } from './contour';
-import { flowText, needsFlow, type PageFields } from './flow';
+import { chainHead, flowText, hasFields, needsFlow, type PageFields, type TextFlow } from './flow';
 import { masterOf, pageFields } from './pages';
 import {
   approximateMeasure,
@@ -37,6 +37,11 @@ export interface SvgExportOptions {
   background?: boolean;
   /** Fond perdu : marge ajoutée tout autour du plan de travail, en pixels du document. */
   bleed?: number;
+  /**
+   * Répartitions des chaînes de cadres liés, à partager entre les pages d'un même export (d'un
+   * même document) : chaque chaîne n'est répartie qu'une fois, et non une fois par cadre.
+   */
+  flows?: Map<string, TextFlow>;
 }
 
 const esc = (s: string) =>
@@ -174,7 +179,8 @@ function effectsFilter(node: SceneNode, defs: Defs): string | null {
   if (!effects.length) return null;
   const id = defs.id('fx');
   const b = nodeBounds(node);
-  const m = effectMargin(effects) + 2;
+  // Le décalage de l'outil Contour dépasse de la boîte : la zone du filtre le couvre.
+  const m = effectMargin(effects) + 2 + contourReach(node);
   const sd = (r: number) => n(Math.max(0, r) / 2);
   const flood = (c: string) => `<feFlood flood-color="${opaque(c)}" flood-opacity="${n(alphaOf(c))}"/>`;
   let body = '';
@@ -245,15 +251,18 @@ interface Ctx {
   override?: (node: SceneNode) => string | null;
   /** Numéro de page et nombre de pages, pour les champs des textes. */
   fields: PageFields;
+  flows: Map<string, TextFlow>;
 }
 
 /** Mise en page d'un texte : seul, ou sa part d'une chaîne de cadres liés (null : rien à afficher). */
 function textLayout(node: TextNode, ctx: Ctx): TextLayout | null {
   if (!needsFlow(ctx.doc, node)) return layoutText(node, ctx.measure);
-  return (
-    flowText(ctx.doc, node.id, ctx.measure, ctx.fields).parts.find((p) => p.node.id === node.id)?.layout ??
-    null
-  );
+  const head = chainHead(ctx.doc, node.id) ?? node;
+  // Les champs changent d'une page à l'autre : ils n'entrent dans la clé que si le texte en a.
+  const key = hasFields(head.text) ? `${head.id}\n${ctx.fields.page}\n${ctx.fields.pages}` : head.id;
+  let flow = ctx.flows.get(key);
+  if (!flow) ctx.flows.set(key, (flow = flowText(ctx.doc, node.id, ctx.measure, ctx.fields)));
+  return flow.parts.find((p) => p.node.id === node.id)?.layout ?? null;
 }
 
 function nodeToSvg(node: SceneNode, ctx: Ctx): string {
@@ -429,7 +438,14 @@ export function artboardToSvg(doc: PoulpeDocument, artboard: Artboard, opts: Svg
     opts.background !== false && artboard.background.type !== 'none'
       ? `<rect x="${n(-b)}" y="${n(-b)}" width="${n(W)}" height="${n(H)}" ${paintAttr('fill', artboard.background, artboard.width, artboard.height, defs)}/>`
       : '';
-  const ctx: Ctx = { doc, defs, measure, override: opts.override, fields: pageFields(doc, artboard) };
+  const ctx: Ctx = {
+    doc,
+    defs,
+    measure,
+    override: opts.override,
+    fields: pageFields(doc, artboard),
+    flows: opts.flows ?? new Map(),
+  };
   const master = masterOf(doc, artboard);
   // Les objets de la page maître passent sous ceux de la page, au même endroit relatif.
   const under = master

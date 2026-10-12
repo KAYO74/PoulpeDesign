@@ -642,6 +642,8 @@ export interface SavedStyle {
   effects?: Effect[];
   opacity?: number;
   blendMode?: BlendMode;
+  /** Dégradé de transparence de l'objet (outil Transparence). */
+  transparency?: Transparency;
   /** Style de texte : appliqué seulement aux textes. */
   text?: Partial<TextStyle>;
 }

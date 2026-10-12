@@ -15,6 +15,7 @@ import type { CanvasController } from '../../canvas/controller';
 import { t } from '../../i18n';
 import { editor, toast, ui, type ToolId } from '../../store';
 import { SHAPE_FAMILY } from '../../toolCatalog';
+import { pivotLocal } from '../move/hooks';
 import type { ToolDelegate } from '../types';
 import { handlesOf, type HandleDrag, type ShapeHandle } from './handles';
 import { shapesStore } from './state';
@@ -29,6 +30,32 @@ const HIT = 7;
 const MIN_OFFSET = 14;
 /** Couleur des poignées de réglage, comme les poignées rouges d'Affinity. */
 const RED = '#e5484d';
+/** Demi-côté (pixels d'écran) de la zone d'une poignée de redimensionnement du contrôleur. */
+const BOX_HANDLE = 8;
+
+/**
+ * Poignée rouge posée sur une poignée de redimensionnement (apex d'un triangle, angle d'un
+ * secteur, sommet d'un carré…) : rapprochée du centre de MIN_OFFSET pour rester visible et
+ * accessible, la poignée de redimensionnement gardant la priorité sous le pointeur.
+ */
+function clearOfBox(n: SceneNode, at: Vec, z: number): Vec {
+  const lim = (BOX_HANDLE + 4) / z;
+  const on = [0, 0.5, 1].some((hx) =>
+    [0, 0.5, 1].some(
+      (hy) =>
+        (hx !== 0.5 || hy !== 0.5) &&
+        Math.abs(at.x - hx * n.width) <= lim &&
+        Math.abs(at.y - hy * n.height) <= lim,
+    ),
+  );
+  if (!on) return at;
+  const cx = n.width / 2,
+    cy = n.height / 2;
+  const len = Math.hypot(cx - at.x, cy - at.y);
+  if (len < 1e-9) return at;
+  const k = Math.min(1, MIN_OFFSET / z / len);
+  return { x: at.x + (cx - at.x) * k, y: at.y + (cy - at.y) * k };
+}
 
 /** Le seul objet sélectionné, s'il est modifiable. */
 function single(): SceneNode | null {
@@ -71,13 +98,24 @@ class ParamHandles {
     if (!node) return null;
     const z = this.c.view.zoom;
     if (node.width * z < 24 || node.height * z < 24) return null;
-    const handles = handlesOf(node, MIN_OFFSET / z);
+    const handles = handlesOf(node, MIN_OFFSET / z).map((h) => ({ ...h, at: clearOfBox(node, h.at, z) }));
     return handles.length ? { node, handles } : null;
+  }
+
+  /** Point d'origine de la transformation (outil Déplacer) sous le pointeur, s'il est affiché. */
+  private onPivot(s: Vec): boolean {
+    const f = this.c.selectionFrame();
+    const l = f && pivotLocal(f);
+    if (!f || !l) return false;
+    const q = this.c.toScreen(localToWorld(f, l));
+    return Math.abs(q.x - s.x) <= 7 && Math.abs(q.y - s.y) <= 7;
   }
 
   private under(s: Vec): { node: SceneNode; handle: ShapeHandle } | null {
     const cur = this.current();
     if (!cur) return null;
+    // Les poignées de redimensionnement et de rotation, et le point d'origine, passent en premier.
+    if (ui.get().tool === 'select' && (this.c.hitHandle(s.x, s.y) || this.onPivot(s))) return null;
     // La dernière poignée est dessinée au-dessus : elle passe en premier.
     for (let i = cur.handles.length - 1; i >= 0; i--) {
       const h = cur.handles[i];
@@ -122,8 +160,8 @@ class ParamHandles {
         this.hover = id;
         this.c.requestDraw();
       }
-      if (h) this.c.canvas.style.cursor = 'pointer';
-      return !!h;
+      // Survol seulement noté : les autres outils reçoivent aussi le mouvement (curseur : `cursor`).
+      return false;
     }
     if (!g.moved && Math.hypot(s.x - g.start.x, s.y - g.start.y) < 2) return true;
     g.moved = true;
@@ -150,6 +188,11 @@ class ParamHandles {
   cancel(): void {
     if (this.drag) editor.cancel();
     this.drag = null;
+  }
+
+  /** Curseur sur une poignée rouge. */
+  cursor(): string | null {
+    return this.hover && this.current() ? 'pointer' : null;
   }
 
   doubleClick(s: Vec): boolean {
@@ -346,6 +389,7 @@ export function shapesDelegate(c: CanvasController): ToolDelegate {
       handles.cancel();
     },
     doubleClick: (_e, _p, s) => handles.doubleClick(s),
+    cursor: () => handles.cursor(),
     key: (e) => {
       if (e.key !== 'Escape' || !(handles.busy || corner.busy)) return false;
       corner.cancel();

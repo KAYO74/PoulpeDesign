@@ -16,7 +16,13 @@ import { dockPanel, floatPanel, startPanelDrag, usePanels } from '../panels/pane
 
 /** Outils d'une colonne personnalisée, rangés par famille dans l'ordre du catalogue. */
 function customGroups(tools: ToolId[]): ToolId[][] {
-  return TOOL_CATALOG.map((c) => c.tools.filter((id) => tools.includes(id))).filter((g) => g.length > 0);
+  const groups = TOOL_CATALOG.map((c) => c.tools.filter((id) => tools.includes(id))).filter(
+    (g) => g.length > 0,
+  );
+  // Outils hors du catalogue (anciens espaces de travail) : gardés à la fin, comme dans `smallGroups`.
+  const rest = tools.filter((id) => !TOOL_CATALOG.some((c) => c.tools.includes(id)));
+  if (rest.length) groups.push(rest);
+  return groups;
 }
 
 /**
@@ -27,8 +33,9 @@ export function pickTool(id: ToolId): void {
   const ws = activeWorkspace();
   const need = toolPersona(id);
   const persona = ui.get().persona;
-  if (ws && need === 'photo' && persona !== 'photo') setPersona('photo');
-  if (ws && need === 'draw' && persona === 'photo') setPersona(ws.base === 'photo' ? 'draw' : ws.base);
+  if (ws && need === 'photo' && persona !== 'photo') setPersona('photo', ws.tools);
+  if (ws && need === 'draw' && persona === 'photo')
+    setPersona(ws.base === 'photo' ? 'draw' : ws.base, ws.tools);
   if (id === 'image') void startPlaceImage();
   else setTool(id);
 }
