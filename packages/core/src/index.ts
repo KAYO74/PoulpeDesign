@@ -47,3 +47,4 @@ export * from './textRegion';
 export * from './textWrap';
 export * from './autoFlow';
 export * from './moveTools';
+export * from './brushTools';

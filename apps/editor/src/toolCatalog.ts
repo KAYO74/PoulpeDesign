@@ -33,7 +33,7 @@ export const DRAW_GROUPS: ToolId[][] = [
 
 export const PHOTO_GROUPS: ToolId[][] = [
   ['select', 'crop', 'straighten', 'perspective'],
-  ['marqueeRect', 'marqueeEllipse', 'lasso', 'polyLasso', 'magicWand', 'quickSelect'],
+  ['marqueeRect', 'marqueeEllipse', 'lasso', 'magicWand', 'quickSelect'],
   ['brush', 'colorReplace', 'eraser', 'backgroundEraser', 'floodEraser', 'fill', 'pixelGradient'],
   ['magicEraser', 'heal', 'patch', 'blemish', 'redEye', 'clone'],
   ['dodge', 'burn', 'sponge', 'blurBrush', 'sharpenBrush', 'smudge', 'liquify'],
@@ -88,7 +88,8 @@ export function toolGroupsFor(persona: Persona): ToolId[][] {
 }
 
 const DRAW_TOOLS = new Set([...DRAW_GROUPS.flat(), ...LAYOUT_GROUPS.flat()]);
-const PHOTO_TOOLS = new Set(PHOTO_GROUPS.flat());
+// L'ancien Lasso polygonal (devenu un mode du lasso) reste un outil photo pour les anciens espaces de travail.
+const PHOTO_TOOLS = new Set<ToolId>([...PHOTO_GROUPS.flat(), 'polyLasso']);
 
 /**
  * Tous les outils, rangés par famille, pour composer sa propre colonne dans un espace de travail
@@ -104,7 +105,6 @@ export const TOOL_CATALOG: { id: 'select' | 'vector' | 'pixel' | 'other'; tools:
       'marqueeRect',
       'marqueeEllipse',
       'lasso',
-      'polyLasso',
       'magicWand',
       'quickSelect',
     ],

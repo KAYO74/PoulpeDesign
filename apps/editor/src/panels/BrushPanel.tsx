@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useT } from '../i18n';
 import { Slider } from '../components/PhotoContext';
 import { brushSettings, isBrushTool, setBrush, useUi } from '../store';
+import { BrushPresets } from '../tools/brushes/BrushPresets';
 
 /** Panneau Pinceau : taille, dureté, opacité et flux de l'outil de peinture actif, avec un aperçu du trait. */
 export function BrushPanel() {
@@ -67,6 +68,7 @@ export function BrushPanel() {
         unit="%"
         onChange={(flow) => setBrush({ flow })}
       />
+      <BrushPresets />
     </div>
   );
 }
