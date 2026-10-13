@@ -147,21 +147,18 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-| Version   | Contenu                                                                                                                           | État               |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| v0.1      | Moteur d'édition, export, appli de bureau                                                                                         | ✅ Disponible      |
-| v0.2      | Côté Canva : modèles, bibliothèque d'éléments, formats réseaux sociaux                                                            | ✅ Disponible      |
-| v0.3      | Vectoriel pro : plume, nœuds, géométrie, effets (Illustrator, Affinity Designer)                                                  | ✅ Disponible      |
-| v0.4      | Retouche photo : pinceaux, sélections, réglages, gomme magique (Photoshop, Affinity Photo)                                        | ✅ Disponible      |
-| v0.5      | Mise en page et impression : pages, CMJN, PDF/X, fichiers PSD, PDF et AI (Affinity Publisher)                                     | ✅ Disponible      |
-| v0.6      | Outils Photoshop et Affinity manquants : correcteur, fluidité, cutter, symboles, LUT…                                             | ✅ Disponible      |
-| v1.0      | Vectorisation, détourage par IA locale, macros, extensions, mises à jour automatiques                                             | ✅ Disponible      |
-| v1.1      | Langue choisie à l'installation, Préférences, calques avancés, appli plus fluide, colonne d'outils                                | ✅ Disponible      |
-| v1.2      | Chaque outil au niveau d'Affinity : formes, plume, texte, cadres, tableaux, recadrage, retouche                                   | ✅ Disponible      |
-| v1.3      | Documentation en anglais, panneaux plus faciles à déplacer, roue de couleurs, pinceaux à créer et partager, taille de l'interface | 🚧 À venir         |
-| Plus tard | Appli signée (Windows, macOS), Flathub, accessibilité vérifiée                                                                    | ⏸️ Pas prioritaire |
+Les prochaines versions, jusqu'à la 1.3.0. Les versions déjà sorties sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
-Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-route.md).
+| Version | Contenu                                                                                                                                    | État        |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                         | 🚧 En cours |
+| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes | ⏳ À venir  |
+| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                               | ⏳ À venir  |
+| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                   | ⏳ À venir  |
+| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ⏳ À venir  |
+| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ⏳ À venir  |
+
+La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 
 ## Contribuer
 
