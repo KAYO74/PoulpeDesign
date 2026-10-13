@@ -2,6 +2,10 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.2
+
+- Code réorganisé, sans changement visible : les cinq plus gros fichiers sont découpés en petits modules, et ESLint vérifie le code à chaque modification.
+
 ## Version 1.2.1
 
 - **Outil Nœud** : un clic sur un segment droit ajoute le nœud exactement sous la souris (il se posait un peu plus loin sur la ligne).
