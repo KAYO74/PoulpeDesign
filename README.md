@@ -147,18 +147,19 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-| Version | Contenu                                                                                            | État          |
-| ------- | -------------------------------------------------------------------------------------------------- | ------------- |
-| v0.1    | Moteur d'édition, export, appli de bureau                                                          | ✅ Disponible |
-| v0.2    | Côté Canva : modèles, bibliothèque d'éléments, formats réseaux sociaux                             | ✅ Disponible |
-| v0.3    | Vectoriel pro : plume, nœuds, géométrie, effets (Illustrator, Affinity Designer)                   | ✅ Disponible |
-| v0.4    | Retouche photo : pinceaux, sélections, réglages, gomme magique (Photoshop, Affinity Photo)         | ✅ Disponible |
-| v0.5    | Mise en page et impression : pages, CMJN, PDF/X, fichiers PSD, PDF et AI (Affinity Publisher)      | ✅ Disponible |
-| v0.6    | Outils Photoshop et Affinity manquants : correcteur, fluidité, cutter, symboles, LUT…              | ✅ Disponible |
-| v1.0    | Vectorisation, détourage par IA locale, macros, extensions, mises à jour automatiques              | ✅ Disponible |
-| v1.1    | Langue choisie à l'installation, Préférences, calques avancés, appli plus fluide, colonne d'outils | ✅ Disponible |
-| v1.2    | Chaque outil au niveau d'Affinity : formes, plume, texte, cadres, tableaux, recadrage, retouche    | ✅ Disponible |
-| v1.x    | Appli signée (Windows, macOS), Flathub, accessibilité, documentation en anglais                    | 🚧 À venir    |
+| Version   | Contenu                                                                                                                           | État               |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| v0.1      | Moteur d'édition, export, appli de bureau                                                                                         | ✅ Disponible      |
+| v0.2      | Côté Canva : modèles, bibliothèque d'éléments, formats réseaux sociaux                                                            | ✅ Disponible      |
+| v0.3      | Vectoriel pro : plume, nœuds, géométrie, effets (Illustrator, Affinity Designer)                                                  | ✅ Disponible      |
+| v0.4      | Retouche photo : pinceaux, sélections, réglages, gomme magique (Photoshop, Affinity Photo)                                        | ✅ Disponible      |
+| v0.5      | Mise en page et impression : pages, CMJN, PDF/X, fichiers PSD, PDF et AI (Affinity Publisher)                                     | ✅ Disponible      |
+| v0.6      | Outils Photoshop et Affinity manquants : correcteur, fluidité, cutter, symboles, LUT…                                             | ✅ Disponible      |
+| v1.0      | Vectorisation, détourage par IA locale, macros, extensions, mises à jour automatiques                                             | ✅ Disponible      |
+| v1.1      | Langue choisie à l'installation, Préférences, calques avancés, appli plus fluide, colonne d'outils                                | ✅ Disponible      |
+| v1.2      | Chaque outil au niveau d'Affinity : formes, plume, texte, cadres, tableaux, recadrage, retouche                                   | ✅ Disponible      |
+| v1.3      | Documentation en anglais, panneaux plus faciles à déplacer, roue de couleurs, pinceaux à créer et partager, taille de l'interface | 🚧 À venir         |
+| Plus tard | Appli signée (Windows, macOS), Flathub, accessibilité vérifiée                                                                    | ⏸️ Pas prioritaire |
 
 Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-route.md).
 
