@@ -2,6 +2,11 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.5
+
+- **Panneaux** : chaque panneau (Calques, Pinceau, Historique…) se détache seul en tirant son onglet hors du groupe, ou par un double-clic sur l'onglet ; ramené sur le Studio, il reprend sa place.
+- **Taille de l'interface** : Préférences › Affichage, de 80 % à 200 %, pour agrandir menus, panneaux et textes dans l'appli de bureau.
+
 ## Version 1.2.4
 
 - **Menus sur Mac** : Fichier, Édition, Calque… passent dans la barre du haut de l'écran, à côté de la pomme, avec les mêmes raccourcis ; Préférences et À propos sont dans le menu « Poulpe Design », et un menu Fenêtre est ajouté.

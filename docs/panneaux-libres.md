@@ -24,6 +24,7 @@ La disposition est mémorisée d'une session à l'autre.
 ## Taille de l'interface
 
 **Préférences › Affichage › Taille de l'interface** (de 80 % à 200 %) agrandit toute la fenêtre de l'appli de bureau : menus, panneaux, textes et icônes. Le document reste net (`renderDpr` dans `apps/editor/src/uiScale.ts`). Dans le navigateur, son propre zoom (Ctrl + / Ctrl −) fait la même chose.
+
 - Tests : `apps/editor/e2e/panels.spec.ts`.
 
 ## Espaces de travail personnalisés
