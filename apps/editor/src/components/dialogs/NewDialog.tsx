@@ -6,12 +6,13 @@ import { newDocument, openDocument, openPhoto } from '../../io';
 import { newFromTemplate } from '../../libraryActions';
 import { TemplateCard } from '../../panels/Library';
 import { setSettings, useUi } from '../../store';
+import { MyTemplates } from './MyTemplates';
 import { NumberField } from '../fields';
 import { Icon } from '../Icon';
 import { Modal } from './Modal';
 import { close } from './close';
 
-type NewSection = 'templates' | FormatCategory;
+type NewSection = 'templates' | 'mine' | FormatCategory;
 
 /**
  * Écran d'accueil et « Nouveau document » : modèles prêts à l'emploi, formats par usage (réseaux
@@ -29,7 +30,8 @@ export function NewDialog() {
   const print = section === 'print' || findFormat(preset)?.category === 'print';
   const create = (w: number, h: number, isPrint = print) =>
     newDocument(w, h, isPrint ? { dpi: 300, pages: pageCount, facing } : {});
-  const formats = section === 'templates' ? [] : FORMAT_PRESETS.filter((f) => f.category === section);
+  const formats =
+    section === 'templates' || section === 'mine' ? [] : FORMAT_PRESETS.filter((f) => f.category === section);
   const templates = TEMPLATES.filter((d) => !format || d.format === format);
   const usedFormats = [...new Set(TEMPLATES.map((d) => d.format))];
   return (
@@ -39,6 +41,10 @@ export function NewDialog() {
           <button aria-pressed={section === 'templates'} onClick={() => setSection('templates')}>
             <Icon name="template" />
             {t('new.templates')}
+          </button>
+          <button aria-pressed={section === 'mine'} data-testid="new-mine" onClick={() => setSection('mine')}>
+            <Icon name="styleSave" />
+            {t('mytpl.title')}
           </button>
           <span className="new-nav-head">{t('new.formats')}</span>
           {(['social', 'print', 'screen'] as const).map((c) => (
@@ -63,7 +69,9 @@ export function NewDialog() {
           </button>
         </nav>
         <div className="new-main">
-          {section === 'templates' ? (
+          {section === 'mine' ? (
+            <MyTemplates />
+          ) : section === 'templates' ? (
             <>
               <div className="chips" role="group">
                 <button className="chip-btn" aria-pressed={format === null} onClick={() => setFormat(null)}>

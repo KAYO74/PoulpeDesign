@@ -2,6 +2,13 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.3
+
+- **Modèles** : 9 nouveaux modèles pour les réseaux sociaux (TikTok, sondage et recette en story, carrousel, concours, article, bannières X, LinkedIn et chaîne vidéo).
+- **Formats** : écrans de la HD 720p au 8K (Full HD, 2K, 4K, 4K cinéma, 5K, 6K, 8K, ultra-large, tablette, page web), impression de l'A0 à l'A6, B4, B5, formats US, flyers, affiches, photos, cartes de visite ; nouveaux formats réseaux (bannières, vidéo verticale, photo de profil…).
+- **Mes modèles** : Fichier › Enregistrer comme modèle garde le document dans l'appli ; l'écran d'accueil le propose dans « Mes modèles », où chaque modèle s'exporte en fichier `.poulpemodele` et où l'on importe ceux des autres.
+- **Lanceur** : le menu Démarrer, le bureau, le menu des applications Linux et macOS affichent « Poulpe Design » (le nom interne « Poulpe » reste, pour que les mises à jour trouvent l'appli installée).
+
 ## Version 1.2.2
 
 - Code réorganisé, sans changement visible : les cinq plus gros fichiers sont découpés en petits modules, et ESLint vérifie le code à chaque modification.

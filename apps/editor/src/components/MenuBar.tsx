@@ -121,6 +121,7 @@ export function MenuBar() {
         <Sep />
         <Item id="file.save" />
         <Item id="file.saveAs" />
+        <Item id="file.saveTemplate" />
         <Sep />
         <Item id="file.importImage" />
         <Sep />

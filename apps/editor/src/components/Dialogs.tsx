@@ -22,6 +22,7 @@ import { PreferencesDialog } from './PreferencesDialog';
 import { HelpDialog } from './HelpDialog';
 import { ExtensionParamsDialog, ExtensionsDialog } from '../extensions/ExtensionsDialog';
 import { VectorizeDialog } from '../smart/VectorizeDialog';
+import { SaveTemplateDialog } from './dialogs/SaveTemplateDialog';
 
 // Cadre commun des fenêtres : les autres modules de l'éditeur continuent de l'importer d'ici.
 export { Modal } from './dialogs/Modal';
@@ -57,5 +58,6 @@ function MainDialog() {
   if (dialog === 'workspace') return <WorkspaceDialog />;
   if (dialog === 'preferences') return <PreferencesDialog />;
   if (dialog === 'help') return <HelpDialog />;
+  if (dialog === 'saveTemplate') return <SaveTemplateDialog />;
   return null;
 }

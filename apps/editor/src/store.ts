@@ -125,6 +125,7 @@ export type Dialog =
   | 'workspace'
   | 'preferences'
   | 'help'
+  | 'saveTemplate'
   | 'language';
 
 /** Catégories de la fenêtre Préférences. */
