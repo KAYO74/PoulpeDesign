@@ -19,6 +19,7 @@ import { ELEMENT_MIME } from '../panels/Library';
 import { editor, ui, useEditor, useUi } from '../store';
 import { CanvasMenu } from './CanvasMenu';
 import { textEditKey } from '../tools/text/keys';
+import { renderDpr } from '../uiScale';
 
 let controller: CanvasController | null = null;
 export const getController = () => controller;
@@ -38,7 +39,7 @@ export function Viewport() {
     controller = c;
     const area = canvasRef.current!.parentElement!;
     let fitted = false;
-    const ro = new ResizeObserver(() => {
+    const fit = () => {
       const r = area.getBoundingClientRect();
       c.resize(r.width, r.height);
       if (!fitted && r.width > 0) {
@@ -46,8 +47,11 @@ export function Viewport() {
         c.zoomToFit();
       }
       drawRulers();
-    });
+    };
+    const ro = new ResizeObserver(fit);
     ro.observe(area);
+    // Taille de l'interface changée : même surface, mais plus de pixels réels à dessiner.
+    window.addEventListener('ui-scale', fit);
     // Les règles ne changent qu'avec la vue (ou le thème), et une fois par image au plus.
     let frame = 0;
     const drawRulers = () => {
@@ -65,6 +69,7 @@ export function Viewport() {
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
+      window.removeEventListener('ui-scale', fit);
       unsub();
       c.dispose();
       controller = null;
@@ -130,7 +135,7 @@ export function Viewport() {
 }
 
 function paintRulers(cx: HTMLCanvasElement, cy: HTMLCanvasElement, c: CanvasController) {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = renderDpr();
   const cs = getComputedStyle(cx);
   const bg = cs.getPropertyValue('--ruler').trim() || '#26262b';
   const tick = cs.getPropertyValue('--tick').trim() || '#6e6c78';

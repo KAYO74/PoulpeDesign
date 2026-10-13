@@ -37,6 +37,7 @@ import { NumberField, Select } from './fields';
 import { Icon, type IconName } from './Icon';
 import { ShortcutsEditor } from './ShortcutsDialog';
 import { renderStats, type RenderStats } from '../perf';
+import { UI_SCALES, uiScaleAvailable } from '../uiScale';
 import {
   nativeEngineInfo,
   rustEngineStatus,
@@ -500,6 +501,14 @@ function DisplayPane() {
             onChange={(v) => setSettings({ theme: v })}
           />
           <Select
+            label={t('prefs.uiScale')}
+            testId="prefs-ui-scale"
+            value={s.uiScale}
+            disabled={!uiScaleAvailable()}
+            options={UI_SCALES.map((v) => ({ value: v as number, label: `${Math.round(v * 100)} %` }))}
+            onChange={(v) => setSettings({ uiScale: v })}
+          />
+          <Select
             label={t('view.toolsSide')}
             value={s.toolsSide}
             options={[
@@ -543,6 +552,7 @@ function DisplayPane() {
           testId="prefs-tools-locked"
           onChange={(v) => setSettings({ toolsLocked: v })}
         />
+        {!uiScaleAvailable() && <p className="note small">{t('prefs.uiScaleWeb')}</p>}
         <Check
           label={t('prefs.perfMeter')}
           checked={s.perfMeter}

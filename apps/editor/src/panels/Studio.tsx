@@ -12,6 +12,7 @@ import {
   panels,
   startPanelDrag,
   startSplitter,
+  tabPanel,
   usePanels,
   type PanelId,
 } from './panelLayout';
@@ -35,12 +36,21 @@ interface Tab {
 }
 
 /** Onglet actif et état replié de chaque groupe, conservés quand il passe d'ancré à flottant. */
-const groupState = new Map<string, { active: number; open: boolean }>();
+const groupState = new Map<string, { active: string | null; open: boolean }>();
+
+/** Rectangle du groupe (ancré ou flottant) qui contient normalement ce panneau. */
+function homeRect(group: PanelId): DOMRect | null {
+  const el = document.querySelector(`[data-testid="studio-${group}"]`);
+  const r = el?.getBoundingClientRect();
+  return r && r.width > 0 ? r : null;
+}
 
 /**
  * Groupe d'onglets repliable, comme les Studios d'Affinity. Sa barre d'onglets sert de poignée :
  * on la glisse pour détacher le groupe en fenêtre flottante (comme dans Photoshop), on la ramène
  * sur le Studio pour le ré-ancrer. Double-clic sur la barre : détacher / ré-ancrer.
+ * Un onglet (Calques, Pinceau, Historique…) glissé hors du groupe devient sa propre fenêtre ;
+ * ramené sur son groupe, il y reprend sa place. Double-clic sur un onglet : le détacher seul.
  */
 function StudioGroup({
   id,
@@ -48,6 +58,7 @@ function StudioGroup({
   tabs,
   initial = 0,
   floating,
+  home,
   style,
 }: {
   id: PanelId;
@@ -55,25 +66,45 @@ function StudioGroup({
   tabs: Tab[];
   initial?: number;
   floating?: boolean;
+  /** Panneau détaché seul : le groupe où il retourne quand on l'ancre. */
+  home?: PanelId;
   style?: React.CSSProperties;
 }) {
   const t = useT();
   const side = useUi((s) => s.settings.studioSide);
   const saved = groupState.get(stateKey);
-  const [active, setActiveState] = useState(saved?.active ?? initial);
+  const [active, setActiveState] = useState<string | null>(saved?.active ?? null);
   const [open, setOpenState] = useState(saved?.open ?? true);
   const ref = useRef<HTMLElement>(null);
-  const remember = (a: number, o: boolean) => groupState.set(stateKey, { active: a, open: o });
-  const setActive = (i: number) => {
-    setActiveState(i);
+  const remember = (a: string | null, o: boolean) => groupState.set(stateKey, { active: a, open: o });
+  const setActive = (tab: string) => {
+    setActiveState(tab);
     setOpenState(true);
-    remember(i, true);
+    remember(tab, true);
   };
   const setOpen = (o: boolean) => {
     setOpenState(o);
     remember(active, o);
   };
-  const current = Math.min(active, tabs.length - 1);
+  // L'onglet actif est retenu par son nom : détacher un autre onglet ne change pas l'affichage.
+  const found = tabs.findIndex((tab) => tab.id === active);
+  const current = found >= 0 ? found : Math.min(initial, tabs.length - 1);
+  /** Détache un onglet en fenêtre seule, à côté du groupe. */
+  const detachTab = (tab: string) => {
+    const r = ref.current!.getBoundingClientRect();
+    const x = side === 'left' ? r.right + 24 : r.left - r.width - 24;
+    floatPanel(tabPanel(tab), { x, y: r.top + 20, w: r.width, h: Math.max(r.height, 240) });
+  };
+  const tabDown = (e: React.PointerEvent, tab: string) => {
+    // Un groupe d'un seul onglet se déplace tout entier par son onglet.
+    if (tabs.length < 2) return;
+    e.stopPropagation();
+    const r = ref.current!.getBoundingClientRect();
+    startPanelDrag(e, tabPanel(tab), e.currentTarget as HTMLElement, {
+      size: { w: r.width, h: Math.max(r.height, 240) },
+      home: () => homeRect(id),
+    });
+  };
   const toggleFloat = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('[role="tab"],[data-no-drag]')) return;
     if (floating) return dockPanel(id);
@@ -92,7 +123,7 @@ function StudioGroup({
         className="studio-tabs panel-handle"
         role="tablist"
         title={t(floating ? 'panel.dockHint' : 'panel.floatHint')}
-        onPointerDown={(e) => startPanelDrag(e, id, ref.current)}
+        onPointerDown={(e) => startPanelDrag(e, id, ref.current, home ? { home: () => homeRect(home) } : {})}
         onDoubleClick={toggleFloat}
       >
         <span className="panel-grip" aria-hidden="true" />
@@ -103,7 +134,10 @@ function StudioGroup({
             aria-selected={i === current}
             className="studio-tab"
             data-testid={`tab-${tab.id}`}
-            onClick={() => setActive(i)}
+            title={tabs.length > 1 ? t('panel.tabHint') : undefined}
+            onClick={() => setActive(tab.id)}
+            onPointerDown={(e) => tabDown(e, tab.id)}
+            onDoubleClick={() => (home ? dockPanel(id) : tabs.length > 1 && detachTab(tab.id))}
           >
             {t(tab.label)}
           </button>
@@ -186,16 +220,27 @@ export function studioTabsAll(): { id: string; label: MessageKey }[] {
     .map((id) => TABS[id]);
 }
 
-function useGroups(): GroupDef[] {
+/** Groupes du Studio de la Persona, et panneaux détachés seuls (avec leur groupe d'origine). */
+function useGroups(): { groups: GroupDef[]; detached: { tab: Tab; home: PanelId }[] } {
   const editingText = useUi((s) => s.tool === 'text');
   const persona = useUi((s) => s.persona);
   const allowed = useActiveWorkspace()?.tabs ?? null;
+  const floating = usePanels((s) => s.floating);
   const { doc, selection } = useEditor();
   const adjusting = selection.length === 1 && findNode(doc, selection[0])?.node.type === 'adjustment';
-  const pick = (ids: string[]) => ids.filter((id) => !allowed || allowed.includes(id)).map((id) => TABS[id]);
+  const detached: { tab: Tab; home: PanelId }[] = [];
+  const pick = (ids: string[], home: PanelId) =>
+    ids
+      .filter((id) => !allowed || allowed.includes(id))
+      .map((id) => TABS[id])
+      .filter((tab) => {
+        if (!floating[tabPanel(tab.id)]) return true;
+        detached.push({ tab, home });
+        return false;
+      });
   const photo = persona === 'photo';
   const focus = photo ? (adjusting ? 'adjustment' : null) : editingText ? 'character' : null;
-  const top = pick(photo ? TOP_PHOTO : TOP_DRAW);
+  const top = pick(photo ? TOP_PHOTO : TOP_DRAW, 'studio-top');
   const groups: GroupDef[] = [
     {
       id: 'studio-top',
@@ -209,15 +254,15 @@ function useGroups(): GroupDef[] {
     {
       id: 'studio-bottom',
       stateKey: photo ? 'layers' : 'layers-draw',
-      tabs: pick(photo ? BOTTOM : BOTTOM_DRAW),
+      tabs: pick(photo ? BOTTOM : BOTTOM_DRAW, 'studio-bottom'),
     },
   ];
-  return groups.filter((g) => g.tabs.length > 0);
+  return { groups: groups.filter((g) => g.tabs.length > 0), detached };
 }
 
 export function Studio() {
   const t = useT();
-  const groups = useGroups();
+  const { groups, detached } = useGroups();
   const side = useUi((s) => s.settings.studioSide);
   const dropping = useUi((s) => s.panelDock !== null && s.panelDock !== 'tools');
   const floating = usePanels((s) => s.floating);
@@ -290,6 +335,16 @@ export function Studio() {
       {docked.length === 0 && dropping && <div className={`dock-band ${side}`} aria-hidden="true" />}
       {loose.map((g) => (
         <StudioGroup key={g.stateKey} {...g} floating />
+      ))}
+      {detached.map(({ tab, home }) => (
+        <StudioGroup
+          key={`tab-${tab.id}`}
+          id={tabPanel(tab.id)}
+          stateKey={`tab-${tab.id}`}
+          tabs={[tab]}
+          home={home}
+          floating
+        />
       ))}
     </>
   );
