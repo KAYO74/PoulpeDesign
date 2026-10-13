@@ -107,6 +107,18 @@ Livrée le 5 octobre 2026, voir [version-1.0.md](version-1.0.md) : vectorisation
 - Appli de bureau signée (Windows, macOS) avec mises à jour automatiques, publiée sur Flathub pour Linux.
 - Performances sur gros fichiers, accessibilité WCAG 2.2 AA vérifiée, documentation FR / EN.
 
+### v1.3 Prochaine version (demandée le 13 octobre 2026)
+
+Tout sans régression ni bug : chaque point est vérifié par les tests avant d'être publié.
+
+- **Documentation en anglais :** toute la documentation du dépôt traduite.
+- **Panneaux :** déplacer plus facilement les fenêtres Calques, Pinceau, Historique et les autres.
+- **Couleurs :** sélecteur RVB avec une roue, qui s'ouvre quand on choisit une couleur dans la barre d'outils ou dans le menu du haut ; le choix « aucune couleur » partout où l'on choisit une couleur, comme dans Affinity.
+- **Pinceaux :** créer ses pinceaux et les partager, aussi sous forme d'extensions de l'appli ; une fenêtre de création de pinceau qui reste ouverte pendant qu'on essaie le pinceau sur le document, et qu'on peut fermer.
+- **Interface :** régler la taille de l'interface dans les Préférences.
+
+Pas prioritaire pour le moment : la signature des installeurs Mac (et Windows), Flathub.
+
 ## Hors périmètre et risques
 
 - **Pas de 3D, de vidéo ni d'animation** avant la v1.0 : ce sont d'autres logiciels (After Effects, Blender).
