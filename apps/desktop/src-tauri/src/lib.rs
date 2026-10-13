@@ -135,6 +135,16 @@ pub fn run() {
             // Mises à jour automatiques : vérifiées et installées depuis l'interface (updater.ts).
             #[cfg(desktop)]
             _app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            // Windows et Linux : l'éditeur dessine sa propre barre de titre, avec les menus et les
+            // boutons réduire, agrandir et fermer. Le Mac garde la sienne et reçoit les menus
+            // dans la barre du haut de l'écran (nativeMenu.ts).
+            #[cfg(any(target_os = "windows", target_os = "linux"))]
+            {
+                use tauri::Manager;
+                if let Some(window) = _app.get_webview_window("main") {
+                    window.set_decorations(false)?;
+                }
+            }
             Ok(())
         })
         .manage(engine)

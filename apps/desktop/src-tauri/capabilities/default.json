@@ -1,11 +1,17 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Droits de la fenêtre principale : dialogues d'ouverture et d'enregistrement, lecture et écriture des fichiers choisis par l'utilisateur. Recherche, téléchargement et installation des mises à jour signées, puis redémarrage.",
+  "description": "Droits de la fenêtre principale : barre de titre de l'éditeur (déplacer, réduire, agrandir, fermer) et menus du Mac, dialogues d'ouverture et d'enregistrement, lecture et écriture des fichiers choisis par l'utilisateur. Recherche, téléchargement et installation des mises à jour signées, puis redémarrage.",
   "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-internal-toggle-maximize",
+    "core:window:allow-is-maximized",
+    "core:window:allow-start-dragging",
+    "core:window:allow-close",
     "dialog:allow-open",
     "dialog:allow-save",
     "dialog:allow-message",

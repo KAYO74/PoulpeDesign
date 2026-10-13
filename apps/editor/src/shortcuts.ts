@@ -53,6 +53,12 @@ export function resetShortcut(id?: string): void {
   save();
 }
 
+/** Prévient quand un raccourci change. */
+export function subscribeShortcuts(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function useShortcuts(): Record<string, string> {
   return useSyncExternalStore(
     (cb) => {

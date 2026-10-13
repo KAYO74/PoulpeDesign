@@ -1,7 +1,8 @@
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import { useT } from '../i18n';
-import { ui } from '../store';
-import { applyWorkspace, useActiveWorkspace, useWorkspaces } from '../workspaces';
+import { useActiveWorkspace, useWorkspaces } from '../workspaces';
+import { Nodes } from './MenuBar';
+import { workspaceNodes } from './menuSpec';
 import { Icon } from './Icon';
 
 /** Choix d'un espace de travail personnalisé, à côté des trois Personas intégrées. */
@@ -37,42 +38,8 @@ export function WorkspaceMenu() {
 
 /** Éléments du menu des espaces (barre d'outils et menu Affichage). */
 export function WorkspaceItems() {
-  const t = useT();
-  const list = useWorkspaces((s) => s.list);
-  const active = useActiveWorkspace();
-  return (
-    <>
-      {list.map((w) => (
-        <Menu.Item
-          key={w.id}
-          className="menu-item"
-          data-testid={`workspace-${w.name}`}
-          onSelect={() => applyWorkspace(w.id)}
-        >
-          <span className="menu-check">{active?.id === w.id ? '✓' : ''}</span>
-          <span className="menu-label">{w.name}</span>
-          <span className="menu-shortcut">{t(`workspace.base.${w.base}`)}</span>
-        </Menu.Item>
-      ))}
-      {list.length > 0 && <Menu.Separator className="menu-sep" />}
-      <Menu.Item
-        className="menu-item"
-        data-testid="workspace-new"
-        onSelect={() => ui.set({ dialog: 'workspace', workspaceEdit: null })}
-      >
-        <span className="menu-check" />
-        <span className="menu-label">{t('workspace.new')}</span>
-      </Menu.Item>
-      {active && (
-        <Menu.Item
-          className="menu-item"
-          data-testid="workspace-edit"
-          onSelect={() => ui.set({ dialog: 'workspace', workspaceEdit: active.id })}
-        >
-          <span className="menu-check" />
-          <span className="menu-label">{t('workspace.edit', { name: active.name })}</span>
-        </Menu.Item>
-      )}
-    </>
-  );
+  useT();
+  useWorkspaces((s) => s.list);
+  useActiveWorkspace();
+  return <Nodes items={workspaceNodes()} />;
 }
