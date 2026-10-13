@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { baseName, isDesktop } from './io';
-import { handleKeyDown, handleKeyUp } from './commands';
+import { handleKeyDown, handleKeyUp, isMac } from './commands';
 import { ContextBar } from './components/ContextBar';
 import { Dialogs } from './components/Dialogs';
 import { MenuBar } from './components/MenuBar';
@@ -8,12 +8,20 @@ import { StatusBar } from './components/StatusBar';
 import { ToolColumn } from './components/ToolColumn';
 import { Toolbar } from './components/Toolbar';
 import { Viewport } from './components/Viewport';
+import { WindowControls } from './components/WindowControls';
 import { useT } from './i18n';
 import { Library } from './panels/Library';
 import { PagesPanel } from './panels/PagesPanel';
 import { Studio } from './panels/Studio';
 import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from './panels/panelLayout';
 import { editor, useEditor, useUi } from './store';
+
+/*
+ * Appli de bureau : sur Mac, les menus vont dans la barre du haut de l'écran (nativeMenu.ts) ;
+ * sous Windows et Linux, la barre de titre de l'éditeur remplace celle du système.
+ */
+const nativeMenus = isDesktop() && isMac;
+const ownTitleBar = isDesktop() && !isMac;
 
 export function App() {
   const t = useT();
@@ -53,15 +61,28 @@ export function App() {
 
   const name = filePath ? baseName(filePath) : doc.name;
   return (
-    <div className={`app tools-${settings.toolsSide} studio-${settings.studioSide} persona-${persona}`}>
-      <header className="titlebar">
-        <img className="appicon" src="./poulpe.svg" alt="" />
-        <MenuBar />
-        <div className="wtitle">
-          <b>{t('app.name')}</b> — {name}
-          {dirty ? ' •' : ''}
-        </div>
-      </header>
+    <div
+      className={`app${nativeMenus ? ' native-menus' : ''} tools-${settings.toolsSide} studio-${settings.studioSide} persona-${persona}`}
+    >
+      {!nativeMenus && (
+        <header
+          className={`titlebar${ownTitleBar ? ' own' : ''}`}
+          data-tauri-drag-region={ownTitleBar || undefined}
+        >
+          <img
+            className="appicon"
+            src="./poulpe.svg"
+            alt=""
+            data-tauri-drag-region={ownTitleBar || undefined}
+          />
+          <MenuBar />
+          <div className="wtitle" data-tauri-drag-region={ownTitleBar || undefined}>
+            <b data-tauri-drag-region={ownTitleBar || undefined}>{t('app.name')}</b> — {name}
+            {dirty ? ' •' : ''}
+          </div>
+          {ownTitleBar && <WindowControls />}
+        </header>
+      )}
       <Toolbar />
       <ContextBar />
       <main className="workspace">

@@ -1966,6 +1966,12 @@ export function t(key: MessageKey | string, vars?: Record<string, string | numbe
   return s;
 }
 
+/** Prévient quand la langue change. */
+export function subscribeLang(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 /** Re-rend le composant quand la langue change. */
 export function useT(): typeof t {
   useSyncExternalStore(

@@ -61,6 +61,20 @@ export const frV12 = {
   'tip.patch.desc': 'Corrigez une zone en la remplaçant par une autre partie de l’image.',
   'tip.blemish.desc': 'Faites disparaître d’un clic les petits défauts (boutons, poussières).',
   'tip.redEye.desc': 'Corrigez les yeux rouges d’un clic.',
+  // Barre de titre (Windows et Linux) et barre de menus du Mac.
+  'window.minimize': 'Réduire',
+  'window.maximize': 'Agrandir',
+  'window.restore': 'Restaurer',
+  'window.close': 'Fermer',
+  'macMenu.services': 'Services',
+  'macMenu.hide': 'Masquer Poulpe Design',
+  'macMenu.hideOthers': 'Masquer les autres',
+  'macMenu.showAll': 'Tout afficher',
+  'macMenu.quit': 'Quitter Poulpe Design',
+  'macMenu.window': 'Fenêtre',
+  'macMenu.zoom': 'Réduire/agrandir',
+  'macMenu.fullscreen': 'Plein écran',
+  'macMenu.bringAllToFront': 'Tout ramener au premier plan',
 };
 
 export type MessageKeyV12 = keyof typeof frV12;
@@ -120,4 +134,18 @@ export const enV12: Record<MessageKeyV12, string> = {
   'tip.patch.desc': 'Fix an area by replacing it with another part of the image.',
   'tip.blemish.desc': 'Remove small flaws (spots, dust) in one click.',
   'tip.redEye.desc': 'Fix red eyes in one click.',
+  // Title bar (Windows and Linux) and Mac menu bar.
+  'window.minimize': 'Minimize',
+  'window.maximize': 'Maximize',
+  'window.restore': 'Restore',
+  'window.close': 'Close',
+  'macMenu.services': 'Services',
+  'macMenu.hide': 'Hide Poulpe Design',
+  'macMenu.hideOthers': 'Hide Others',
+  'macMenu.showAll': 'Show All',
+  'macMenu.quit': 'Quit Poulpe Design',
+  'macMenu.window': 'Window',
+  'macMenu.zoom': 'Zoom',
+  'macMenu.fullscreen': 'Enter Full Screen',
+  'macMenu.bringAllToFront': 'Bring All to Front',
 };

@@ -120,6 +120,46 @@ svg.i {
   min-width: 0;
   user-select: none;
 }
+/* Appli de bureau sur Mac : pas de barre de titre dans l'éditeur, les menus sont ceux du Mac. */
+.app.native-menus {
+  grid-template-rows: 40px 34px minmax(0, 1fr) 24px;
+}
+/* Windows et Linux : la barre de titre de l'éditeur sert de barre de la fenêtre. */
+.titlebar.own {
+  padding-right: 0;
+}
+.titlebar.own .wtitle {
+  padding-right: 0;
+}
+.window-controls {
+  display: flex;
+  align-self: stretch;
+  flex: none;
+}
+.window-btn {
+  width: 46px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.window-btn svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.1;
+}
+.window-btn:hover {
+  background: var(--panel-2);
+  color: var(--fg);
+}
+.window-btn.close:hover {
+  background: #e5484d;
+  color: #fff;
+}
 .appicon {
   width: 20px;
   height: 20px;

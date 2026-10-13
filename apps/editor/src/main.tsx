@@ -7,6 +7,7 @@ import { chooseStartLanguage } from './startLanguage';
 import { startRustEngine } from './engine';
 import { loadSystemFonts } from './fonts';
 import { getLang } from './i18n';
+import { isMac } from './commands';
 import { isDesktop, openPath, openPhotoBytes } from './io';
 import * as library from './libraryActions';
 import * as vector from './vectorActions';
@@ -51,6 +52,8 @@ if (isDesktop() || location.search.includes('bench'))
   void import('./bench').then((b) => b.maybeRunBenchmark(isDesktop()));
 
 if (isDesktop()) {
+  // Sur Mac, les menus passent dans la barre du haut de l'écran, à côté de la pomme.
+  if (isMac) void import('./nativeMenu').then((m) => m.installMacMenu());
   // Fichier passé au lancement (double-clic sur un .poulpe) ou ouvert pendant que l'appli tourne.
   import('@tauri-apps/api/core').then(async ({ invoke }) => {
     const path = await invoke<string | null>('opened_file').catch(() => null);
