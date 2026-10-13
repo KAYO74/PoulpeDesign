@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Nom affiché par macOS (Dock, barre des menus) ; le nom interne « Poulpe » reste pour les mises à jour. -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key>
+  <string>Poulpe Design</string>
+  <key>CFBundleDisplayName</key>
+  <string>Poulpe Design</string>
+</dict>
+</plist>
