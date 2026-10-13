@@ -4,6 +4,7 @@ import { enV1, frV1, type MessageKeyV1 } from './i18n-v1';
 import { enPrefs, frPrefs, type MessageKeyPrefs } from './i18n-prefs';
 import { enLayers, frLayers, type MessageKeyLayers } from './i18n-layers';
 import { enV12, frV12, type MessageKeyV12 } from './i18n-v12';
+import { enV123, frV123, type MessageKeyV123 } from './i18n-v123';
 import { en as en_shapes, fr as fr_shapes } from './tools/shapes/i18n';
 import { en as en_paint, fr as fr_paint } from './tools/paint/i18n';
 import { en as en_paths, fr as fr_paths } from './tools/paths/i18n';
@@ -942,10 +943,19 @@ const fr = {
 } as const;
 
 export type MessageKey =
-  keyof typeof fr | MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools | MessageKeyV12;
+  | keyof typeof fr
+  | MessageKeyV1
+  | MessageKeyLayers
+  | MessageKeyPrefs
+  | MessageKeyTools
+  | MessageKeyV12
+  | MessageKeyV123;
 
 const en: Record<
-  Exclude<MessageKey, MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools | MessageKeyV12>,
+  Exclude<
+    MessageKey,
+    MessageKeyV1 | MessageKeyLayers | MessageKeyPrefs | MessageKeyTools | MessageKeyV12 | MessageKeyV123
+  >,
   string
 > = {
   'app.name': 'Poulpe Design',
@@ -1868,6 +1878,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frPrefs,
     ...frTools,
     ...frV12,
+    ...frV123,
     ...fr_shapes,
     ...fr_paint,
     ...fr_paths,
@@ -1886,6 +1897,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frTools,
     ...enTools,
     ...enV12,
+    ...enV123,
     ...fr_shapes,
     ...en_shapes,
     ...fr_paint,

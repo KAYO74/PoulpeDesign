@@ -45,7 +45,7 @@ export const isDesktop = (): boolean => typeof window !== 'undefined' && '__TAUR
 const exportImages = new ImageCache();
 
 export type FileKind =
-  'poulpe' | 'png' | 'jpeg' | 'svg' | 'pdf' | 'psd' | 'zip' | 'macro' | 'extension' | 'prefs';
+  'poulpe' | 'png' | 'jpeg' | 'svg' | 'pdf' | 'psd' | 'zip' | 'macro' | 'extension' | 'prefs' | 'template';
 const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   poulpe: { ext: POULPE_EXTENSION, mime: 'application/x-poulpe', label: 'Poulpe Design' },
   png: { ext: 'png', mime: 'image/png', label: 'PNG' },
@@ -57,6 +57,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   macro: { ext: 'poulpemacro', mime: 'application/json', label: 'Macro Poulpe Design' },
   extension: { ext: 'js', mime: 'text/javascript', label: 'Extension Poulpe Design' },
   prefs: { ext: 'poulpeprefs', mime: 'application/json', label: 'Préférences Poulpe Design' },
+  template: { ext: 'poulpemodele', mime: 'application/x-poulpe', label: 'Modèle Poulpe Design' },
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */
@@ -225,7 +226,7 @@ export async function openPath(path: string): Promise<void> {
   await openBytes(path, await readFile(path));
 }
 
-async function thumbnail(doc: PoulpeDocument): Promise<Uint8Array | undefined> {
+export async function thumbnail(doc: PoulpeDocument): Promise<Uint8Array | undefined> {
   const ab = doc.artboards[0];
   if (!ab) return undefined;
   try {

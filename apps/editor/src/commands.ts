@@ -96,6 +96,7 @@ export const COMMANDS = {
   'file.importImage': { label: 'file.importImage', shortcut: 'Mod+Shift+I', run: () => void importImage() },
   'file.openPhoto': { label: 'file.openPhoto', shortcut: 'Mod+Alt+O', run: () => void openPhoto() },
   'file.export': { label: 'file.export', shortcut: 'Mod+Shift+E', run: () => ui.set({ dialog: 'export' }) },
+  'file.saveTemplate': { label: 'mytpl.save', run: () => ui.set({ dialog: 'saveTemplate' }) },
   'file.batchExport': { label: 'file.batchExport', run: () => ui.set({ dialog: 'batch' }) },
   'file.exportPng': {
     label: 'file.exportPng',

@@ -2843,3 +2843,30 @@ h4.sub .link {
   flex: 1;
   min-width: 0;
 }
+
+/* Mes modèles (écran d'accueil) */
+.my-tpl {
+  position: relative;
+}
+.my-tpl-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.my-tpl:hover .my-tpl-actions,
+.my-tpl:focus-within .my-tpl-actions {
+  opacity: 1;
+}
+.my-tpl-actions .icon-btn {
+  background: var(--panel);
+  border-radius: 6px;
+}
+.mytpl-bar .chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

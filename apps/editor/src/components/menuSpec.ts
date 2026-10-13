@@ -130,6 +130,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         sep,
         cmd('file.save'),
         cmd('file.saveAs'),
+        cmd('file.saveTemplate'),
         sep,
         cmd('file.importImage'),
         sep,

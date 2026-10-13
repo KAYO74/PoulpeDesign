@@ -31,6 +31,7 @@ import {
 import { ICONS, ICON_VIEWBOX } from './icons';
 import { ILLUSTRATIONS } from './illustrations';
 import { FRAME_FILL, frameContent } from './shapes';
+import { SOCIAL_TEMPLATES } from './templatesSocial';
 
 /*
  * Modèles prêts à l'emploi, dessinés pour Poulpe (même licence que l'appli). Un modèle décrit le
@@ -1032,6 +1033,7 @@ export const TEMPLATES: TemplateDef[] = [
       };
     },
   },
+  ...SOCIAL_TEMPLATES,
 ];
 
 /** Place le contenu d'un modèle dans un plan de travail (remplace son contenu). */
