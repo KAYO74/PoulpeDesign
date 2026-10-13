@@ -53,10 +53,22 @@ export function floodMask(
       const i = stack[--sp];
       const cx = i % w,
         cy = (i / w) | 0;
-      if (cx > 0 && !mask[i - 1] && inside(i - 1)) ((mask[i - 1] = 255), (stack[sp++] = i - 1));
-      if (cx < w - 1 && !mask[i + 1] && inside(i + 1)) ((mask[i + 1] = 255), (stack[sp++] = i + 1));
-      if (cy > 0 && !mask[i - w] && inside(i - w)) ((mask[i - w] = 255), (stack[sp++] = i - w));
-      if (cy < h - 1 && !mask[i + w] && inside(i + w)) ((mask[i + w] = 255), (stack[sp++] = i + w));
+      if (cx > 0 && !mask[i - 1] && inside(i - 1)) {
+        mask[i - 1] = 255;
+        stack[sp++] = i - 1;
+      }
+      if (cx < w - 1 && !mask[i + 1] && inside(i + 1)) {
+        mask[i + 1] = 255;
+        stack[sp++] = i + 1;
+      }
+      if (cy > 0 && !mask[i - w] && inside(i - w)) {
+        mask[i - w] = 255;
+        stack[sp++] = i - w;
+      }
+      if (cy < h - 1 && !mask[i + w] && inside(i + w)) {
+        mask[i + w] = 255;
+        stack[sp++] = i + w;
+      }
     }
   }
   // Adoucissement : les voisins extérieurs proches de la tolérance entrent en partie.
@@ -118,8 +130,7 @@ export function maskOutline(mask: Uint8Array, w: number, h: number, threshold = 
       for (let guard = 0; guard < 4 * (w + 1) * (h + 1); guard++) {
         const x = k % (w + 1),
           y = Math.floor(k / (w + 1));
-        const lx = line[line.length - 2],
-          ly = line[line.length - 1];
+        const lx = line[line.length - 2];
         const dir = x !== lx ? 0 : 1;
         // On ne garde que les coins : les points alignés sont fusionnés.
         if (dir === prevDir && line.length >= 4) {

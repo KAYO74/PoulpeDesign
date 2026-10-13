@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2.1-FF5F86" alt="Version 1.2.1"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2.2-FF5F86" alt="Version 1.2.2"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -164,12 +164,13 @@ Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-r
 
 ## Contribuer
 
-Poulpe Design est écrit en TypeScript (React, Vite) et en Rust, et embarqué dans une appli de bureau [Tauri](https://v2.tauri.app/). Le cœur passe peu à peu en Rust : depuis la 1.1.1, les réglages et filtres d'image sont calculés par le moteur Rust, sur la carte graphique ou sur tous les cœurs ([Moteur Rust](docs/moteur-rust.md)). Il faut Node 20 ou plus et pnpm 10 (`corepack enable`).
+Poulpe Design est écrit en TypeScript (React, Vite) et en Rust, et embarqué dans une appli de bureau [Tauri](https://v2.tauri.app/). Le cœur passe peu à peu en Rust : depuis la 1.1.1, les réglages et filtres d'image sont calculés par le moteur Rust, sur la carte graphique ou sur tous les cœurs ([Moteur Rust](docs/moteur-rust.md)). Il faut Node 22 (22.13 ou plus) ou Node 20 (20.19 ou plus), et pnpm 10 (`corepack enable`).
 
 ```sh
 pnpm install
 pnpm dev            # éditeur dans le navigateur : http://localhost:5173
 pnpm test           # tests du moteur
+pnpm lint           # analyse du code (ESLint)
 pnpm e2e            # tests de bout en bout
 pnpm desktop:dev    # appli de bureau (Rust et dépendances Tauri requis)
 ```

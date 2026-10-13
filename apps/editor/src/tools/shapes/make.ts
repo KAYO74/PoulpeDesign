@@ -3,7 +3,7 @@ import { t } from '../../i18n';
 import { ui, type ToolId } from '../../store';
 import { shapesStore } from './state';
 
-/* Création des formes de la version 1.2, par les mêmes gestes que le Rectangle (voir controller.ts). */
+/* Création des formes de la version 1.2, par les mêmes gestes que le Rectangle (voir canvas/gestures.ts). */
 
 /** Outils de forme ajoutés en version 1.2 : glisser pour créer, comme le Rectangle. */
 export const NEW_SHAPE_TOOLS: ToolId[] = ['roundRect', ...SHAPE_KINDS];

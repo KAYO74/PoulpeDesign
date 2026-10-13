@@ -130,10 +130,9 @@ export function Histogram({ data, height = 70 }: { data: ImageData | null; heigh
     if (!data) return;
     const h = histogram({ data: data.data, width: data.width, height: data.height });
     const draw = (arr: Uint32Array, color: string, op: GlobalCompositeOperation) => {
-      let max = 1;
       // L'échelle ignore les pics extrêmes (noir ou blanc purs) pour garder la forme lisible.
       const sorted = [...arr].sort((a, b) => a - b);
-      max = Math.max(1, sorted[Math.floor(sorted.length * 0.98)] * 1.2);
+      const max = Math.max(1, sorted[Math.floor(sorted.length * 0.98)] * 1.2);
       ctx.globalCompositeOperation = op;
       ctx.fillStyle = color;
       ctx.beginPath();

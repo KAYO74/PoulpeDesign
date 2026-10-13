@@ -145,6 +145,8 @@ class CropTool implements ToolDelegate {
       if (this.session) this.teardown();
       return;
     }
+    // Pas un alias de `this` : le module retient l'outil actif pour les commandes de la barre (`crop`).
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     instance = this;
     if (this.previewing && !editor.inGesture) {
       // L'aperçu a été validé ou annulé ailleurs (une autre commande, l'historique).
@@ -370,7 +372,7 @@ class CropTool implements ToolDelegate {
     return true;
   }
 
-  pointerUp(e: PointerEvent): boolean {
+  pointerUp(_e: PointerEvent): boolean {
     const g = this.gesture;
     if (!g) return false;
     this.gesture = null;
@@ -385,7 +387,6 @@ class CropTool implements ToolDelegate {
       const r = this.rect();
       if (!g.moved || !r || r.width < 1 || r.height < 1) this.setRect(g.rect);
     }
-    void e;
     this.c.requestDraw();
     return true;
   }

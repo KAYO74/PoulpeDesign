@@ -7,15 +7,10 @@ import {
   type PoulpeDocument,
   type SceneNode,
 } from '@poulpe/core';
-import {
-  canvasPaint,
-  drawChildren,
-  getAssetRevision,
-  getLayoutRevision,
-  getRenderRevision,
-  getSharedRevision,
-  type RenderOptions,
-} from './index';
+import { drawChildren, type RenderOptions } from './draw';
+import { getAssetRevision, getRenderRevision, getSharedRevision } from './images';
+import { getLayoutRevision } from './layout';
+import { canvasPaint } from './paints';
 
 /*
  * Cache d'images du canevas.

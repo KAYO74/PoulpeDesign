@@ -30,7 +30,7 @@ Comme dans Affinity, on peut créer son propre espace à côté des Personas Des
 - L'espace enregistre la disposition actuelle des panneaux (ancrés ou flottants, positions, tailles, côtés). Tant qu'il est ouvert, chaque changement de disposition y est retenu.
 - Revenir à une Persona intégrée rend la disposition qu'elle avait avant. **Modifier « nom »…** change le nom, le type, les outils ou les panneaux, ou supprime l'espace.
 
-Code : `apps/editor/src/workspaces.ts` (clé `poulpe.workspaces`), `components/WorkspaceMenu.tsx`, boîte `WorkspaceDialog` dans `components/Dialogs.tsx`. Les raccourcis des outils masqués restent actifs.
+Code : `apps/editor/src/workspaces.ts` (clé `poulpe.workspaces`), `components/WorkspaceMenu.tsx`, boîte `WorkspaceDialog` dans `components/dialogs/WorkspaceDialog.tsx`. Les raccourcis des outils masqués restent actifs.
 
 ## Colonne d'outils à la carte
 

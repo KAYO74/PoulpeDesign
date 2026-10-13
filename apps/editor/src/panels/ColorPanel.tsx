@@ -133,7 +133,7 @@ export function ColorPanel() {
     }
   };
 
-  const useSwatch = (c: string) => {
+  const applySwatch = (c: string) => {
     if (gradient) onColor(c, 'set');
     else applyPaint(target, { type: 'solid', color: c }, 'set');
   };
@@ -289,7 +289,7 @@ export function ColorPanel() {
                 style={{ background: rgbaToCss(c) }}
                 title={c}
                 aria-label={c}
-                onClick={() => useSwatch(c)}
+                onClick={() => applySwatch(c)}
               />
             ))}
           </div>
@@ -304,7 +304,7 @@ export function ColorPanel() {
             style={{ background: rgbaToCss(c) }}
             title={`${c} · ${t('color.removeSwatch')}`}
             aria-label={c}
-            onClick={() => useSwatch(c)}
+            onClick={() => applySwatch(c)}
             onContextMenu={(e) => {
               e.preventDefault();
               removeSwatch(c);

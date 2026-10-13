@@ -325,7 +325,7 @@ export function fitDeleteAnchors(sps: SubPath[], keys: string[]): SubPath[] {
     for (const { from, to } of fits) {
       const pts: Vec[] = [];
       let t1: Vec | null = null,
-        t2: Vec = pt(-1, 0);
+        t2: Vec;
       for (let i = from; ; i = (i + 1) % n) {
         const b = segmentCubic(orig, i);
         if (!t1) t1 = startTangent(b);

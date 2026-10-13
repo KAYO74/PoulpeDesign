@@ -59,7 +59,7 @@ const SOFTWARE = /swiftshader|llvmpipe|softpipe|software|basic render|microsoft 
 
 function gpuInfo(kind: 'webgl2' | 'webgl', powerPreference: WebGLPowerPreference): GpuInfo | null {
   const canvas = document.createElement('canvas');
-  let gl: WebGLRenderingContext | WebGL2RenderingContext | null = null;
+  let gl: WebGLRenderingContext | WebGL2RenderingContext | null;
   try {
     gl = canvas.getContext(kind, { powerPreference, failIfMajorPerformanceCaveat: false }) as
       WebGLRenderingContext | WebGL2RenderingContext | null;

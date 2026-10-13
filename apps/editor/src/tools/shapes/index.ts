@@ -5,7 +5,7 @@ import { shapesDelegate } from './delegate';
 /*
  * Outils de forme (version 1.2) : rectangle arrondi, triangle, flèche, bulle, anneau, secteur,
  * engrenage, nuage, cœur et spirale, poignées rouges des formes, outil Coin non destructif.
- * La création elle-même passe par les gestes du Rectangle (voir make.ts et controller.ts).
+ * La création elle-même passe par les gestes du Rectangle (voir make.ts et canvas/gestures.ts).
  */
 const module: ToolModule = {
   delegate: shapesDelegate,

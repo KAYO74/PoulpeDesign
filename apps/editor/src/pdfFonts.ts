@@ -214,7 +214,7 @@ export async function embedFonts(pdf: jsPDF, doc: PoulpeDocument, artboards: Art
   const missing = new Set<string>();
   const cache = new Map<string, Uint8Array | null>();
   for (const face of usedFaces(doc, artboards)) {
-    let bytes: Uint8Array | null = null;
+    let bytes: Uint8Array | null;
     try {
       bytes = (await bundledFace(face)) ?? (await systemFace(face));
     } catch {

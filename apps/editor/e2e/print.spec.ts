@@ -242,7 +242,7 @@ test('exporte un PDF/X-4 en CMJN avec les valeurs saisies en CMJN', async ({ pag
 });
 
 test('l’épreuvage CMJN montre les couleurs vives plus ternes', async ({ page }) => {
-  const { drag, at } = await canvas(page);
+  const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([350, 150], [600, 330]);
   await page.getByTestId('hex-input').fill('00FF00');
@@ -257,7 +257,6 @@ test('l’épreuvage CMJN montre les couleurs vives plus ternes', async ({ page 
       },
       [475, 240],
     );
-  void at;
   await expect.poll(pixel).toEqual([0, 255, 0, 255]);
   await page.keyboard.press('Control+y');
   await expect.poll(async () => (await pixel())[1]).toBeLessThan(200);

@@ -314,7 +314,7 @@ export function inpaint(px: Pixels, hole: Uint8Array, opts: InpaintOptions = {})
       }
 
       // Vote : chaque pixel du trou prend la moyenne pondérée de ce que proposent les carrés.
-      let sigma2 = 0;
+      let sigma2: number;
       {
         const ds = targets.map((t) => dist[t]).sort((a, b) => a - b);
         sigma2 = ds[Math.floor(ds.length * 0.75)] / (P * P) + 1;

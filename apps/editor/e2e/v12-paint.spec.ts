@@ -69,7 +69,7 @@ test('Remplissage : tracé exact, poignées, arrêts et types', async ({ page })
   // Suppr retire l'arrêt choisi, pas l'objet.
   await page.getByTestId('paint-stop-color').blur();
   await page.keyboard.press('Delete');
-  let list = await nodes(page);
+  const list = await nodes(page);
   expect(list).toHaveLength(1);
   expect(list[0].fill.stops).toHaveLength(2);
   // Un arrêt tiré hors de la ligne disparaît.
