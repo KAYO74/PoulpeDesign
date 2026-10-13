@@ -247,7 +247,7 @@ export const SOCIAL_TEMPLATES: TemplateDef[] = [
   },
   {
     id: 'xHeaderBanner',
-    name: tr('Bannière de profil X', 'X profile header'),
+    name: tr('Bannière de profil X', 'X header banner'),
     format: 'xHeader',
     tags: 'bannière en-tête profil x twitter header banner profile',
     build: (lang) => {
