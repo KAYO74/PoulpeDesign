@@ -238,3 +238,41 @@ test('outils alignés ou rangés en groupes, au choix', async ({ page }) => {
   await expect(page.getByTestId('toolcol').getByTestId('tool-ellipse')).toBeVisible();
   await expect(page.getByTestId('toolcol').getByTestId('tool-star')).toHaveCount(0);
 });
+
+test('détache un seul panneau (Historique) en fenêtre, puis le remet dans son groupe', async ({ page }) => {
+  // Glisser l'onglet Historique hors du Studio.
+  await drag(page, await center(page, 'tab-history'), [600, 300]);
+  const win = page.getByTestId('float-tab:history');
+  await expect(win).toBeVisible();
+  await expect(win.getByTestId('tab-history')).toBeVisible();
+  // Le groupe d'origine reste ancré avec ses autres panneaux.
+  const studio = page.getByTestId('studio');
+  await expect(studio.getByTestId('tab-layers')).toBeVisible();
+  await expect(studio.getByTestId('tab-history')).toHaveCount(0);
+  await expect(page.getByTestId('float-studio-bottom')).toHaveCount(0);
+
+  // Mémorisé après un rechargement.
+  await page.reload();
+  await expect(page.getByTestId('float-tab:history')).toBeVisible();
+
+  // Ramené sur le Studio : il reprend sa place dans son groupe.
+  const head = (await page.getByTestId('float-tab:history').locator('.studio-tabs').boundingBox())!;
+  const sb = (await studio.boundingBox())!;
+  await drag(page, [head.x + head.width - 30, head.y + 10], [sb.x + sb.width / 2, sb.y + 300]);
+  await expect(page.getByTestId('float-tab:history')).toHaveCount(0);
+  await expect(studio.getByTestId('tab-history')).toBeVisible();
+
+  // Double-clic sur un onglet : détacher ; bouton d'ancrage : remettre.
+  await studio.getByTestId('tab-color').dblclick();
+  await expect(page.getByTestId('float-tab:color')).toBeVisible();
+  await expect(studio.getByTestId('tab-stroke')).toHaveAttribute('aria-selected', 'true');
+  await page.getByTestId('dock-tab:color').click();
+  await expect(page.getByTestId('float-tab:color')).toHaveCount(0);
+  await expect(studio.getByTestId('tab-color')).toBeVisible();
+});
+
+test('un clic sur un onglet change toujours de panneau', async ({ page }) => {
+  await page.getByTestId('tab-history').click();
+  await expect(page.getByTestId('tab-history')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('[data-testid^="float-"]')).toHaveCount(0);
+});

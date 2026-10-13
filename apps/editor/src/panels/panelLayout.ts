@@ -9,7 +9,14 @@ import { ui } from '../store';
  * Magasin séparé des réglages pour que le déplacement d'une fenêtre ne redessine pas tout l'éditeur.
  */
 
-export type PanelId = 'tools' | 'studio-top' | 'studio-bottom';
+/**
+ * Fenêtres déplaçables : la colonne d'outils, les deux groupes du Studio, et chaque panneau
+ * (Calques, Pinceau, Historique…) détaché seul de son groupe (`tab:<onglet>`).
+ */
+export type PanelId = 'tools' | 'studio-top' | 'studio-bottom' | `tab:${string}`;
+
+/** Fenêtre d'un panneau détaché seul de son groupe. */
+export const tabPanel = (tab: string): PanelId => `tab:${tab}`;
 
 export interface PanelFrame {
   x: number;
@@ -157,6 +164,20 @@ function dockRect(id: PanelId): DOMRect | null {
 const inRect = (r: DOMRect, x: number, y: number) =>
   x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 
+export interface DragOptions {
+  /** Taille de la fenêtre créée (par défaut : celle de l'élément glissé). */
+  size?: { w: number; h: number };
+  /** Autre zone où le lâcher ancre le panneau (le groupe d'origine d'un panneau détaché). */
+  home?: () => DOMRect | null;
+}
+
+function overDock(id: PanelId, opts: DragOptions, x: number, y: number): boolean {
+  const zone = dockRect(id);
+  if (zone && inRect(zone, x, y)) return true;
+  const home = opts.home?.();
+  return !!home && inRect(home, x, y);
+}
+
 /** Distance (px) à parcourir avant qu'un panneau ancré se détache. */
 const TEAR_OFF = 10;
 
@@ -165,7 +186,12 @@ const TEAR_OFF = 10;
  * déplace la fenêtre flottante, et la ré-ancre si elle est lâchée sur sa zone d'ancrage.
  * Un simple clic (sans déplacement) n'est pas intercepté : les onglets restent cliquables.
  */
-export function startPanelDrag(e: React.PointerEvent, id: PanelId, el: HTMLElement | null): void {
+export function startPanelDrag(
+  e: React.PointerEvent,
+  id: PanelId,
+  el: HTMLElement | null,
+  opts: DragOptions = {},
+): void {
   if (e.button !== 0 || !el) return;
   const target = e.target as HTMLElement;
   if (target.closest('[data-no-drag]')) return;
@@ -182,13 +208,12 @@ export function startPanelDrag(e: React.PointerEvent, id: PanelId, el: HTMLEleme
       document.body.classList.add('panel-dragging');
     }
     const cur = panels.get().floating[id];
-    const w = cur?.w ?? initial?.w ?? Math.max(r.width, id === 'tools' ? 44 : 280);
-    const h = cur?.h ?? initial?.h ?? Math.max(r.height, PANEL_LIMITS.minH);
+    const w = cur?.w ?? initial?.w ?? opts.size?.w ?? Math.max(r.width, id === 'tools' ? 44 : 280);
+    const h = cur?.h ?? initial?.h ?? opts.size?.h ?? Math.max(r.height, PANEL_LIMITS.minH);
     // Un panneau ancré très large : on garde la poignée sous le pointeur.
     const ox = Math.min(off.x, w - 20);
     floatPanel(id, { x: ev.clientX - ox, y: ev.clientY - off.y, w, h }, false);
-    const zone = dockRect(id);
-    ui.set({ panelDock: zone && inRect(zone, ev.clientX, ev.clientY) ? id : null });
+    ui.set({ panelDock: overDock(id, opts, ev.clientX, ev.clientY) ? id : null });
   };
   const up = (ev: PointerEvent) => {
     window.removeEventListener('pointermove', move);
@@ -196,9 +221,8 @@ export function startPanelDrag(e: React.PointerEvent, id: PanelId, el: HTMLEleme
     window.removeEventListener('pointercancel', up);
     document.body.classList.remove('panel-dragging');
     if (!moved) return;
-    const zone = dockRect(id);
     ui.set({ panelDock: null });
-    if (ev.type === 'pointerup' && zone && inRect(zone, ev.clientX, ev.clientY)) dockPanel(id);
+    if (ev.type === 'pointerup' && overDock(id, opts, ev.clientX, ev.clientY)) dockPanel(id);
     else panels.set({}, true);
     // Le clic qui suit un glissement (s'il a lieu) ne doit pas changer d'onglet.
     const swallow = (c: MouseEvent) => c.stopPropagation();

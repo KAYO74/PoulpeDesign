@@ -155,6 +155,8 @@ export interface Settings {
   autoUpdate: boolean;
   /** Images par seconde et mémoire utilisée dans la barre d'état. */
   perfMeter: boolean;
+  /** Taille de l'interface (1 = 100 %), appli de bureau. */
+  uiScale: number;
 }
 
 export interface View {
@@ -252,6 +254,7 @@ function loadSettings(): Settings {
     showWelcome: true,
     autoUpdate: true,
     perfMeter: false,
+    uiScale: 1,
   };
   try {
     return { ...fallback, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') };

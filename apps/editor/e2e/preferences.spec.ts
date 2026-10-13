@@ -199,3 +199,14 @@ test('le moteur Rust est chargé et la carte graphique se choisit', async ({ pag
   await expect(gpu).toHaveValue('high-performance');
   expect(await page.evaluate(() => (window as any).poulpe.prefs.getPerf().vramMb)).toBe(4096);
 });
+
+test('taille de l’interface : réglage de l’appli de bureau, zoom du navigateur ici', async ({ page }) => {
+  await page.keyboard.press('Control+,');
+  await page.getByTestId('prefs-tab-display').click();
+  const size = page.getByTestId('prefs-ui-scale');
+  await expect(size).toBeVisible();
+  await expect(size.locator('option')).toHaveCount(8);
+  await expect(size).toHaveValue('1');
+  await expect(size).toBeDisabled();
+  await expect(page.getByText('dans le navigateur, utilisez son zoom')).toBeVisible();
+});
