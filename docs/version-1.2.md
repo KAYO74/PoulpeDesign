@@ -2,6 +2,12 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.6
+
+- **Fusionner** : clic droit sur des calques › Fusionner (union, soustraction, intersection, exclusion, division, ou en une seule image avec Ctrl+E) ; lâcher un calque sur un autre propose aussi de les grouper ou de les fusionner.
+- **Grouper et supprimer** : boutons Grouper et Supprimer sous la liste des calques, dans toutes les Personas.
+- **Plans de travail** : clic droit sur un plan de travail dans les calques pour en ajouter un ou le supprimer.
+
 ## Version 1.2.5
 
 - **Panneaux** : chaque panneau (Calques, Pinceau, Historique…) se détache seul en tirant son onglet hors du groupe, ou par un double-clic sur l'onglet ; ramené sur le Studio, il reprend sa place.

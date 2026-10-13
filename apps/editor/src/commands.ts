@@ -1,4 +1,4 @@
-import { COLOR_ADJUSTMENTS, LIVE_FILTERS, findNode, type AdjustmentKind } from '@poulpe/core';
+import { COLOR_ADJUSTMENTS, LIVE_FILTERS, findNode, topLevelIds, type AdjustmentKind } from '@poulpe/core';
 import * as A from './actions';
 import type { NodeAction } from './canvas/pathTools';
 import { beginTextEdit, endTextEdit, isEditingText } from './canvas/textEdit';
@@ -235,6 +235,12 @@ export const COMMANDS = {
   },
   'select.subject': { label: 'select.subject', run: () => void selectSubject(), enabled: canCutout },
   'layer.mergeVisible': { label: 'layer.mergeVisible', shortcut: 'Mod+Alt+Shift+E', run: P.mergeVisible },
+  'layer.mergeSelected': {
+    label: 'layer.mergeSelected',
+    shortcut: 'Mod+E',
+    run: P.mergeSelected,
+    enabled: () => topLevelIds(editor.doc, editor.selection).length >= 2,
+  },
   'adjust.auto': { label: 'adjust.auto', run: P.addAutoLevels },
   ...adjustmentCommands(),
   ...lutCommands(),

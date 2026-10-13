@@ -3,11 +3,18 @@ import {
   autoLevels,
   createAdjustment,
   createDocument,
+  createGroup,
   createImage,
   defaultAdjustment,
   findArtboard,
   findNode,
+  fitGroups,
+  groupNodes,
   newId,
+  nodeBounds,
+  topLevelIds,
+  unionBoxes,
+  walkDocument,
   type Adjustment,
   type AdjustmentKind,
   type AdjustmentNode,
@@ -444,6 +451,50 @@ export function mergeVisible(): void {
       name: t('name.merged'),
     });
     findArtboard(d, ab.id)!.children.push(img);
+    return [img.id];
+  });
+}
+
+/**
+ * Fusionne les calques sélectionnés en une seule image, à la place du plus haut d'entre eux
+ * (comme « Fusionner la sélection » d'Affinity). Formes, courbes, textes et photos se mélangent.
+ */
+export function mergeSelected(): void {
+  const doc = editor.doc;
+  const top = topLevelIds(doc, editor.getState().selection);
+  if (top.length < 2) return;
+  // De bas en haut, l'ordre d'empilement.
+  const nodes = [...walkDocument(doc)].filter((l) => top.includes(l.node.id)).map((l) => l.node);
+  const box = unionBoxes(nodes.map(nodeBounds));
+  if (!box) return;
+  // Marge pour les contours et les ombres qui débordent du cadre des objets.
+  const pad = 32;
+  const x = Math.floor(box.x - pad);
+  const y = Math.floor(box.y - pad);
+  const w = Math.ceil(box.width + pad * 2);
+  const h = Math.ceil(box.height + pad * 2);
+  let k = 1;
+  for (const n of nodes) {
+    const a = n.type === 'image' ? doc.assets[n.assetId] : null;
+    if (a && n.width > 0) k = Math.max(k, a.width / n.width);
+  }
+  k = Math.min(k, 8192 / Math.max(w, h));
+  const canvas = makeCanvas(w * k, h * k);
+  const ctx = canvas.getContext('2d')!;
+  ctx.scale(k, k);
+  ctx.translate(-x, -y);
+  for (const n of nodes) drawNode(ctx, doc, n, { images: images() });
+  const key = registerBitmap(canvas);
+  editor.apply('history.mergeSelected', (d) => {
+    const id = newId('img');
+    d.assets[id] = { id, mime: 'image/png', width: canvas.width, height: canvas.height, data: key };
+    const img = createImage({ x, y, width: w, height: h, assetId: id, name: t('name.mergedLayers') });
+    // Le groupe provisoire prend la place du calque le plus haut, puis l'image prend la sienne.
+    const gid = groupNodes(d, top, createGroup([], ''));
+    const loc = gid ? findNode(d, gid) : null;
+    if (!loc) return;
+    loc.parent.children[loc.index] = img;
+    fitGroups(d);
     return [img.id];
   });
 }

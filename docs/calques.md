@@ -20,8 +20,15 @@ s'annule (Ctrl+Z) et se retrouve tel quel dans le fichier `.poulpe`.
 
 - Glisser une ligne la place à n'importe quelle position : un trait montre où elle va tomber.
 - Lâcher au milieu d'un groupe met les calques dedans (le groupe s'encadre), sur un plan de travail tout en haut de celui-ci.
+- Lâcher au milieu d'un autre calque ouvre un petit menu : **Grouper**, fusionner les formes (**Union**, **Soustraction**, **Intersection**, **Exclusion**) ou **Fusionner en une image**.
 - Si la ligne glissée fait partie de la sélection, toute la sélection suit (« 3 calques » sous le pointeur).
 - Près du bord du panneau, la liste défile toute seule.
+
+## Fusionner, grouper, supprimer
+
+- Clic droit › **Fusionner** : Union, Soustraction, Intersection, Exclusion, Division (les formes et courbes deviennent une seule courbe), ou **Fusionner en une image** (Ctrl+E, aussi dans le menu Calque) qui aplatit formes, textes et photos en une image, à la place du calque le plus haut.
+- Sous la liste : **Grouper** (Ctrl+G) et **Supprimer** (aussi la touche Suppr), dans toutes les Personas.
+- Clic droit sur un plan de travail : **Ajouter un plan de travail** ou **Supprimer le plan de travail** (il en reste toujours un).
 
 ## Sélection dans le panneau
 
