@@ -76,7 +76,7 @@ export function App() {
         >
           <img
             className="appicon"
-            src="./poulpe.svg"
+            src="./poulpe.png"
             alt=""
             data-tauri-drag-region={ownTitleBar || undefined}
           />
