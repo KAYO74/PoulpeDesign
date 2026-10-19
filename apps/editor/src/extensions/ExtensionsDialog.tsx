@@ -3,7 +3,9 @@ import { Modal } from '../components/Dialogs';
 import { NumberField } from '../components/fields';
 import { useT } from '../i18n';
 import { pickFile } from '../io';
-import { ui } from '../store';
+import { ui, useStore } from '../store';
+import { brushPacks, uninstallPack } from '../tools/brushes/packs';
+import { installBrushes } from '../tools/brushes/BrushPresets';
 import {
   inspectExtension,
   installExtension,
@@ -113,6 +115,7 @@ export function ExtensionsDialog() {
               ))}
             </ul>
           </section>
+          <BrushPacksSection />
           <section>
             <h3>{t('ext.examples')}</h3>
             <ul className="ext-list">
@@ -250,4 +253,33 @@ export function ExtensionParamsDialog() {
 
 function defaultFor(type: string): unknown {
   return type === 'number' ? 0 : type === 'boolean' ? false : type === 'color' ? '#000000' : '';
+}
+
+/** Paquets de pinceaux installés (version 1.2.9) : ils se gèrent comme les extensions. */
+function BrushPacksSection() {
+  const t = useT();
+  const packs = useStore(brushPacks, (s) => s.list);
+  return (
+    <section>
+      <h3>{t('brushPacks.title')}</h3>
+      {packs.length === 0 && <p className="muted">{t('brushPacks.none')}</p>}
+      <ul className="ext-list">
+        {packs.map((p) => (
+          <li key={p.id} data-testid={`brush-pack-${p.name}`}>
+            <span>
+              <b>{p.name}</b>{' '}
+              <span className="muted">{t('brushPacks.count', { n: p.presetIds.length })}</span>
+              {p.author && <span className="ext-desc">{t('ext.author', { name: p.author })}</span>}
+            </span>
+            <button className="btn" onClick={() => uninstallPack(p.id)}>
+              {t('ext.remove')}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button className="btn" data-testid="ext-brushes-install" onClick={() => void installBrushes(t)}>
+        {t('brushPacks.install')}
+      </button>
+    </section>
+  );
 }

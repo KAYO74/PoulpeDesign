@@ -1,6 +1,6 @@
 [package]
 name = "poulpe"
-version = "1.2.8"
+version = "1.2.9"
 description = "Poulpe Design, application libre de création graphique"
 authors = ["Contributeurs de Poulpe Design"]
 license = "MPL-2.0"

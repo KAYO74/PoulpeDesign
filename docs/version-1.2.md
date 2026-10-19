@@ -2,6 +2,11 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.9
+
+- **Partager ses pinceaux** : panneau Pinceau › Partager mes pinceaux… enregistre ses pinceaux et leurs formes dans un fichier `.poulpebrushes`.
+- **Installer des pinceaux** : panneau Pinceau ou Extensions › Gérer les extensions… › Installer des pinceaux…, pour un fichier `.poulpebrushes`, Photoshop `.abr` ou Affinity `.afbrushes` (formes seulement, le format d'Affinity n'est pas publié). Chaque paquet se retire d'un clic.
+
 ## Version 1.2.8
 
 - **Création de pinceau** : panneau Pinceau › Créer un pinceau…, ou Affichage › Création de pinceau. La fenêtre reste ouverte pendant qu'on essaie le pinceau sur le document, et se ferme d'un clic.

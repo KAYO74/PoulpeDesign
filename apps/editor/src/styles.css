@@ -3014,3 +3014,9 @@ h4.sub .link {
   background: #fff;
   border-radius: 3px;
 }
+.brushes-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
