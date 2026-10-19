@@ -9,6 +9,7 @@ import { enV125, frV125, type MessageKeyV125 } from './i18n-v125';
 import { enV126, frV126, type MessageKeyV126 } from './i18n-v126';
 import { enV127, frV127, type MessageKeyV127 } from './i18n-v127';
 import { enV128, frV128, type MessageKeyV128 } from './i18n-v128';
+import { enV129, frV129, type MessageKeyV129 } from './i18n-v129';
 import { en as en_shapes, fr as fr_shapes } from './tools/shapes/i18n';
 import { en as en_paint, fr as fr_paint } from './tools/paint/i18n';
 import { en as en_paths, fr as fr_paths } from './tools/paths/i18n';
@@ -957,7 +958,8 @@ export type MessageKey =
   | MessageKeyV125
   | MessageKeyV126
   | MessageKeyV127
-  | MessageKeyV128;
+  | MessageKeyV128
+  | MessageKeyV129;
 
 const en: Record<
   Exclude<
@@ -972,6 +974,7 @@ const en: Record<
     | MessageKeyV126
     | MessageKeyV127
     | MessageKeyV128
+    | MessageKeyV129
   >,
   string
 > = {
@@ -1900,6 +1903,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frV126,
     ...frV127,
     ...frV128,
+    ...frV129,
     ...fr_shapes,
     ...fr_paint,
     ...fr_paths,
@@ -1923,6 +1927,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enV126,
     ...enV127,
     ...enV128,
+    ...enV129,
     ...fr_shapes,
     ...en_shapes,
     ...fr_paint,

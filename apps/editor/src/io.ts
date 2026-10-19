@@ -45,7 +45,18 @@ export const isDesktop = (): boolean => typeof window !== 'undefined' && '__TAUR
 const exportImages = new ImageCache();
 
 export type FileKind =
-  'poulpe' | 'png' | 'jpeg' | 'svg' | 'pdf' | 'psd' | 'zip' | 'macro' | 'extension' | 'prefs' | 'template';
+  | 'poulpe'
+  | 'png'
+  | 'jpeg'
+  | 'svg'
+  | 'pdf'
+  | 'psd'
+  | 'zip'
+  | 'macro'
+  | 'extension'
+  | 'prefs'
+  | 'template'
+  | 'brushes';
 const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   poulpe: { ext: POULPE_EXTENSION, mime: 'application/x-poulpe', label: 'Poulpe Design' },
   png: { ext: 'png', mime: 'image/png', label: 'PNG' },
@@ -58,6 +69,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   extension: { ext: 'js', mime: 'text/javascript', label: 'Extension Poulpe Design' },
   prefs: { ext: 'poulpeprefs', mime: 'application/json', label: 'Préférences Poulpe Design' },
   template: { ext: 'poulpemodele', mime: 'application/x-poulpe', label: 'Modèle Poulpe Design' },
+  brushes: { ext: 'poulpebrushes', mime: 'application/json', label: 'Pinceaux Poulpe Design' },
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */
