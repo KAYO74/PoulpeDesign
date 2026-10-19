@@ -1,103 +1,103 @@
-# Performances : mesure et optimisation du canevas
+# Performance: measuring and optimizing the canvas
 
-6 octobre 2026
+October 6, 2026
 
-Cette page dit où Poulpe Design ralentissait, ce qui a été changé et ce que l'on gagne, chiffres avant et après à l'appui. Elle décrit aussi les réglages de performance que la fenêtre Préférences affiche.
+This page says where Poulpe Design was slowing down, what was changed and what we gain, backed by before and after figures. It also describes the performance settings shown in the Preferences window.
 
-## Comment on mesure
+## How we measure
 
-La mesure est intégrée à l'appli : `?bench` dans l'adresse de l'éditeur, ou `POULPE_BENCH=1 poulpe` pour l'appli de bureau, qui écrit son rapport sur la sortie standard (voir [moteur-v0.1.md](moteur-v0.1.md#performances-de-lappli-de-bureau-sous-linux)).
+Measurement is built into the app: `?bench` in the editor's address, or `POULPE_BENCH=1 poulpe` for the desktop app, which writes its report to standard output (see [moteur-v0.1.md](moteur-v0.1.md#desktop-app-performance-under-linux)).
 
-Le document d'essai contient 1 000 objets (formes unies, dégradés, contours, rotations, 40 blocs de texte) sur un plan de travail 1920 × 1080. Chaque scénario rejoue un geste réel image par image, 60 fois. Le temps d'une image compte tout ce que le geste provoque : le geste lui-même, la mise à jour des panneaux, les dessins de l'image suivante (canevas, règles) et la fin du dessin par le navigateur. En dessous de 16 ms, l'image suit l'écran à 60 images par seconde.
+The test document contains 1,000 objects (solid shapes, gradients, strokes, rotations, 40 text blocks) on a 1920 × 1080 artboard. Each scenario replays a real gesture frame by frame, 60 times. The time of a frame counts everything the gesture triggers: the gesture itself, the panel updates, the drawing of the next frame (canvas, rulers) and the browser finishing the drawing. Below 16 ms, the image keeps up with the screen at 60 frames per second.
 
-Machine de mesure : machine virtuelle Linux sans carte graphique, 4 cœurs Xeon, Chromium 141, canevas de 721 × 718 px. La colonne « machine lente » ralentit le processeur 4 fois (réglage de Chromium), ce qui donne une idée d'un vieil ordinateur ou de l'appli de bureau sous Linux, dont la vue web est environ 4 fois plus lente sans carte graphique.
+Measurement machine: Linux virtual machine without a graphics card, 4 Xeon cores, Chromium 141, 721 × 718 px canvas. The "slow machine" column slows the processor down 4 times (a Chromium setting), which gives an idea of an old computer or of the desktop app on Linux, whose web view is about 4 times slower without a graphics card.
 
-## Résultats
+## Results
 
-Temps moyen d'une image, en millisecondes (images par seconde entre parenthèses).
+Average time of a frame, in milliseconds (frames per second in parentheses).
 
-| Scénario                         | Avant   | Après     | Machine lente, avant | Machine lente, après |
-| -------------------------------- | ------- | --------- | -------------------- | -------------------- |
-| Survol des objets à la souris    | 30 (34) | 1 (1 000) | 141 (7)              | 5 (189)              |
-| Défilement                       | 24 (42) | 1,4 (713) | 113 (9)              | 6 (166)              |
-| Zoom                             | 69 (15) | 3,6 (279) | 337 (3)              | 15 (66)              |
-| Défilement à fort zoom (× 4)     | 54 (18) | 3,3 (307) | 270 (4)              | 17 (60)              |
-| Déplacement de 50 objets         | 54 (18) | 15 (66)   | 247 (4)              | 68 (15)              |
-| Réglage de la couleur d'un objet | 49 (20) | 11 (90)   | 223 (4)              | 48 (21)              |
-| Premier affichage du document    | 24 (41) | 17 (59)   | 113 (9)              | 117 (9)              |
+| Scenario                        | Before  | After     | Slow machine, before | Slow machine, after |
+| ------------------------------- | ------- | --------- | -------------------- | ------------------- |
+| Hovering objects with the mouse | 30 (34) | 1 (1,000) | 141 (7)              | 5 (189)             |
+| Scrolling                       | 24 (42) | 1.4 (713) | 113 (9)              | 6 (166)             |
+| Zoom                            | 69 (15) | 3.6 (279) | 337 (3)              | 15 (66)             |
+| Scrolling at high zoom (× 4)    | 54 (18) | 3.3 (307) | 270 (4)              | 17 (60)             |
+| Moving 50 objects               | 54 (18) | 15 (66)   | 247 (4)              | 68 (15)             |
+| Adjusting an object's color     | 49 (20) | 11 (90)   | 223 (4)              | 48 (21)             |
+| First display of the document   | 24 (41) | 17 (59)   | 113 (9)              | 117 (9)             |
 
-Pas de fuite de mémoire : la mesure complète rejouée 4 fois de suite dans la même fenêtre, la mémoire JavaScript reste stable (47, 49, 49, 49 Mo après nettoyage). Les images gardées par le cache sont limitées par le réglage « Cache d'images » (256 Mo au plus par défaut) ; pour un écran de cette taille, elles occupent quelques Mo.
+No memory leak: with the full measurement replayed 4 times in a row in the same window, JavaScript memory stays stable (47, 49, 49, 49 MB after garbage collection). The images kept by the cache are capped by the "Render cache" setting (256 MB at most by default); for a screen of this size, they take a few MB.
 
-Ce qu'on en retient :
+What we take away:
 
-- **Bouger la souris, défiler et zoomer ne font plus ramer**, même sur une machine lente : de 3 à 9 images par seconde avant, plus de 60 après.
-- **Déplacer ou modifier des objets est 3 à 4 fois plus rapide**, grâce à ce changement et à la liste des calques virtualisée (PR #22), qui ne recrée plus ses 1 000 lignes à chaque image.
-- Le premier affichage d'un document ne change pas : il faut bien tout dessiner une fois.
+- **Moving the mouse, scrolling and zooming no longer lag**, even on a slow machine: from 3 to 9 frames per second before, more than 60 after.
+- **Moving or editing objects is 3 to 4 times faster**, thanks to this change and to the virtualized layer list (PR #22), which no longer rebuilds its 1,000 rows on every frame.
+- The first display of a document does not change: everything has to be drawn once.
 
-## Ce qui ralentissait, et ce qui a changé
+## What was slowing things down, and what changed
 
-1. **Chaque mouvement de souris redessinait tout le document.** La position du pointeur (affichée dans la barre d'état) passait par l'état de l'interface, et le canevas se redessinait à chaque changement de cet état, y compris celui-là. Il lisait aussi les couleurs du thème (un calcul de style de la page) à chaque fois. Désormais le canevas ignore ce qui ne le concerne pas (pointeur, messages, boîtes de dialogue) et ne relit les couleurs que quand le thème change.
-2. **Cache d'images du canevas** (`packages/render/src/cache.ts`). Le contenu de chaque plan de travail est gardé en image et simplement recopié tant qu'il ne change pas. Quand des objets sont sélectionnés, ce qui est dessous et ce qui est dessus sont gardés en deux images, et seuls les objets sélectionnés (ceux qu'on modifie) sont dessinés à chaque image. Une image reste bonne tant que ses objets sont les mêmes : les documents sont immuables, un objet inchangé garde son identité, la vérification est donc immédiate. Les modes de fusion, les calques de réglage, les cadres de texte liés, les numéros de page, les symboles et les images en cours de retouche sont pris en compte ; dans le doute, le dessin se fait en direct comme avant.
-3. **Zoom et défilement.** Pendant le geste, l'image déjà calculée est déplacée ou étirée ; elle est redessinée nette dès que le geste s'arrête (140 ms). Le réglage « Qualité d'aperçu » permet de redessiner net à chaque image.
-4. **Objets hors de l'écran ignorés.** À fort zoom, seuls les objets visibles sont dessinés.
-5. **Règles** redessinées au plus une fois par image et seulement quand la vue change, sans réallouer leur toile.
-6. **Damier de transparence** dessiné d'un seul motif au lieu de milliers de petits carrés.
-7. **Taille des textes** : à chaque commande, la taille de tous les textes était recalculée (mesure de chaque mot). Elle est maintenant gardée tant que le texte ne change pas.
-8. **Historique** : la liste des étapes n'est plus recopiée à chaque image d'un geste, et le nombre d'étapes gardées est limité (500 par défaut, réglable) pour que la mémoire ne grossisse pas sans fin sur les grosses retouches photo.
-9. **Zone de saisie du texte** : elle ne se met plus à jour à chaque changement du document quand aucun texte n'est en cours d'édition.
+1. **Every mouse movement redrew the whole document.** The pointer position (shown in the status bar) went through the interface state, and the canvas redrew on every change of that state, including that one. It also read the theme colors (a page style computation) every time. Now the canvas ignores what does not concern it (pointer, messages, dialogs) and only rereads the colors when the theme changes.
+2. **Canvas image cache** (`packages/render/src/cache.ts`). The content of each artboard is kept as an image and simply copied as long as it does not change. When objects are selected, what is below and what is above are kept as two images, and only the selected objects (the ones being edited) are drawn on each frame. An image stays valid as long as its objects are the same: documents are immutable and an unchanged object keeps its identity, so the check is instant. Blend modes, adjustment layers, linked text frames, page numbers, symbols and images being retouched are taken into account; when in doubt, drawing happens live as before.
+3. **Zoom and scrolling.** During the gesture, the already computed image is moved or stretched; it is redrawn sharp as soon as the gesture stops (140 ms). The "Preview quality" setting lets you redraw sharp on every frame.
+4. **Off-screen objects skipped.** At high zoom, only visible objects are drawn.
+5. **Rulers** redrawn at most once per frame and only when the view changes, without reallocating their canvas.
+6. **Transparency checkerboard** drawn with a single pattern instead of thousands of small squares.
+7. **Text size**: on every command, the size of every text was recomputed (measuring each word). It is now kept as long as the text does not change.
+8. **History**: the list of steps is no longer copied on every frame of a gesture, and the number of steps kept is capped (500 by default, adjustable) so that memory does not grow endlessly during large photo retouching.
+9. **Text input field**: it no longer updates on every document change when no text is being edited.
 
-Les tests de bout en bout vérifient que l'image affichée avec le cache est la même qu'un dessin complet sans cache, pendant un déplacement et après une modification (`apps/editor/e2e/performance.spec.ts`).
+End-to-end tests check that the image displayed with the cache is the same as a full drawing without the cache, during a move and after an edit (`apps/editor/e2e/performance.spec.ts`).
 
-## Réglages de performance
+## Performance settings
 
-Ils sont appliqués par `apps/editor/src/perf.ts` ; la fenêtre Préférences > Performances les affiche, les enregistre et appelle `setPerformanceSettings` au démarrage avec les valeurs enregistrées.
+They are applied by `apps/editor/src/perf.ts`; the Preferences > Performance window shows them, saves them and calls `setPerformanceSettings` at startup with the saved values.
 
-| Réglage                 | Champ                  | Par défaut          | Effet                                                                                                                                                                                   |
-| ----------------------- | ---------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cache d'images          | `cacheMb`              | 256 Mo              | Mémoire maximale des images gardées du canevas. 0 désactive le cache (tout est redessiné à chaque image).                                                                               |
-| Étapes d'annulation     | `historyLimit`         | 500                 | Les étapes plus anciennes sont oubliées. 0 : illimité.                                                                                                                                  |
-| Qualité d'aperçu        | `previewQuality`       | équilibrée          | `fast` : image étirée pendant le zoom même si elle ne couvre pas tout l'écran ; `balanced` : étirée tant qu'elle couvre l'écran ; `full` : redessinée nette à chaque image (plus lent). |
-| Accélération matérielle | `hardwareAcceleration` | oui                 | Images du cache confiées à la carte graphique (toiles hors écran). Non : gardées en mémoire centrale, utile si un pilote graphique pose problème.                                       |
-| Fils de calcul          | `workerThreads`        | nombre de cœurs − 1 | Fils utilisés par le détourage par IA.                                                                                                                                                  |
+| Setting               | Field                  | Default             | Effect                                                                                                                                                                                |
+| --------------------- | ---------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Render cache          | `cacheMb`              | 256 MB              | Maximum memory for the canvas images kept. 0 disables the cache (everything is redrawn on every frame).                                                                               |
+| Undo steps kept       | `historyLimit`         | 500                 | Older steps are forgotten. 0: unlimited.                                                                                                                                              |
+| Preview quality       | `previewQuality`       | balanced            | `fast`: image stretched during zoom even if it does not cover the whole screen; `balanced`: stretched as long as it covers the screen; `full`: redrawn sharp on every frame (slower). |
+| Hardware acceleration | `hardwareAcceleration` | yes                 | Cache images handed to the graphics card (offscreen canvases). No: kept in main memory, useful if a graphics driver causes problems.                                                  |
+| Computing threads     | `workerThreads`        | number of cores − 1 | Threads used by AI background removal.                                                                                                                                                |
 
-`renderStats()` donne les chiffres de la fenêtre Diagnostic : mémoire occupée par le cache, nombre d'images gardées, durée moyenne et maximale des 60 dernières images, mémoire JavaScript (Chromium).
+`renderStats()` provides the figures of the Diagnostics window: memory used by the cache, number of images kept, average and maximum duration of the last 60 frames, JavaScript memory (Chromium).
 
-## Linux : ombre des plans de travail (1.1.2)
+## Linux: artboard shadow (1.1.2)
 
-Premier retour sur un vrai poste Linux (i7, RTX 4060, écran 2560 × 1440) : 45 ms par image dans l'appli de bureau. Quand WebKitGTK dessine le canevas sans carte graphique (cas fréquent avec certains pilotes), le flou de l'ombre portée des plans de travail (`shadowBlur`) coûtait à lui seul 22 ms par image. L'ombre est maintenant floutée une seule fois sur un petit carré, puis ses coins sont recopiés et ses bords étirés (`drawArtboardShadow`) : même rendu à 1 niveau de couleur près.
+First feedback from a real Linux machine (i7, RTX 4060, 2560 × 1440 screen): 45 ms per frame in the desktop app. When WebKitGTK draws the canvas without the graphics card (a common case with some drivers), blurring the artboards' drop shadow (`shadowBlur`) alone cost 22 ms per frame. The shadow is now blurred once on a small square, then its corners are copied and its edges stretched (`drawArtboardShadow`): same rendering to within 1 color level.
 
-Mesure dans WebKitGTK 2.52 sans accélération du canevas, 1 000 objets, fenêtre 2560 × 1440, en ms par image :
+Measured in WebKitGTK 2.52 without canvas acceleration, 1,000 objects, 2560 × 1440 window, in ms per frame:
 
-| Scénario                         | Avant | Après |
-| -------------------------------- | ----: | ----: |
-| Survol à la souris               |  18,7 |   5,2 |
-| Défilement                       |  28,7 |   6,1 |
-| Zoom                             |  34,7 |  16,4 |
-| Réglage de la couleur d'un objet |  44,4 |  23,2 |
-| Déplacement de 50 objets         |  51,5 |  33,1 |
+| Scenario                    | Before | After |
+| --------------------------- | -----: | ----: |
+| Mouse hover                 |   18.7 |   5.2 |
+| Scrolling                   |   28.7 |   6.1 |
+| Zoom                        |   34.7 |  16.4 |
+| Adjusting an object's color |   44.4 |  23.2 |
+| Moving 50 objects           |   51.5 |  33.1 |
 
-Autres constats du même rapport :
+Other findings from the same report:
 
-- WebKit masque le nom de la carte graphique (« Apple GPU ») et annonce au plus 8 cœurs : le Diagnostic affiche maintenant le modèle du processeur, ses vrais fils d'exécution et la mémoire occupée par tous les processus de l'appli, lus par l'appli de bureau.
-- WebKitGTK n'active l'isolation multi-origine (`crossOriginIsolated`, threads partagés dans la page) que pour les pages servies en HTTP, pas pour le protocole de l'appli : les calculs lourds passent donc par le moteur Rust natif, qui utilise tous les cœurs.
+- WebKit hides the graphics card's name ("Apple GPU") and reports at most 8 cores: Diagnostics now shows the processor model, its real execution threads and the memory used by all the app's processes, read by the desktop app.
+- WebKitGTK only enables cross-origin isolation (`crossOriginIsolated`, shared threads in the page) for pages served over HTTP, not for the app's protocol: heavy computations therefore go through the native Rust engine, which uses all cores.
 
-## Dessin sur plusieurs cœurs (1.1.3)
+## Drawing on several cores (1.1.3)
 
-Un gros redessin (300 objets ou plus : ouverture, fin d'un zoom) est découpé en bandes dessinées en même
-temps par plusieurs fils de dessin (`apps/editor/src/canvas/parallel.ts`), avec le même code de dessin.
-L'interface ne se fige plus pendant ce temps ; l'ancienne image reste affichée jusqu'à ce que la nouvelle
-soit prête. Réglage `parallelDrawing` (activé par défaut). Mesure `?bench`, 1000 objets, machine de test
-à 4 cœurs sans carte graphique (interface bloquée / image finie) :
+A large redraw (300 objects or more: opening, end of a zoom) is split into bands drawn at the same
+time by several drawing threads (`apps/editor/src/canvas/parallel.ts`), with the same drawing code.
+The interface no longer freezes in the meantime; the old image stays displayed until the new one
+is ready. Setting `parallelDrawing` (enabled by default). `?bench` measurement, 1000 objects, 4-core test
+machine without a graphics card (interface blocked / image finished):
 
-| Scénario                        | Chromium avant | Chromium après | WebKitGTK avant | WebKitGTK après |
-| ------------------------------- | -------------- | -------------- | --------------- | --------------- |
-| Premier affichage, formes unies | 14.9 ms        | 1.6 / 11.9 ms  | 89.6 ms         | 4.5 / 78.7 ms   |
-| Premier affichage, document     | 22.4 ms        | 1.8 / 17.0 ms  | 97.5 ms         | 3.7 / 146 ms    |
+| Scenario                    | Chromium before | Chromium after | WebKitGTK before | WebKitGTK after |
+| --------------------------- | --------------- | -------------- | ---------------- | --------------- |
+| First display, solid shapes | 14.9 ms         | 1.6 / 11.9 ms  | 89.6 ms          | 4.5 / 78.7 ms   |
+| First display, document     | 22.4 ms         | 1.8 / 17.0 ms  | 97.5 ms          | 3.7 / 146 ms    |
 
-Avec seulement 3 fils, WebKitGTK met plus longtemps à finir l'image, mais l'interface reste fluide ; les
-processeurs à 8 cœurs ou plus utilisent jusqu'à 8 fils.
+With only 3 threads, WebKitGTK takes longer to finish the image, but the interface stays smooth;
+processors with 8 cores or more use up to 8 threads.
 
-## Pistes suivantes
+## Next steps
 
-- Calques de réglage et filtres photo calculés dans un Web Worker, hors du fil de l'interface.
-- Refaire la mesure dans l'appli de bureau sur un vrai poste Linux (`POULPE_BENCH=1 poulpe`).
+- Adjustment layers and photo filters computed in a Web Worker, off the interface thread.
+- Redo the measurement in the desktop app on a real Linux machine (`POULPE_BENCH=1 poulpe`).

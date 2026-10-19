@@ -1,65 +1,65 @@
-# Côté Canva v0.2 : état et organisation du code
+# Canva side v0.2: status and code layout
 
-5 octobre 2026
+October 5, 2026
 
-La v0.2 ajoute à Poulpe Design ce qui permet de faire un joli visuel en quelques clics, sans partir d'une page blanche : des modèles, une bibliothèque d'éléments libres, des styles prêts à l'emploi et le redimensionnement d'un design vers un autre format.
+v0.2 adds to Poulpe Design what you need to make a nice visual in a few clicks, without starting from a blank page: templates, a library of free elements, ready-made styles, and resizing a design to another format.
 
-## Ce que voit l'utilisateur
+## What the user sees
 
-- **Écran d'accueil.** Au lancement, la fenêtre « Bienvenue dans Poulpe Design » propose les modèles (filtrables par format), les formats vides par usage (réseaux sociaux, impression, écran), une taille personnalisée et l'ouverture d'un fichier. La case « Afficher au lancement » le désactive. Il s'ouvre aussi par Fichier > Nouveau.
-- **Panneau Bibliothèque** (bouton de la barre d'outils, Affichage > Bibliothèque, ou Ctrl+Maj+L). Il s'ancre du côté opposé au Studio et suit donc la disposition choisie. Trois onglets :
-  - **Modèles** : 19 modèles, avec recherche et filtre par catégorie. Un modèle remplit le plan de travail actif s'il est vide, sinon il arrive dans un nouveau plan de travail à droite.
-  - **Éléments** : 3 styles de texte (titre, sous-titre, corps), 33 formes, 7 cadres photo, 12 illustrations et 172 icônes rangées en 10 catégories, avec une recherche en français et en anglais (sans tenir compte des accents). Un clic ajoute l'élément au centre de la vue, un glisser-déposer le pose où on le lâche. Les formes et icônes prennent la couleur de remplissage courante.
-  - **Styles** : 18 palettes et 8 combinaisons de polices. Une palette s'applique à la sélection, ou à tout le plan de travail (fond compris) sans sélection ; un nouveau clic propose une autre répartition des mêmes couleurs. Le bouton « + » ajoute la palette au nuancier. Une combinaison de polices met la police de titre sur les grands textes et la police de corps sur les autres.
-- **Cadres photo.** Une image déposée sur un cadre, ou importée quand un cadre est sélectionné, le remplit en étant recadrée pour le couvrir. On la recadre ensuite comme toute image (double-clic).
-- **Formats.** 20 formats, dont 10 pour les réseaux sociaux (Instagram carré et portrait, story, Facebook, LinkedIn, X, Pinterest, YouTube), 7 pour l'impression (A3, A4, A5, Letter, carte de visite, carte postale, invitation) et 3 pour l'écran.
-- **Redimensionner le design** (Document > Redimensionner le design…, ou le bouton du panneau Bibliothèque) : choix d'un format ou d'une taille, en copie à côté de l'original (par défaut) ou sur place.
+- **Welcome screen.** At launch, the "Welcome to Poulpe Design" window offers templates (filterable by format), blank formats by use (social media, print, screen), a custom size and opening a file. The "Show at startup" checkbox turns it off. It also opens from File > New.
+- **Library panel** (toolbar button, View > Library, or Ctrl+Shift+L). It docks on the side opposite the Studio and so follows the chosen layout. Three tabs:
+  - **Templates**: 19 templates, with search and a category filter. A template fills the active artboard if it is empty; otherwise it lands in a new artboard to the right.
+  - **Elements**: 3 text styles (title, subtitle, body), 33 shapes, 7 photo frames, 12 illustrations and 172 icons in 10 categories, with search in French and English (accent-insensitive). A click adds the element at the center of the view; drag and drop places it where you drop it. Shapes and icons take the current fill color.
+  - **Styles**: 18 palettes and 8 font pairings. A palette applies to the selection, or to the whole artboard (background included) when nothing is selected; clicking again offers another distribution of the same colors. The "+" button adds the palette to the swatches. A font pairing puts the heading font on large texts and the body font on the others.
+- **Photo frames.** An image dropped on a frame, or imported while a frame is selected, fills it and is cropped to cover it. You then crop it like any image (double-click).
+- **Formats.** 20 formats, including 10 for social media (Instagram square and portrait, story, Facebook, LinkedIn, X, Pinterest, YouTube), 7 for print (A3, A4, A5, Letter, business card, postcard, invitation) and 3 for screen.
+- **Resize design** (Document > Resize design…, or the button in the Library panel): pick a format or a size, as a copy next to the original (default) or in place.
 
-## Organisation du code
+## Code layout
 
-| Où                                       | Quoi                                                                                                                                                                                  |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core/src/path.ts`              | Lecture des tracés SVG (`d`), conversion des arcs en courbes de Bézier, boîte englobante.                                                                                             |
-| `packages/core/src/resize.ts`            | `resizeArtboard` : redimensionnement « intelligent » d'un plan de travail.                                                                                                            |
-| `packages/core/src/recolor.ts`           | Contraste, clarté, `designColors` et `applyPalette`.                                                                                                                                  |
-| `packages/core/src/factory.ts`           | Formats (`FORMAT_PRESETS`, avec une catégorie), `createPath`.                                                                                                                         |
-| `packages/library/`                      | Contenu de la bibliothèque : modèles, formes, cadres, illustrations, icônes, palettes, polices. Tout est décrit en code (petit langage dans `src/dsl.ts`), en français et en anglais. |
-| `apps/editor/src/libraryActions.ts`      | Ce que font les boutons de la bibliothèque sur le document.                                                                                                                           |
-| `apps/editor/src/panels/Library.tsx`     | Le panneau Bibliothèque.                                                                                                                                                              |
-| `apps/editor/src/components/Thumb.tsx`   | Aperçus des modèles et des éléments, dessinés par le moteur de rendu lui-même.                                                                                                        |
-| `apps/editor/src/components/Dialogs.tsx` | Écran d'accueil et fenêtre de redimensionnement.                                                                                                                                      |
+| Where                                    | What                                                                                                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/src/path.ts`              | Parsing SVG paths (`d`), converting arcs to Bézier curves, bounding box.                                                                                                      |
+| `packages/core/src/resize.ts`            | `resizeArtboard`: "smart" resizing of an artboard.                                                                                                                            |
+| `packages/core/src/recolor.ts`           | Contrast, lightness, `designColors` and `applyPalette`.                                                                                                                       |
+| `packages/core/src/factory.ts`           | Formats (`FORMAT_PRESETS`, with a category), `createPath`.                                                                                                                    |
+| `packages/library/`                      | Library content: templates, shapes, frames, illustrations, icons, palettes, fonts. Everything is described in code (a small language in `src/dsl.ts`), in French and English. |
+| `apps/editor/src/libraryActions.ts`      | What the library buttons do to the document.                                                                                                                                  |
+| `apps/editor/src/panels/Library.tsx`     | The Library panel.                                                                                                                                                            |
+| `apps/editor/src/components/Thumb.tsx`   | Previews of templates and elements, drawn by the rendering engine itself.                                                                                                     |
+| `apps/editor/src/components/Dialogs.tsx` | Welcome screen and resize window.                                                                                                                                             |
 
-Le nouveau type d'objet `path` (forme libre décrite par un tracé SVG) fait passer le format de fichier en version 2 ; voir [format-poulpe.md](format-poulpe.md). Les fichiers de la v0.1 s'ouvrent sans changement.
+The new `path` object type (a free shape described by an SVG path) moves the file format to version 2; see [format-poulpe.md](format-poulpe.md). v0.1 files open unchanged.
 
-### Redimensionnement d'un design
+### Resizing a design
 
-Chaque axe est traité à part, avec `k`, le plus petit des deux rapports d'échelle (le texte n'est donc jamais déformé) :
+Each axis is handled separately, with `k` being the smaller of the two scale ratios (so text is never distorted):
 
-1. Un objet qui couvre presque tout un côté (90 % ou plus, sauf un texte) est étiré sur cet axe : fonds, bandeaux. Une image garde ses proportions et est recadrée pour couvrir.
-2. Un objet qui touche un bord (à 2 % près) ou déborde reste collé à ce bord : logos dans un coin, badges.
-3. Un objet posé sur un autre (contenu dans un objet plus grand, qui n'est ni un texte ni un fond) suit cet objet en gardant sa position relative : un texte sur un bandeau.
-4. Les autres objets forment un bloc, réduit ou agrandi de `k`, dont le centre garde sa place relative dans la page. Ils gardent ainsi leur mise en page entre eux.
+1. An object that covers almost a whole side (90% or more, except text) is stretched along that axis: backgrounds, banners. An image keeps its proportions and is cropped to cover.
+2. An object that touches an edge (within 2%) or overflows it stays pinned to that edge: logos in a corner, badges.
+3. An object placed on another one (contained in a larger object that is neither text nor a background) follows that object and keeps its relative position: text on a banner.
+4. The other objects form a block, scaled down or up by `k`, whose center keeps its relative place on the page. This way they keep their layout relative to each other.
 
-Les épaisseurs de contour et les arrondis sont multipliés par `k`.
+Stroke widths and corner radii are multiplied by `k`.
 
 ### Palettes
 
-Les couleurs du design sont rangées de la plus sombre à la plus claire, et chacune prend la couleur de la palette qui occupe la même position relative. Le texte sombre sur fond clair reste donc sombre sur fond clair, ce qui garde le contraste. L'opacité d'origine est conservée.
+The design's colors are sorted from darkest to lightest, and each one takes the palette color at the same relative position. Dark text on a light background therefore stays dark on a light background, which preserves contrast. The original opacity is kept.
 
-## Licences du contenu
+## Content licenses
 
-- Modèles, formes, cadres, illustrations, palettes et combinaisons : faits pour Poulpe Design, sous MPL-2.0 comme le reste du code.
-- Icônes : [Phosphor Icons](https://phosphoricons.com), licence MIT, voir [`packages/library/LICENSE-icons.md`](../packages/library/LICENSE-icons.md). Les tracés sont extraits de `@phosphor-icons/core` par `pnpm --filter @poulpe/library icons` (liste et mots-clés français dans `scripts/icons-list.json`).
-- Polices : uniquement celles déjà fournies avec Poulpe Design (licence OFL).
+- Templates, shapes, frames, illustrations, palettes and pairings: made for Poulpe Design, under MPL-2.0 like the rest of the code.
+- Icons: [Phosphor Icons](https://phosphoricons.com), MIT license, see [`packages/library/LICENSE-icons.md`](../packages/library/LICENSE-icons.md). The paths are extracted from `@phosphor-icons/core` by `pnpm --filter @poulpe/library icons` (list and French keywords in `scripts/icons-list.json`).
+- Fonts: only those already shipped with Poulpe Design (OFL license).
 
-## Limites connues
+## Known limitations
 
-- **Pas encore de photos libres intégrées.** La v0.2 permet d'importer ses propres photos et de les mettre dans des cadres, mais n'embarque pas de banque d'images CC0. Les sources envisagées (Openverse, Wikimedia Commons, Unsplash, Pexels) demandent soit un accès réseau depuis l'appli, soit un tri des licences image par image. C'est reporté à une version suivante.
-- Les modèles et éléments sont figés dans le code : on ne peut pas encore enregistrer ses propres modèles.
-- Le redimensionnement suit des règles simples : un design très chargé peut demander des retouches après coup.
+- **No built-in free photos yet.** v0.2 lets you import your own photos and put them in frames, but does not ship a CC0 image bank. The candidate sources (Openverse, Wikimedia Commons, Unsplash, Pexels) require either network access from the app or checking licenses image by image. This is postponed to a later version.
+- Templates and elements are fixed in the code: you cannot save your own templates yet.
+- Resizing follows simple rules: a very busy design may need touch-ups afterwards.
 
 ## Tests
 
-- `packages/core/test/v02.test.ts` : tracés, migration de la version 1, formats, redimensionnement, palettes.
-- `packages/library/test/library.test.ts` : identifiants uniques, chaque modèle se construit dans les deux langues, icônes et recherche.
-- `apps/editor/e2e/library.spec.ts` : écran d'accueil, modèles, éléments, cadre photo, glisser-déposer, palettes et polices, redimensionnement, panneau en anglais.
+- `packages/core/test/v02.test.ts`: paths, migration from version 1, formats, resizing, palettes.
+- `packages/library/test/library.test.ts`: unique identifiers, every template builds in both languages, icons and search.
+- `apps/editor/e2e/library.spec.ts`: welcome screen, templates, elements, photo frame, drag and drop, palettes and fonts, resizing, panel in English.

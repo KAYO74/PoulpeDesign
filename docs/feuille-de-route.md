@@ -1,128 +1,128 @@
-# Poulpe Design — Feuille de route des fonctionnalités
+# Poulpe Design — Feature roadmap
 
-4 octobre 2026
+October 4, 2026
 
-Poulpe Design atteint l'essentiel d'Illustrator, Photoshop et Affinity en v1.0, en cinq jalons qui ajoutent chacun un métier : dessin de base, création rapide type Canva, vectoriel pro, retouche photo, mise en page et export pro.
+Poulpe Design covers the essentials of Illustrator, Photoshop and Affinity in v1.0, through five milestones that each add a discipline: basic drawing, quick Canva-style creation, pro vector, photo retouching, layout and pro export.
 
-## Objectif et principes
+## Goal and principles
 
-- **Un seul document, trois métiers.** Comme Affinity, on passe du vectoriel (Illustrator / Designer) au pixel (Photoshop / Photo) et à la mise en page (Publisher) sans changer de fichier ni d'appli.
-- **Non destructif partout.** Calques de réglage, filtres dynamiques, masques et effets restent modifiables jusqu'à l'export.
-- **Simple d'abord, puissant ensuite.** Les fonctions avancées vivent dans des panneaux qu'on ouvre au besoin, pour garder l'interface épurée de la maquette.
-- **Application de bureau installable, dès la v0.1.** Poulpe Design s'installe sur Windows, macOS et Linux via Tauri, qui embarque le même code web. La version navigateur reste disponible sans installation. Tout tourne en local, sans serveur (CanvasKit / WebGL 2, filtres en shaders).
-- **Cohérent avec le cadrage.** On garde ses jalons v0.1 (moteur), v0.2 (Canva) et v1.0. L'étape « v0.3 Affinity » du cadrage est découpée ici en trois : v0.3 vectoriel pro, v0.4 retouche photo, v0.5 mise en page et export pro.
+- **One document, three disciplines.** As in Affinity, you move from vector (Illustrator / Designer) to pixels (Photoshop / Photo) and to layout (Publisher) without changing file or app.
+- **Non-destructive everywhere.** Adjustment layers, live filters, masks and effects stay editable until export.
+- **Simple first, powerful next.** Advanced features live in panels you open when needed, to keep the mockup's clean interface.
+- **Installable desktop app, from v0.1.** Poulpe Design installs on Windows, macOS and Linux via Tauri, which bundles the same web code. The browser version remains available without installation. Everything runs locally, without a server (CanvasKit / WebGL 2, filters as shaders).
+- **Consistent with the scoping document.** We keep its milestones v0.1 (engine), v0.2 (Canva) and v1.0. The scoping document's "v0.3 Affinity" step is split here into three: v0.3 pro vector, v0.4 photo retouching, v0.5 layout and pro export.
 
-## Correspondance des fonctionnalités
+## Feature mapping
 
-Les fonctions phares des trois logiciels, et le jalon où Poulpe Design les apporte. « AI » = Illustrator, « PS » = Photoshop, « AF » = Affinity (Designer, Photo, Publisher).
+The flagship features of the three applications, and the milestone in which Poulpe Design brings them. "AI" = Illustrator, "PS" = Photoshop, "AF" = Affinity (Designer, Photo, Publisher).
 
-| Fonctionnalité                                               | Chez qui     | Poulpe Design                        |
-| ------------------------------------------------------------ | ------------ | ------------------------------------ |
-| Formes, rectangles arrondis, polygones, étoiles              | AI, AF       | v0.1                                 |
-| Calques, groupes, verrouillage, visibilité                   | AI, PS, AF   | v0.1                                 |
-| Texte artistique et texte en bloc, polices Google Fonts      | AI, PS, AF   | v0.1                                 |
-| Remplissage, contour, dégradés linéaires et radiaux          | AI, PS, AF   | v0.1                                 |
-| Plans de travail multiples (artboards)                       | AI, PS, AF   | v0.1                                 |
-| Annuler / rétablir illimité, historique                      | AI, PS, AF   | v0.1                                 |
-| Export PNG, JPEG, SVG, PDF                                   | AI, PS, AF   | v0.1                                 |
-| Modèles, bibliothèque d'éléments, formats réseaux sociaux    | (Canva)      | v0.2                                 |
-| Plume, nœuds, courbes de Bézier, crayon                      | AI, AF       | v0.3                                 |
-| Opérations booléennes, Pathfinder, Shape Builder             | AI, AF       | v0.3                                 |
-| Symboles, styles de calque, styles de texte et de paragraphe | AI, AF       | v0.3                                 |
-| Texte sur tracé, OpenType avancé, vectorisation du texte     | AI, AF       | v0.3                                 |
-| Dégradés de forme (mesh), dégradés coniques, motifs          | AI, AF       | v0.3                                 |
-| Pinceaux pixel, gomme, tampon, correcteur                    | PS, AF       | v0.4                                 |
-| Sélections (lasso, baguette magique, sélection rapide)       | PS, AF       | v0.4                                 |
-| Masques de calque et masques d'écrêtage                      | PS, AF       | v0.1 (simples), v0.4 (pixel)         |
-| Calques de réglage (niveaux, courbes, TSL, balance)          | PS, AF       | v0.4                                 |
-| Filtres dynamiques (flou, netteté, bruit, déformation)       | PS, AF       | v0.4                                 |
-| Modes de fusion et effets (ombre, lueur, biseau)             | PS, AF       | v0.1 (fusion), v0.3 (effets)         |
-| Recadrage, redressement, transformation perspective          | PS, AF       | v0.4                                 |
-| Gestion couleur RVB / CMJN, profils ICC, nuanciers           | AI, PS, AF   | v0.5                                 |
-| Pages maîtres, cadres de texte liés, styles de mise en page  | AF Publisher | v0.5                                 |
-| Export PDF/X d'impression, fonds perdus, traits de coupe     | AI, AF       | v0.5                                 |
-| Ouverture PSD, SVG, PDF et AI (compatibilité PDF)            | AI, PS, AF   | v0.3 (SVG), v0.5 (PSD, PDF, AI)      |
-| Vectorisation d'image (Image Trace)                          | AI           | v1.0                                 |
-| Détourage auto et remplissage selon le contenu               | PS           | v0.4 (remplissage), v1.0 (détourage) |
+| Feature                                                      | Found in     | Poulpe Design                   |
+| ------------------------------------------------------------ | ------------ | ------------------------------- |
+| Shapes, rounded rectangles, polygons, stars                  | AI, AF       | v0.1                            |
+| Layers, groups, locking, visibility                          | AI, PS, AF   | v0.1                            |
+| Artistic text and frame text, Google Fonts                   | AI, PS, AF   | v0.1                            |
+| Fill, stroke, linear and radial gradients                    | AI, PS, AF   | v0.1                            |
+| Multiple artboards                                           | AI, PS, AF   | v0.1                            |
+| Unlimited undo / redo, history                               | AI, PS, AF   | v0.1                            |
+| PNG, JPEG, SVG, PDF export                                   | AI, PS, AF   | v0.1                            |
+| Templates, element library, social media formats             | (Canva)      | v0.2                            |
+| Pen, nodes, Bézier curves, pencil                            | AI, AF       | v0.3                            |
+| Boolean operations, Pathfinder, Shape Builder                | AI, AF       | v0.3                            |
+| Symbols, layer styles, character and paragraph styles        | AI, AF       | v0.3                            |
+| Text on a path, advanced OpenType, converting text to curves | AI, AF       | v0.3                            |
+| Mesh gradients, conical gradients, patterns                  | AI, AF       | v0.3                            |
+| Pixel brushes, eraser, clone stamp, healing brush            | PS, AF       | v0.4                            |
+| Selections (lasso, magic wand, quick selection)              | PS, AF       | v0.4                            |
+| Layer masks and clipping masks                               | PS, AF       | v0.1 (simple), v0.4 (pixel)     |
+| Adjustment layers (levels, curves, HSL, balance)             | PS, AF       | v0.4                            |
+| Live filters (blur, sharpen, noise, distortion)              | PS, AF       | v0.4                            |
+| Blend modes and effects (shadow, glow, bevel)                | PS, AF       | v0.1 (blending), v0.3 (effects) |
+| Crop, straighten, perspective transform                      | PS, AF       | v0.4                            |
+| RGB / CMYK color management, ICC profiles, swatches          | AI, PS, AF   | v0.5                            |
+| Master pages, linked text frames, layout styles              | AF Publisher | v0.5                            |
+| Print PDF/X export, bleed, crop marks                        | AI, AF       | v0.5                            |
+| Opening PSD, SVG, PDF and AI (PDF compatibility)             | AI, PS, AF   | v0.3 (SVG), v0.5 (PSD, PDF, AI) |
+| Image tracing (Image Trace)                                  | AI           | v1.0                            |
+| Automatic cutout and content-aware fill                      | PS           | v0.4 (fill), v1.0 (cutout)      |
 
-## Jalons détaillés
+## Detailed milestones
 
-> Schéma interactif « feuille de route » (6 jalons) : voir la [version en ligne](https://claude.ai/code/artifact/2c715d1a-2474-4a2e-9d8a-fdf7bd81d031).
+> Interactive "roadmap" diagram (6 milestones): see the [online version](https://claude.ai/code/artifact/2c715d1a-2474-4a2e-9d8a-fdf7bd81d031).
 
-Chaque jalon s'appuie sur le précédent : le vectoriel pro, la photo et la mise en page partagent le moteur de la v0.1.
+Each milestone builds on the previous one: pro vector, photo and layout share the v0.1 engine.
 
-### v0.1 Moteur d'édition de base
+### v0.1 Basic editing engine
 
-- **Outils :** sélection, sélection directe, rectangle, ellipse, polygone, étoile, ligne, texte, image, main, zoom, pipette.
-- **Objets :** déplacer, redimensionner, pivoter, aligner, distribuer, magnétisme, règles et repères, grille.
-- **Calques :** groupes, ordre, verrouillage, visibilité, opacité, 12 modes de fusion, masques d'écrêtage simples.
-- **Couleur :** sélecteur TSL / RVB / hexadécimal, opacité, couleurs récentes, nuancier du document, dégradés linéaires et radiaux avec éditeur d'arrêts.
-- **Texte :** police, graisse, taille, interlettrage, interligne, alignement, couleur, majuscules, souligné et barré.
-- **Document :** plans de travail multiples, annuler illimité, enregistrement `.poulpe` local, export PNG, JPEG, SVG, PDF.
-- **Bureau :** installateurs Windows (.msi), macOS (.dmg) et Linux (AppImage, .deb), ouverture des fichiers `.poulpe` par double-clic, menus natifs, glisser-déposer depuis le système, accès aux polices installées.
+- **Tools:** selection, direct selection, rectangle, ellipse, polygon, star, line, text, image, hand, zoom, eyedropper.
+- **Objects:** move, resize, rotate, align, distribute, snapping, rulers and guides, grid.
+- **Layers:** groups, order, locking, visibility, opacity, 12 blend modes, simple clipping masks.
+- **Color:** HSL / RGB / hexadecimal picker, opacity, recent colors, document swatches, linear and radial gradients with a stop editor.
+- **Text:** font, weight, size, letter spacing, line spacing, alignment, color, uppercase, underline and strikethrough.
+- **Document:** multiple artboards, unlimited undo, local `.poulpe` saving, PNG, JPEG, SVG, PDF export.
+- **Desktop:** Windows (.msi), macOS (.dmg) and Linux (AppImage, .deb) installers, opening `.poulpe` files by double-click, native menus, drag and drop from the system, access to installed fonts.
 
-### v0.2 Côté Canva
+### v0.2 Canva side
 
-Livrée le 5 octobre 2026, voir [cote-canva-v0.2.md](cote-canva-v0.2.md).
+Delivered on October 5, 2026, see [cote-canva-v0.2.md](cote-canva-v0.2.md).
 
-- Modèles par format (Instagram, story, A4, affiche, carte de visite, miniature YouTube).
-- Bibliothèque d'éléments libres (formes, icônes, illustrations). Les photos CC0 intégrées sont reportées : on importe ses propres photos dans des cadres.
-- Combinaisons de polices prêtes, palettes de couleurs suggérées, redimensionnement d'un design vers un autre format.
+- Templates by format (Instagram, story, A4, poster, business card, YouTube thumbnail).
+- Library of free elements (shapes, icons, illustrations). Built-in CC0 photos are postponed: you import your own photos into frames.
+- Ready-made font pairings, suggested color palettes, resizing a design to another format.
 
-### v0.3 Vectoriel pro (Illustrator, Affinity Designer)
+### v0.3 Pro vector (Illustrator, Affinity Designer)
 
-Première partie livrée le 5 octobre 2026, voir [vectoriel-pro-v0.3.md](vectoriel-pro-v0.3.md) : plume, crayon, outil Nœud, les cinq opérations booléennes, décalage de tracé, conversion en courbes (textes compris), pointillés, extrémités, jonctions et flèches, cinq effets (ombre portée, ombre interne, lueur externe, lueur interne, flou), texte sur tracé et import SVG. Le reste de la liste ci-dessous (symboles, styles, mesh, coniques, motifs, épaisseur variable, contours multiples, OpenType, colonnes, Shape Builder, ciseaux, couteau, biseau) suivra dans une v0.3.x. Le passage du rendu à CanvasKit est reporté : le rendu Canvas 2D actuel suffit pour tout ce qui précède, et les opérations booléennes passent par Paper.js.
+First part delivered on October 5, 2026, see [vectoriel-pro-v0.3.md](vectoriel-pro-v0.3.md): pen, pencil, Node tool, the five boolean operations, path offset, conversion to curves (including text), dashes, caps, joins and arrows, five effects (drop shadow, inner shadow, outer glow, inner glow, blur), text on a path and SVG import. The rest of the list below (symbols, styles, mesh, conical gradients, patterns, variable width, multiple strokes, OpenType, columns, Shape Builder, scissors, knife, bevel) will follow in a v0.3.x. The move of rendering to CanvasKit is postponed: the current Canvas 2D rendering is enough for everything above, and boolean operations go through Paper.js.
 
-- **Tracés :** plume, nœuds, poignées, crayon, lissage, ciseaux, couteau, outil coin (arrondir un angle).
-- **Géométrie :** union, soustraction, intersection, exclusion, division, Shape Builder, décalage de tracé.
-- **Contours avancés :** pointillés, extrémités, flèches, épaisseur variable, contours multiples par objet.
-- **Couleur avancée :** dégradés coniques et de forme (mesh), motifs, couleurs globales liées, harmonies de couleurs.
-- **Texte avancé :** texte sur tracé, colonnes, habillage autour des formes, OpenType (ligatures, chiffres, petites capitales), styles de caractère et de paragraphe, vectorisation du texte.
-- **Réutilisation :** symboles, styles de calque, effets (ombre portée, ombre interne, lueur, biseau, contour), import SVG.
+- **Paths:** pen, nodes, handles, pencil, smoothing, scissors, knife, corner tool (rounding a corner).
+- **Geometry:** union, subtract, intersect, exclude, divide, Shape Builder, path offset.
+- **Advanced strokes:** dashes, caps, arrows, variable width, multiple strokes per object.
+- **Advanced color:** conical and mesh gradients, patterns, linked global colors, color harmonies.
+- **Advanced text:** text on a path, columns, text wrap around shapes, OpenType (ligatures, figures, small caps), character and paragraph styles, converting text to curves.
+- **Reuse:** symbols, layer styles, effects (drop shadow, inner shadow, glow, bevel, outline), SVG import.
 
-### v0.4 Retouche photo (Photoshop, Affinity Photo)
+### v0.4 Photo retouching (Photoshop, Affinity Photo)
 
-Livrée le 5 octobre 2026, voir [retouche-photo-v0.4.md](retouche-photo-v0.4.md) : Persona Photo, sélections (rectangle, ellipse, lasso, baguette magique, contour progressif, dilater, contracter), pinceau avec pression, gomme, pot de peinture, tampon, densité, flou et netteté au pinceau, **gomme magique** et remplissage d'après le contenu (hors ligne, sans IA), masques de calque pixel, 14 calques de réglage, 6 filtres dynamiques, niveaux automatiques et histogramme. Reportés : sélection rapide, lasso polygonal, correcteur, doigt, liquéfier et déformations, LUT, redressement, perspective, taille de l'image et de la zone de travail.
+Delivered on October 5, 2026, see [retouche-photo-v0.4.md](retouche-photo-v0.4.md): Photo Persona, selections (rectangle, ellipse, lasso, magic wand, feather, grow, shrink), pressure-sensitive brush, eraser, paint bucket, clone stamp, dodge and burn, blur and sharpen brushes, **magic eraser** and content-aware fill (offline, without AI), pixel layer masks, 14 adjustment layers, 6 live filters, auto levels and histogram. Postponed: quick selection, polygonal lasso, healing brush, smudge, liquify and distortions, LUT, straighten, perspective, image and canvas size.
 
-- **Calques pixel :** pinceaux avec pression du stylet, gomme, pot de peinture, tampon, correcteur, doigt, densité.
-- **Sélections :** rectangle, ellipse, lasso, lasso polygonal, baguette magique, sélection rapide, affiner les bords.
-- **Non destructif :** masques de calque pixel, calques de réglage (niveaux, courbes, teinte et saturation, balance des couleurs, noir et blanc, exposition, vibrance, LUT), filtres dynamiques (flous, netteté, bruit, déformations, liquéfier).
-- **Image :** recadrage, redressement, perspective, taille de l'image et de la zone de travail, histogramme.
+- **Pixel layers:** brushes with stylus pressure, eraser, paint bucket, clone stamp, healing brush, smudge, dodge and burn.
+- **Selections:** rectangle, ellipse, lasso, polygonal lasso, magic wand, quick selection, refine edges.
+- **Non-destructive:** pixel layer masks, adjustment layers (levels, curves, hue and saturation, color balance, black and white, exposure, vibrance, LUT), live filters (blurs, sharpen, noise, distortions, liquify).
+- **Image:** crop, straighten, perspective, image and canvas size, histogram.
 
-### v0.5 Mise en page et export pro (Affinity Publisher, impression)
+### v0.5 Layout and pro export (Affinity Publisher, print)
 
-Faite en octobre 2026, en deux parties. Première partie, voir [mise-en-page-v0.5.md](mise-en-page-v0.5.md) : Persona Mise en page et panneau Pages, documents multipages en colonne ou en vis-à-vis, pages maîtres, numéros de page, cadres de texte liés, marges, fond perdu, résolution du document, et PDF d'impression à la taille réelle avec traits de coupe. Deuxième partie, voir [impression-v0.5.md](impression-v0.5.md) : couleurs CMJN avec profil ICC, épreuvage à l'écran, PDF/X-4, ouverture des fichiers PSD, PDF et AI, export PSD et export par lots. Les niveaux de gris et les tons directs viendront avec les nuanciers.
+Done in October 2026, in two parts. First part, see [mise-en-page-v0.5.md](mise-en-page-v0.5.md): Layout Persona and Pages panel, multi-page documents in a column or as facing pages, master pages, page numbers, linked text frames, margins, bleed, document resolution, and print PDF at actual size with crop marks. Second part, see [impression-v0.5.md](impression-v0.5.md): CMYK colors with an ICC profile, soft proofing, PDF/X-4, opening PSD, PDF and AI files, PSD export and batch export. Grayscale and spot colors will come with swatches.
 
-- Documents multipages, pages maîtres, cadres de texte liés, numérotation.
-- Gestion couleur RVB, CMJN et niveaux de gris avec profils ICC, épreuvage à l'écran.
-- Export PDF/X avec fonds perdus et traits de coupe, export par tranches et par lots.
-- Ouverture des fichiers PSD (calques) et PDF / AI, export PSD.
+- Multi-page documents, master pages, linked text frames, page numbering.
+- RGB, CMYK and grayscale color management with ICC profiles, soft proofing.
+- PDF/X export with bleed and crop marks, slice export and batch export.
+- Opening PSD (layers) and PDF / AI files, PSD export.
 
-### v1.0 Version stable
+### v1.0 Stable version
 
-Livrée le 5 octobre 2026, voir [version-1.0.md](version-1.0.md) : vectorisation d'image, détourage automatique (sélection du sujet, suppression de l'arrière-plan), macros, raccourcis personnalisables, extensions, mises à jour automatiques. La signature des installeurs et Flathub sont prêts et attendent les comptes nécessaires (voir [signature-et-mises-a-jour.md](signature-et-mises-a-jour.md)). L'accessibilité vérifiée, la documentation anglaise complète et les performances sur très gros fichiers suivront en v1.x.
+Delivered on October 5, 2026, see [version-1.0.md](version-1.0.md): image tracing, automatic cutout (subject selection, background removal), macros, customizable shortcuts, extensions, automatic updates. Installer signing and Flathub are ready and waiting for the necessary accounts (see [signature-et-mises-a-jour.md](signature-et-mises-a-jour.md)). Verified accessibility, complete English documentation and performance on very large files will follow in v1.x.
 
-- Vectorisation d'image, détourage automatique et remplissage selon le contenu, calculés dans le navigateur.
-- Actions et macros enregistrables, raccourcis personnalisables, extensions.
-- Appli de bureau signée (Windows, macOS) avec mises à jour automatiques, publiée sur Flathub pour Linux.
-- Performances sur gros fichiers, accessibilité WCAG 2.2 AA vérifiée, documentation FR / EN.
+- Image tracing, automatic cutout and content-aware fill, computed in the browser.
+- Recordable actions and macros, customizable shortcuts, extensions.
+- Signed desktop app (Windows, macOS) with automatic updates, published on Flathub for Linux.
+- Performance on large files, verified WCAG 2.2 AA accessibility, FR / EN documentation.
 
-### v1.3 Prochaine version (demandée le 13 octobre 2026)
+### v1.3 Next version (requested on October 13, 2026)
 
-Tout sans régression ni bug : chaque point est vérifié par les tests avant d'être publié.
+Everything without regressions or bugs: each item is checked by the tests before being released.
 
-- **Documentation en anglais :** toute la documentation du dépôt traduite.
-- **Panneaux :** déplacer plus facilement les fenêtres Calques, Pinceau, Historique et les autres.
-- **Couleurs :** sélecteur RVB avec une roue, qui s'ouvre quand on choisit une couleur dans la barre d'outils ou dans le menu du haut ; le choix « aucune couleur » partout où l'on choisit une couleur, comme dans Affinity.
-- **Pinceaux :** créer ses pinceaux et les partager, aussi sous forme d'extensions de l'appli ; une fenêtre de création de pinceau qui reste ouverte pendant qu'on essaie le pinceau sur le document, et qu'on peut fermer.
-- **Interface :** régler la taille de l'interface dans les Préférences.
+- **English documentation:** all of the repository's documentation translated.
+- **Panels:** moving the Layers, Brush, History and other windows more easily.
+- **Colors:** an RGB picker with a wheel, which opens when you choose a color in the toolbar or in the top menu; the "No color" choice wherever a color is chosen, as in Affinity.
+- **Brushes:** creating your own brushes and sharing them, also as app extensions; a brush creation window that stays open while you try the brush on the document, and that can be closed.
+- **Interface:** setting the interface size in Preferences.
 
-Pas prioritaire pour le moment : la signature des installeurs Mac (et Windows), Flathub.
+Not a priority for now: signing the Mac (and Windows) installers, Flathub.
 
-## Hors périmètre et risques
+## Out of scope and risks
 
-- **Pas de 3D, de vidéo ni d'animation** avant la v1.0 : ce sont d'autres logiciels (After Effects, Blender).
-- **Fichiers AI et PSD :** le format AI récent n'est lisible que via sa partie PDF, et les PSD complexes (objets dynamiques, effets propriétaires) seront ouverts en approximation.
-- **Performance pixel :** les grosses images (plus de 50 mégapixels) et les pinceaux rapides poussent WebGL 2 et la mémoire du navigateur. On teste ce point dès la v0.4, avec WebGPU en option si nécessaire.
-- **CMJN** : ni le navigateur ni Tauri n'en offrent de gestion native, il faut embarquer un moteur de couleur (lcms compilé en WASM).
-- **Fonctions « intelligentes » :** le détourage et le remplissage automatiques exigent des modèles locaux lourds, d'où leur report en v1.0.
+- **No 3D, video or animation** before v1.0: those belong to other software (After Effects, Blender).
+- **AI and PSD files:** the recent AI format can only be read through its PDF part, and complex PSDs (smart objects, proprietary effects) will be opened as an approximation.
+- **Pixel performance:** large images (more than 50 megapixels) and fast brushes push WebGL 2 and the browser's memory. We test this from v0.4, with WebGPU as an option if needed.
+- **CMYK**: neither the browser nor Tauri offers native support for it, so a color engine has to be bundled (lcms compiled to WASM).
+- **"Smart" features:** automatic cutout and fill require heavy local models, hence their postponement to v1.0.

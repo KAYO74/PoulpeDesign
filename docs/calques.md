@@ -1,45 +1,45 @@
-# Gestion des calques
+# Layer management
 
-Le panneau **Calques** montre le calque du dessus en premier, comme dans Affinity et Photoshop.
+The **Layers** panel shows the top layer first, as in Affinity and Photoshop.
 
-## Changer l'ordre
+## Changing the order
 
-| Action                            | Raccourci                  | Où                                      |
-| --------------------------------- | -------------------------- | --------------------------------------- |
-| Premier plan                      | Ctrl+Maj+] (Cmd sur macOS) | Clic droit, Calque › Ordre, Disposition |
-| Avancer d'un niveau               | Ctrl+]                     | idem                                    |
-| Reculer d'un niveau               | Ctrl+[                     | idem                                    |
-| Arrière-plan                      | Ctrl+Maj+[                 | idem                                    |
-| Sélectionner le calque au-dessus  | Alt+]                      | Calque › Ordre                          |
-| Sélectionner le calque en dessous | Alt+[                      | Calque › Ordre                          |
+| Action             | Shortcut                    | Where                               |
+| ------------------ | --------------------------- | ----------------------------------- |
+| Bring to Front     | Ctrl+Shift+] (Cmd on macOS) | Right-click, Layer › Order, Arrange |
+| Bring Forward      | Ctrl+]                      | same                                |
+| Send Backward      | Ctrl+[                      | same                                |
+| Send to Back       | Ctrl+Shift+[                | same                                |
+| Select Layer Above | Alt+]                       | Layer › Order                       |
+| Select Layer Below | Alt+[                       | Layer › Order                       |
 
-Avec plusieurs calques sélectionnés, ils bougent ensemble en gardant leur ordre. Tout changement d'ordre
-s'annule (Ctrl+Z) et se retrouve tel quel dans le fichier `.poulpe`.
+With several layers selected, they move together and keep their order. Every order change
+can be undone (Ctrl+Z) and is saved as is in the `.poulpe` file.
 
-## Glisser-déposer
+## Drag and drop
 
-- Glisser une ligne la place à n'importe quelle position : un trait montre où elle va tomber.
-- Lâcher au milieu d'un groupe met les calques dedans (le groupe s'encadre), sur un plan de travail tout en haut de celui-ci.
-- Lâcher au milieu d'un autre calque ouvre un petit menu : **Grouper**, fusionner les formes (**Union**, **Soustraction**, **Intersection**, **Exclusion**) ou **Fusionner en une image**.
-- Si la ligne glissée fait partie de la sélection, toute la sélection suit (« 3 calques » sous le pointeur).
-- Près du bord du panneau, la liste défile toute seule.
+- Dragging a row places it at any position: a line shows where it will land.
+- Dropping in the middle of a group puts the layers inside it (the group gets highlighted); dropping on an artboard puts them at its very top.
+- Dropping in the middle of another layer opens a small menu: **Group**, combine the shapes (**Add**, **Subtract**, **Intersect**, **Xor**) or **Merge into one image**.
+- If the dragged row is part of the selection, the whole selection follows ("3 layers" under the pointer).
+- Near the edge of the panel, the list scrolls by itself.
 
-## Fusionner, grouper, supprimer
+## Merging, grouping, deleting
 
-- Clic droit › **Fusionner** : Union, Soustraction, Intersection, Exclusion, Division (les formes et courbes deviennent une seule courbe), ou **Fusionner en une image** (Ctrl+E, aussi dans le menu Calque) qui aplatit formes, textes et photos en une image, à la place du calque le plus haut.
-- Sous la liste : **Grouper** (Ctrl+G) et **Supprimer** (aussi la touche Suppr), dans toutes les Personas.
-- Clic droit sur un plan de travail : **Ajouter un plan de travail** ou **Supprimer le plan de travail** (il en reste toujours un).
+- Right-click › **Merge**: Add, Subtract, Intersect, Xor, Divide (the shapes and curves become a single curve), or **Merge into one image** (Ctrl+E, also in the Layer menu), which flattens shapes, texts and photos into one image, in place of the topmost layer.
+- Below the list: **Group** (Ctrl+G) and **Delete** (also the Delete key), in every Persona.
+- Right-click an artboard: **Add Artboard** or **Delete Artboard** (there is always at least one left).
 
-## Sélection dans le panneau
+## Selecting in the panel
 
-- Clic : un calque. Ctrl+clic (Cmd sur macOS) : ajoute ou retire. Maj+clic : toute la plage.
-- Flèches haut/bas : calque précédent/suivant (Maj pour étendre), F2 : renommer, touche Menu : menu contextuel.
+- Click: one layer. Ctrl+click (Cmd on macOS): adds or removes. Shift+click: the whole range.
+- Up/Down arrows: previous/next layer (Shift to extend), F2: rename, Menu key: context menu.
 
-## Beaucoup de calques
+## Lots of layers
 
-Au-delà de 150 lignes, le panneau n'affiche que les lignes visibles (liste virtualisée) et chaque ligne
-n'est redessinée que si son calque change. Mesure avec 3 000 calques (Chromium, sans GPU) : affichage
-du panneau 2,3 s avant, 0,16 s après ; changer la sélection 0,7 s avant, 0,12 s après.
+Beyond 150 rows, the panel only renders the visible rows (virtualized list) and each row
+is only redrawn when its layer changes. Measured with 3,000 layers (Chromium, no GPU): showing
+the panel took 2.3 s before, 0.16 s after; changing the selection 0.7 s before, 0.12 s after.
 
-Code : `apps/editor/src/panels/LayersPanel.tsx`, `apps/editor/src/layers.ts`, `moveNodesTo` dans
-`packages/core/src/tree.ts`. Tests : `packages/core/test/calques.test.ts`, `apps/editor/e2e/layers.spec.ts`.
+Code: `apps/editor/src/panels/LayersPanel.tsx`, `apps/editor/src/layers.ts`, `moveNodesTo` in
+`packages/core/src/tree.ts`. Tests: `packages/core/test/calques.test.ts`, `apps/editor/e2e/layers.spec.ts`.

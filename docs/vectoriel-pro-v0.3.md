@@ -1,47 +1,47 @@
-# Vectoriel pro v0.3 : état et organisation du code
+# Pro vector v0.3: status and code layout
 
-5 octobre 2026
+October 5, 2026
 
-La v0.3 donne à Poulpe Design les outils de dessin vectoriel d'Illustrator et d'Affinity Designer : dessiner et modifier des courbes, combiner des formes, régler finement les contours, ajouter des effets, écrire le long d'une courbe et ouvrir des fichiers SVG.
+v0.3 gives Poulpe Design the vector drawing tools of Illustrator and Affinity Designer: drawing and editing curves, combining shapes, fine-tuning strokes, adding effects, writing along a curve and opening SVG files.
 
-## Ce que voit l'utilisateur
+## What the user sees
 
-- **Plume** (P). Un clic pose un nœud net, un glisser pose une courbe. Un clic sur le premier nœud ferme le tracé, Entrée ou Échap le laisse ouvert, Retour arrière retire le dernier nœud.
-- **Crayon** (N). Dessin à main levée, lissé au relâchement. Le curseur « Lissage » de la barre contextuelle règle la force du lissage.
-- **Outil Nœud** (A, anciennement « Sélection directe »). Sur un tracé, il montre les nœuds et leurs poignées. On déplace un nœud ou une poignée, on clique sur un segment pour ajouter un nœud, on glisse un segment pour le courber, Suppr retire les nœuds choisis, un double-clic passe un nœud de net à lisse. La barre contextuelle propose Net, Lisse, Supprimer et Fermer / ouvrir. Sur une forme qui n'est pas un tracé, elle propose « Convertir en courbes ».
-- **Géométrie** (Calque > Géométrie et cinq boutons de la barre d'outils) : union, soustraction, intersection, exclusion et division. Comme dans Affinity, le résultat prend le style de l'objet du dessous.
-- **Calque** : Convertir en courbes (Ctrl+Entrée, textes compris), Contour en tracé (le contour devient une forme pleine) et Décaler le tracé… (agrandir ou rétrécir une forme d'une distance donnée).
-- **Panneau Contour** : style plein ou pointillé (avec longueurs du trait et de l'espace), extrémités, jonctions, et flèches au début et à la fin des tracés ouverts.
-- **Panneau Effets** (nouvel onglet du Studio) : ombre portée, ombre interne, lueur externe, lueur interne et flou, chacun avec sa case, sa couleur, son opacité, son décalage et son adoucissement. Les effets se voient aussi dans les exports PNG, JPEG et SVG ; dans le PDF, l'objet qui porte un effet est inclus en image.
-- **Texte sur tracé** (menu Texte) : on sélectionne un texte et une forme, puis « Placer le texte sur le tracé ». Sur un cercle, le texte part du haut et se centre. Un curseur de la barre contextuelle le fait glisser le long de la courbe, et « Retirer du tracé » le remet à plat. Le texte reste modifiable, et peut aussi être converti en courbes.
-- **Import SVG** : Fichier > Importer une image ou un SVG…, ou un glisser-déposer. Le SVG arrive en objets modifiables (tracés, formes, textes simples, dégradés, images intégrées), groupés et réduits s'ils dépassent le plan de travail.
+- **Pen** (P). A click places a sharp node, a drag places a curve. Clicking the first node closes the path, Enter or Esc leaves it open, Backspace removes the last node.
+- **Pencil** (N). Freehand drawing, smoothed on release. The "Smoothing" slider in the context toolbar sets how strong the smoothing is.
+- **Node tool** (A, formerly "Direct selection"). On a path, it shows the nodes and their handles. You move a node or a handle, click a segment to add a node, drag a segment to bend it; Delete removes the chosen nodes, and a double-click switches a node between sharp and smooth. The context toolbar offers Sharp, Smooth, Delete and Close / open. On a shape that is not a path, it offers "Convert to Curves".
+- **Geometry** (Layer > Geometry and five toolbar buttons): add (union), subtract, intersect, xor (exclude) and divide. As in Affinity, the result takes the style of the bottom object.
+- **Layer**: Convert to Curves (Ctrl+Enter, texts included), Expand Stroke (the stroke becomes a filled shape) and Offset Path… (grow or shrink a shape by a given distance).
+- **Stroke panel**: solid or dashed style (with dash and gap lengths), caps, joins, and arrowheads at the start and end of open paths.
+- **Effects panel** (new Studio tab): drop shadow, inner shadow, outer glow, inner glow and Gaussian blur, each with its checkbox, color, opacity, offset and softness. Effects also show up in PNG, JPEG and SVG exports; in PDF, an object carrying an effect is included as an image.
+- **Text on path** (Text menu): select a text and a shape, then "Put Text on Path". On a circle, the text starts at the top and is centered. A slider in the context toolbar slides it along the curve, and "Remove Text from Path" flattens it again. The text stays editable and can also be converted to curves.
+- **SVG import**: File > Import Image or SVG…, or drag and drop. The SVG comes in as editable objects (paths, shapes, simple texts, gradients, embedded images), grouped and scaled down if they exceed the artboard.
 
-## Organisation du code
+## Code layout
 
-| Où                                        | Quoi                                                                                                                             |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core/src/bezier.ts`             | Calculs sur les courbes de Bézier : point, découpe, boîte exacte, point le plus proche, aplatissement.                           |
-| `packages/core/src/pathEdit.ts`           | Modèle d'édition des tracés (sous-tracés, nœuds, poignées) et ses opérations.                                                    |
-| `packages/core/src/vector.ts`             | Contours (extrémités, pointillés, flèches), conversion en tracé, mise en page du texte sur tracé.                                |
-| `packages/core/src/boolean.ts`            | Opérations booléennes, décalage, contour en tracé et lissage, avec [Paper.js](http://paperjs.org) (MIT) et paperjs-offset (MIT). |
-| `packages/core/src/effects.ts`            | Réglages par défaut des effets et marge qu'ils ajoutent autour d'un objet.                                                       |
-| `packages/core/src/svgImport.ts`          | Lecture d'un fichier SVG en objets Poulpe Design.                                                                                |
-| `packages/core/src/svg.ts`                | Export SVG : contours avancés, flèches, filtres d'effets, texte sur tracé.                                                       |
-| `packages/render/src/index.ts`            | Rendu des contours avancés, du texte sur tracé et des effets (calques hors écran).                                               |
-| `apps/editor/src/canvas/pathTools.ts`     | Plume, crayon et outil Nœud.                                                                                                     |
-| `apps/editor/src/vectorActions.ts`        | Ce que font les commandes vectorielles sur le document.                                                                          |
-| `apps/editor/src/textToCurves.ts`         | Conversion d'un texte en courbes à partir du fichier de sa police, avec [opentype.js](https://opentype.js.org) (MIT).            |
-| `apps/editor/src/panels/StrokePanel.tsx`  | Panneau Contour.                                                                                                                 |
-| `apps/editor/src/panels/EffectsPanel.tsx` | Panneau Effets.                                                                                                                  |
+| Where                                     | What                                                                                                                         |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core/src/bezier.ts`             | Bézier curve math: point, split, exact bounding box, nearest point, flattening.                                              |
+| `packages/core/src/pathEdit.ts`           | Path editing model (subpaths, nodes, handles) and its operations.                                                            |
+| `packages/core/src/vector.ts`             | Strokes (caps, dashes, arrowheads), conversion to path, text-on-path layout.                                                 |
+| `packages/core/src/boolean.ts`            | Boolean operations, offset, expand stroke and smoothing, with [Paper.js](http://paperjs.org) (MIT) and paperjs-offset (MIT). |
+| `packages/core/src/effects.ts`            | Default effect settings and the margin they add around an object.                                                            |
+| `packages/core/src/svgImport.ts`          | Reading an SVG file into Poulpe Design objects.                                                                              |
+| `packages/core/src/svg.ts`                | SVG export: advanced strokes, arrowheads, effect filters, text on path.                                                      |
+| `packages/render/src/index.ts`            | Rendering of advanced strokes, text on path and effects (offscreen layers).                                                  |
+| `apps/editor/src/canvas/pathTools.ts`     | Pen, pencil and Node tool.                                                                                                   |
+| `apps/editor/src/vectorActions.ts`        | What the vector commands do to the document.                                                                                 |
+| `apps/editor/src/textToCurves.ts`         | Converting a text to curves from its font file, with [opentype.js](https://opentype.js.org) (MIT).                           |
+| `apps/editor/src/panels/StrokePanel.tsx`  | Stroke panel.                                                                                                                |
+| `apps/editor/src/panels/EffectsPanel.tsx` | Effects panel.                                                                                                               |
 
-Le format de fichier passe en version 3 (voir [format-poulpe.md](format-poulpe.md)). Tous les nouveaux champs sont facultatifs : les fichiers des versions 1 et 2 s'ouvrent sans changement.
+The file format moves to version 3 (see [format-poulpe.md](format-poulpe.md)). All new fields are optional: files from versions 1 and 2 open unchanged.
 
-## Choix et écarts
+## Choices and deviations
 
-- **Pas encore de CanvasKit.** La feuille de route prévoyait de passer le rendu à CanvasKit en v0.3 pour les opérations booléennes. Paper.js les fait très bien sans toucher au rendu, et le Canvas 2D actuel dessine tous les nouveaux contours et effets. CanvasKit ajouterait 7 Mo et une question de performance encore ouverte sous Linux ; on le garde pour quand il apportera un vrai gain (la retouche photo en v0.4, ou les gros fichiers).
-- **Reporté à une v0.3.x :** symboles, styles de calque et de texte, dégradés coniques et de forme (mesh), motifs, épaisseur variable et contours multiples, OpenType avancé, colonnes et habillage, Shape Builder, ciseaux, couteau, outil coin, biseau. L'import SVG ignore pour l'instant les masques, les chemins d'écrêtage et les filtres.
+- **No CanvasKit yet.** The roadmap planned to switch rendering to CanvasKit in v0.3 for boolean operations. Paper.js handles them very well without touching the renderer, and the current Canvas 2D draws all the new strokes and effects. CanvasKit would add 7 MB and a performance question that is still open on Linux; we are keeping it for when it brings a real gain (photo editing in v0.4, or large files).
+- **Postponed to a v0.3.x:** symbols, layer and text styles, conical and mesh gradients, patterns, variable width and multiple strokes, advanced OpenType, columns and text wrap, Shape Builder, scissors, knife, corner tool, bevel. SVG import currently ignores masks, clipping paths and filters.
 
 ## Tests
 
-- `packages/core/test/v03.test.ts` : édition des tracés, opérations booléennes, décalage, import et export SVG, texte sur tracé, conversion en courbes.
-- `apps/editor/e2e/vector.spec.ts` : plume, outil Nœud, crayon, géométrie, conversion et décalage, pointillés, flèches et effets, texte sur un cercle puis vectorisé, import SVG.
+- `packages/core/test/v03.test.ts`: path editing, boolean operations, offset, SVG import and export, text on path, conversion to curves.
+- `apps/editor/e2e/vector.spec.ts`: pen, Node tool, pencil, geometry, conversion and offset, dashes, arrowheads and effects, text on a circle then converted to curves, SVG import.
