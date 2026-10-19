@@ -153,10 +153,11 @@ Les versions jusqu'à la 1.3.0. Les versions plus anciennes sont sur la page [Ve
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
 | v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                         | ✅ Disponible |
 | v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes | ✅ Disponible |
-| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                               | ⏳ À venir    |
-| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                   | ⏳ À venir    |
-| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ⏳ À venir    |
-| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ⏳ À venir    |
+| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                               | ✅ Disponible |
+| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                   | ✅ Disponible |
+| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ✅ Disponible |
+| v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                             | ✅ Disponible |
+| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | 🚧 En cours   |
 
 La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 

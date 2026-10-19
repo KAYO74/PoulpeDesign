@@ -1,38 +1,42 @@
-# Poulpe Design — Feuille de route
+# Poulpe Design — Roadmap
 
-Mise à jour le 19 octobre 2026, après la version 1.2.6.
+Updated October 19, 2026, after version 1.2.10.
 
-Les versions jusqu'à la 1.3.0. Chacune sort seule, avec ses tests, sans rien casser de ce qui marche déjà. Les versions déjà sorties sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases), et leur détail dans [Version 1.0](version-1.0.md), [Version 1.1](version-1.1.md) et [Version 1.2](version-1.2.md).
+The versions up to 1.3.0. Each one ships on its own, with its tests, without breaking what already works. Older versions are on the [Releases](https://github.com/KAYO74/PoulpeDesign/releases) page, and their details in [Version 1.0](version-1.0.md), [Version 1.1](version-1.1.md) and [Version 1.2](version-1.2.md).
 
-## v1.2.5 Panneaux (disponible)
+## v1.2.5 Panels (available)
 
-- Déplacer plus simplement les fenêtres Calques, Pinceau, Historique et les autres panneaux.
-- Régler la taille de l'interface dans les Préférences.
+- Move the Layers, Brush, History and other panels more easily.
+- Set the interface size in Preferences.
 
-## v1.2.6 Calques (disponible)
+## v1.2.6 Layers (available)
 
-- Fusionner facilement des objets, des courbes… par clic droit ou en les glissant les uns sur les autres.
-- Supprimer des formes ou un plan de travail.
-- Créer des groupes dans le panneau Calques.
+- Merge objects, curves… easily, with a right-click or by dragging them onto each other.
+- Delete shapes or an artboard.
+- Create groups in the Layers panel.
 
-## v1.2.7 Couleurs
+## v1.2.7 Colors (available)
 
-- Sélecteur de couleur RVB avec une roue, qui s'ouvre quand on choisit une couleur dans la barre d'outils ou le menu du haut, et qu'on peut placer n'importe où.
-- Le choix « aucune couleur » partout où l'on choisit une couleur, comme dans Affinity.
+- RGB color picker with a wheel, which opens when you pick a color in the toolbar or the top menu, and can be placed anywhere.
+- A "no color" choice everywhere you pick a color, as in Affinity.
 
-## v1.2.8 Création de pinceaux
+## v1.2.8 Brush creation (available)
 
-- Une fenêtre de création de pinceau, qui reste ouverte pendant qu'on essaie le pinceau sur le document, et qu'on peut fermer.
+- A brush creation window that stays open while you try the brush on the document, and that you can close.
 
-## v1.2.9 Partage de pinceaux
+## v1.2.9 Brush sharing (available)
 
-- Partager ses pinceaux et installer ceux des autres, comme des extensions de l'appli.
+- Share your brushes and install other people's, as app extensions.
 
-## v1.3.0 Finition
+## v1.2.10 Project as PSD (available)
 
-- Toute la documentation traduite en anglais.
-- Vérification complète de l'appli : zéro régression, zéro bug connu.
+- Save a real Photoshop file, one layer per object, that Poulpe Design reopens fully editable.
 
-## Pas prioritaire pour le moment
+## v1.3.0 Finishing touches (in progress)
 
-- Signature des installeurs Mac et Windows, publication sur Flathub.
+- All documentation translated into English.
+- A full check of the app: no regressions, no known bugs.
+
+## Not a priority for now
+
+- Signing the Mac and Windows installers, publishing on Flathub.
