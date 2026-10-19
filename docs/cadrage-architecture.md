@@ -1,113 +1,113 @@
-# Poulpe Design : cadrage et architecture
+# Poulpe Design: scope and architecture
 
-4 octobre 2026
+October 4, 2026
 
-## Vision et principes
+## Vision and principles
 
-Le Poulpe Design (nom provisoire) est une application web libre qui réunit la création graphique d'Affinity (vectoriel, photo, mise en page) et la simplicité de Canva (modèles, glisser-déposer), installée gratuitement sur Windows, macOS et Linux, et aussi utilisable dans le navigateur.
+Poulpe Design (working name) is a free and open-source web application that brings together Affinity's graphic design capabilities (vector, photo, layout) and Canva's simplicity (templates, drag and drop), installed for free on Windows, macOS and Linux, and also usable in the browser.
 
-- **Zéro barrière** : une appli de bureau gratuite à installer, ou la même appli directement dans le navigateur pour ceux qui ne peuvent pas installer de logiciel. Pas de compte obligatoire, pas de fonction payante.
-- **Local d'abord** : les fichiers restent sur l'appareil de l'utilisateur. L'appli de bureau fonctionne entièrement hors ligne. Aucun serveur n'est nécessaire pour éditer.
-- **Deux niveaux d'usage** : un mode simple façon Canva (modèles, panneaux réduits) et un mode avancé façon Affinity (plume, calques détaillés, réglages photo), sur le même moteur et le même fichier.
-- **Format ouvert** : le fichier natif est documenté et lisible par tous, et l'export SVG, PDF et PNG garantit qu'on n'est jamais enfermé.
-- **Accessible** : interface conforme WCAG 2.2 AA, navigable au clavier, en français ou en anglais au choix de l'utilisateur, fluide sur un ordinateur modeste.
-- **Interface façon Affinity** : thème sombre par défaut, outils en colonne à droite par défaut (côté modifiable), barre contextuelle en haut qui change avec l'outil actif, panneaux ancrables et déplaçables (calques, propriétés, couleurs, éléments), disposition entièrement personnalisable et enregistrable, et des espaces de travail Dessin, Photo et Mise en page qu'on bascule d'un clic comme les « Personas » d'Affinity. Thème clair disponible.
+- **Zero barriers**: a free desktop app to install, or the same app directly in the browser for those who cannot install software. No account required, no paid features.
+- **Local first**: files stay on the user's device. The desktop app works entirely offline. No server is needed to edit.
+- **Two levels of use**: a simple Canva-style mode (templates, reduced panels) and an advanced Affinity-style mode (pen, detailed layers, photo adjustments), on the same engine and the same file.
+- **Open format**: the native file is documented and readable by anyone, and SVG, PDF and PNG export guarantees that you are never locked in.
+- **Accessible**: WCAG 2.2 AA compliant interface, keyboard navigable, in French or English as the user chooses, smooth on a modest computer.
+- **Affinity-style interface**: dark theme by default, tools in a column on the right by default (side can be changed), a context bar at the top that changes with the active tool, dockable and movable panels (layers, properties, colors, elements), a fully customizable layout that can be saved, and Draw, Photo and Layout workspaces you switch between in one click, like Affinity's "Personas". Light theme available.
 
-## Périmètre du MVP
+## MVP scope
 
-La première version publique (v0.1) doit permettre de créer une affiche ou un visuel réseau social de A à Z, puis de l'exporter.
+The first public version (v0.1) must let you create a poster or a social media visual from start to finish, then export it.
 
-| Domaine      | Dans la v0.1                                                                                                                                         | Plus tard                                                             |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Distribution | Appli de bureau installée (Windows, macOS, Linux) et même appli dans le navigateur                                                                   | Mises à jour automatiques, boutiques d'applications, paquets Flatpak  |
-| Interface    | Disposition façon Affinity : outils à droite par défaut (côté modifiable), barre contextuelle, panneaux ancrables, thème sombre, français ou anglais | Espaces de travail Photo et Mise en page, raccourcis personnalisables |
-| Document     | Plusieurs pages ou plans de travail, formats prédéfinis (A4, Instagram, YouTube…)                                                                    | Grilles de mise en page, styles partagés                              |
-| Formes       | Rectangle, ellipse, polygone, ligne, remplissage, contour, dégradé linéaire                                                                          | Outil plume complet, opérations booléennes, dégradés avancés          |
-| Texte        | Bloc de texte, polices libres et polices installées sur l'ordinateur, gras, italique, alignement, interlignage                                       | Texte sur tracé, styles de paragraphe, OpenType avancé                |
-| Images       | Import, recadrage, opacité, masque simple                                                                                                            | Retouche photo : niveaux, courbes, filtres, pinceaux                  |
-| Calques      | Liste, groupes, ordre, verrouillage, visibilité                                                                                                      | Modes de fusion avancés, calques de réglage                           |
-| Édition      | Sélection, déplacement, redimensionnement, rotation, alignement, magnétisme, annuler et rétablir                                                     | Édition de nœuds, symboles, contraintes                               |
-| Fichiers     | Format natif ouvert, double-clic sur un `.poulpe` pour l'ouvrir, export PNG, JPG, SVG                                                                | Export PDF, import SVG et PSD                                         |
-| Partage      | Fichier enregistré sur l'ordinateur                                                                                                                  | Collaboration en temps réel, liens de partage                         |
+| Area         | In v0.1                                                                                                                                 | Later                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Distribution | Installed desktop app (Windows, macOS, Linux) and the same app in the browser                                                           | Automatic updates, app stores, Flatpak packages       |
+| Interface    | Affinity-style layout: tools on the right by default (side can be changed), context bar, dockable panels, dark theme, French or English | Photo and Layout workspaces, customizable shortcuts   |
+| Document     | Several pages or artboards, preset formats (A4, Instagram, YouTube…)                                                                    | Layout grids, shared styles                           |
+| Shapes       | Rectangle, ellipse, polygon, line, fill, stroke, linear gradient                                                                        | Full pen tool, boolean operations, advanced gradients |
+| Text         | Text block, free fonts and fonts installed on the computer, bold, italic, alignment, line spacing                                       | Text on a path, paragraph styles, advanced OpenType   |
+| Images       | Import, crop, opacity, simple mask                                                                                                      | Photo retouching: levels, curves, filters, brushes    |
+| Layers       | List, groups, order, locking, visibility                                                                                                | Advanced blend modes, adjustment layers               |
+| Editing      | Selection, moving, resizing, rotation, alignment, snapping, undo and redo                                                               | Node editing, symbols, constraints                    |
+| Files        | Open native format, double-click a `.poulpe` to open it, PNG, JPG, SVG export                                                           | PDF export, SVG and PSD import                        |
+| Sharing      | File saved on the computer                                                                                                              | Real-time collaboration, share links                  |
 
-Hors périmètre assumé : impression professionnelle CMJN complète, développement RAW, IA générative et lecture des formats propriétaires d'Affinity ou de Canva, qui ne sont pas documentés.
+Deliberately out of scope: full professional CMYK printing, RAW development, generative AI and reading Affinity's or Canva's proprietary formats, which are not documented.
 
-## Stack technique
+## Tech stack
 
-Tout est en TypeScript, le rendu passe par Skia compilé en WebAssembly (CanvasKit) sur WebGL, et le même code web est empaqueté en appli de bureau avec Tauri ou servi comme site statique, sans serveur dans les deux cas.
+Everything is in TypeScript, rendering goes through Skia compiled to WebAssembly (CanvasKit) on WebGL, and the same web code is packaged as a desktop app with Tauri or served as a static site, with no server in either case.
 
-| Couche                    | Choix                                                                                                                                                         | Pourquoi                                                                                                                                                                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Langage                   | TypeScript strict                                                                                                                                             | Le langage web le plus connu des contributeurs, typage sûr pour un moteur complexe                                                                                                                                           |
-| Appli de bureau           | [Tauri 2](https://v2.tauri.app/) (licences MIT et Apache-2.0) pour Windows, macOS et Linux                                                                    | Installeurs légers car Tauri utilise le moteur web du système au lieu d'embarquer Chromium ; accès natif aux fichiers, aux polices installées et aux menus ; une petite couche en Rust pour les traitements lourds si besoin |
-| Rendu du canevas          | [CanvasKit](https://skia.org/docs/user/modules/canvaskit/) (Skia en WebAssembly, licence BSD-3) sur WebGL 2                                                   | Le moteur de Chrome et d'Android : tracés vectoriels précis, opérations booléennes, mise en page de texte avec HarfBuzz, rendu GPU rapide                                                                                    |
-| Filtres photo             | Shaders WebGL 2, calculs lourds dans des Web Workers                                                                                                          | L'interface reste fluide pendant les traitements ; passage à WebGPU quand il sera généralisé                                                                                                                                 |
-| Interface                 | React, Vite, primitives accessibles [Radix UI](https://www.radix-ui.com/), panneaux ancrables, jetons de design en variables CSS                              | Composants accessibles au clavier et aux lecteurs d'écran, disposition façon Affinity, thèmes sombre et clair simples                                                                                                        |
-| État de l'appli           | Modèle de document en TypeScript pur, hors React                                                                                                              | Le moteur se teste sans navigateur et pourra servir ailleurs (ligne de commande, serveur d'export)                                                                                                                           |
-| Stockage                  | Bureau : fichiers natifs via Tauri, double-clic sur un `.poulpe`. Navigateur : File System Access, téléchargement en repli, brouillons dans IndexedDB et OPFS | Local d'abord, hors ligne, aucun coût d'hébergement                                                                                                                                                                          |
-| Collaboration (plus tard) | [Yjs](https://yjs.dev/) (CRDT, licence MIT)                                                                                                                   | Fusion des modifications sans serveur central obligatoire                                                                                                                                                                    |
-| Export                    | PNG, JPG, WebP par le canevas ; SVG par notre propre sérialiseur ; PDF avec [pdf-lib](https://pdf-lib.js.org/)                                                | Vectoriel préservé en SVG et PDF                                                                                                                                                                                             |
-| Polices                   | Polices libres (licence OFL) fournies, plus les polices installées sur l'ordinateur                                                                           | Pas de dépendance à un service tiers                                                                                                                                                                                         |
-| Outillage                 | Monorepo pnpm, Vitest, Playwright avec tests visuels de rendu, ESLint, Prettier, GitHub Actions qui produit les installeurs des trois systèmes                | Un seul dépôt, chaque modification vérifiée et empaquetée automatiquement                                                                                                                                                    |
-| Distribution              | Installeurs sur les GitHub Releases de KAYO74/PoulpeDesign, version navigateur sur GitHub Pages ou Cloudflare Pages                                           | Gratuit à distribuer, donc gratuit pour toujours                                                                                                                                                                             |
+| Layer                 | Choice                                                                                                                                       | Why                                                                                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Language              | Strict TypeScript                                                                                                                            | The web language best known to contributors, safe typing for a complex engine                                                                                                                        |
+| Desktop app           | [Tauri 2](https://v2.tauri.app/) (MIT and Apache-2.0 licenses) for Windows, macOS and Linux                                                  | Lightweight installers because Tauri uses the system's web engine instead of bundling Chromium; native access to files, installed fonts and menus; a small Rust layer for heavy processing if needed |
+| Canvas rendering      | [CanvasKit](https://skia.org/docs/user/modules/canvaskit/) (Skia in WebAssembly, BSD-3 license) on WebGL 2                                   | The engine of Chrome and Android: precise vector paths, boolean operations, text layout with HarfBuzz, fast GPU rendering                                                                            |
+| Photo filters         | WebGL 2 shaders, heavy computations in Web Workers                                                                                           | The interface stays smooth during processing; move to WebGPU once it is widely available                                                                                                             |
+| Interface             | React, Vite, accessible [Radix UI](https://www.radix-ui.com/) primitives, dockable panels, design tokens as CSS variables                    | Components accessible by keyboard and screen readers, Affinity-style layout, simple dark and light themes                                                                                            |
+| App state             | Document model in pure TypeScript, outside React                                                                                             | The engine can be tested without a browser and could be used elsewhere (command line, export server)                                                                                                 |
+| Storage               | Desktop: native files via Tauri, double-click a `.poulpe`. Browser: File System Access, download as a fallback, drafts in IndexedDB and OPFS | Local first, offline, no hosting cost                                                                                                                                                                |
+| Collaboration (later) | [Yjs](https://yjs.dev/) (CRDT, MIT license)                                                                                                  | Merging changes without a mandatory central server                                                                                                                                                   |
+| Export                | PNG, JPG, WebP through the canvas; SVG through our own serializer; PDF with [pdf-lib](https://pdf-lib.js.org/)                               | Vectors preserved in SVG and PDF                                                                                                                                                                     |
+| Fonts                 | Bundled free fonts (OFL license), plus the fonts installed on the computer                                                                   | No dependency on a third-party service                                                                                                                                                               |
+| Tooling               | pnpm monorepo, Vitest, Playwright with visual rendering tests, ESLint, Prettier, GitHub Actions producing installers for all three systems   | A single repository, every change checked and packaged automatically                                                                                                                                 |
+| Distribution          | Installers on the GitHub Releases of KAYO74/PoulpeDesign, browser version on GitHub Pages or Cloudflare Pages                                | Free to distribute, so free forever                                                                                                                                                                  |
 
-Alternative écartée pour le rendu : Canvas 2D seul, trop lent au-delà de quelques milliers d'objets et sans opérations booléennes. Un moteur WebGL écrit de zéro reste possible plus tard derrière la même interface de rendu. Pour le bureau, Electron est l'alternative : il embarque Chromium, donc un rendu identique partout, mais des installeurs bien plus lourds. Risque à surveiller avec Tauri : le moteur web de Linux (WebKitGTK) est moins performant en WebGL ; on le mesure dès la v0.1 et on bascule sur Electron si l'écart est trop grand, sans toucher au reste du code.
+Rejected rendering alternative: Canvas 2D alone, too slow beyond a few thousand objects and without boolean operations. A WebGL engine written from scratch remains possible later behind the same rendering interface. For the desktop, Electron is the alternative: it bundles Chromium, so rendering is identical everywhere, but installers are much heavier. Risk to watch with Tauri: Linux's web engine (WebKitGTK) performs worse with WebGL; we measure it from v0.1 and switch to Electron if the gap is too large, without touching the rest of the code.
 
-## Architecture du moteur
+## Engine architecture
 
-Le code est découpé en paquets indépendants autour d'un modèle de document unique : l'interface ne modifie jamais le dessin directement, elle passe par des commandes.
+The code is split into independent packages around a single document model: the interface never modifies the drawing directly, it goes through commands.
 
-> Schéma interactif « architecture du moteur » (4 couches, 3 modules) : voir la [version en ligne](https://claude.ai/code/artifact/90f3d5ab-7d39-4c67-82cb-f23c92eeb1f1).
+> Interactive "engine architecture" diagram (4 layers, 3 modules): see the [online version](https://claude.ai/code/artifact/90f3d5ab-7d39-4c67-82cb-f23c92eeb1f1).
 
-Un geste devient une commande, la commande modifie le modèle, et le rendu ne redessine que les objets touchés avant d'afficher le résultat dans le canevas de l'interface. Ce découpage rend l'annulation fiable, permet de tester le moteur sans navigateur et prépare la collaboration et un futur système d'extensions isolées.
+A gesture becomes a command, the command modifies the model, and the renderer only redraws the affected objects before displaying the result in the interface's canvas. This split makes undo reliable, lets the engine be tested without a browser, and prepares collaboration and a future system of sandboxed extensions.
 
-## Format de fichier ouvert
+## Open file format
 
-Le fichier natif est une archive ZIP contenant un document JSON versionné et ses ressources, sur le modèle d'OpenDocument et d'OpenRaster. Son extension est `.poulpe`.
+The native file is a ZIP archive containing a versioned JSON document and its resources, modeled on OpenDocument and OpenRaster. Its extension is `.poulpe`.
 
 ```
-affiche.poulpe (ZIP)
-├── manifest.json      version du format, appli d'origine, liste des fichiers
-├── document.json      pages, calques, objets, styles (schéma publié)
+poster.poulpe (ZIP)
+├── manifest.json      format version, source app, file list
+├── document.json      pages, layers, objects, styles (published schema)
 ├── assets/
-│   ├── images/        images d'origine, jamais recompressées
-│   └── fonts/         polices embarquées si leur licence le permet
-└── thumbnail.png      aperçu pour les explorateurs de fichiers
+│   ├── images/        original images, never recompressed
+│   └── fonts/         embedded fonts if their licence allows it
+└── thumbnail.png      preview for file browsers
 ```
 
-- **Lisible par tous** : le schéma de `document.json` est publié en JSON Schema avec une spécification rédigée, sous licence CC-BY 4.0, pour que d'autres logiciels puissent le lire et l'écrire.
-- **Versionné** : chaque fichier porte sa version de format ; l'appli migre automatiquement les anciens fichiers et refuse proprement un fichier plus récent qu'elle.
-- **Robuste** : les objets sont identifiés par des identifiants stables, ce qui prépare la collaboration et les comparaisons de versions.
-- **Interopérable** : l'export SVG et PDF reste la voie d'échange avec Inkscape, Illustrator ou Affinity. Le SVG n'est pas retenu comme format natif car il ne gère ni les pages multiples, ni les réglages photo non destructifs, ni les modèles.
+- **Readable by anyone**: the `document.json` schema is published as a JSON Schema with a written specification, under the CC-BY 4.0 license, so that other software can read and write it.
+- **Versioned**: each file carries its format version; the app automatically migrates old files and cleanly rejects a file newer than itself.
+- **Robust**: objects are identified by stable IDs, which prepares collaboration and version comparisons.
+- **Interoperable**: SVG and PDF export remains the way to exchange with Inkscape, Illustrator or Affinity. SVG was not chosen as the native format because it handles neither multiple pages, nor non-destructive photo adjustments, nor templates.
 
-## Licence et gouvernance
+## License and governance
 
-Le code est publié sous licence MPL-2.0, celle de Penpot : toute modification d'un fichier du projet doit rester ouverte, sans empêcher d'intégrer l'appli dans d'autres outils.
+The code is published under the MPL-2.0 license, the one used by Penpot: any change to a project file must stay open, without preventing the app from being integrated into other tools.
 
-| Option                | Ce qu'elle garantit                                                                 | Limite                                                           |
-| --------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| **MPL-2.0 (retenue)** | Les fichiers modifiés restent libres ; compatible avec la plupart des bibliothèques | Une entreprise peut ajouter des fichiers fermés autour           |
-| AGPL-3.0              | Toute version hébergée en ligne doit publier son code complet                       | Freine les contributions d'entreprises et certaines intégrations |
-| MIT                   | Adoption maximale, aucune contrainte                                                | Rien n'empêche une version fermée et payante                     |
+| Option               | What it guarantees                                       | Limitation                                                     |
+| -------------------- | -------------------------------------------------------- | -------------------------------------------------------------- |
+| **MPL-2.0 (chosen)** | Modified files stay free; compatible with most libraries | A company can add closed files around it                       |
+| AGPL-3.0             | Any version hosted online must publish its full code     | Discourages contributions from companies and some integrations |
+| MIT                  | Maximum adoption, no constraints                         | Nothing prevents a closed, paid version                        |
 
-- **Contenus** : modèles, icônes et illustrations fournis sous CC0 ou CC-BY 4.0, polices sous OFL, pour que tout ce qui est créé avec l'appli soit utilisable librement, y compris commercialement.
-- **Contributions** : signature DCO (une ligne dans chaque commit) plutôt qu'un accord de cession, pour que le code reste à la communauté.
-- **Communauté** : code de conduite Contributor Covenant, guide de contribution, tickets étiquetés « première contribution », discussions publiques sur GitHub.
-- **Décisions** : le créateur du projet tranche au départ ; une fois des contributeurs réguliers arrivés, les choix structurants passent par des propositions écrites (RFC) dans le dépôt.
+- **Content**: templates, icons and illustrations provided under CC0 or CC-BY 4.0, fonts under OFL, so that everything created with the app can be used freely, including commercially.
+- **Contributions**: DCO sign-off (one line in each commit) rather than a copyright assignment agreement, so that the code stays with the community.
+- **Community**: Contributor Covenant code of conduct, contribution guide, issues labeled "good first issue", public discussions on GitHub.
+- **Decisions**: the project's creator decides at first; once regular contributors arrive, structural choices go through written proposals (RFCs) in the repository.
 
-## Feuille de route
+## Roadmap
 
-La v0.1 vise un premier usage complet et simple, puis on élargit vers Canva avant de creuser les outils experts d'Affinity.
+v0.1 aims at a first complete and simple use, then we broaden toward Canva before digging into Affinity's expert tools.
 
-> Schéma interactif « feuille de route » (6 phases, 5 portes) : voir la [version en ligne](https://claude.ai/code/artifact/90f3d5ab-7d39-4c67-82cb-f23c92eeb1f1).
+> Interactive "roadmap" diagram (6 phases, 5 gates): see the [online version](https://claude.ai/code/artifact/90f3d5ab-7d39-4c67-82cb-f23c92eeb1f1).
 
-Chaque phase ne démarre qu'une fois la porte précédente franchie. Les phases ne sont pas datées : le rythme dépendra du nombre de contributeurs, et une version est publiée dès que sa porte est atteinte.
+Each phase only starts once the previous gate is passed. Phases are not dated: the pace will depend on the number of contributors, and a version is released as soon as its gate is reached.
 
-## Décisions prises
+## Decisions made
 
-Les quatre choix structurants sont tranchés le 4 octobre 2026 ; le reste du document s'applique sauf objection.
+The four structural choices were settled on October 4, 2026; the rest of the document applies unless someone objects.
 
-- [x] **Nom du projet** : Poulpe Design pour le moment, extension de fichier `.poulpe`.
-- [x] **Dépôt GitHub** : [KAYO74/PoulpeDesign](https://github.com/KAYO74/PoulpeDesign), privé, relié au projet.
-- [x] **Licence du code** : MPL-2.0.
-- [x] **Langues de l'interface** : français et anglais, au choix de l'utilisateur dans l'appli.
+- [x] **Project name**: Poulpe Design for now, `.poulpe` file extension.
+- [x] **GitHub repository**: [KAYO74/PoulpeDesign](https://github.com/KAYO74/PoulpeDesign), private, linked to the project.
+- [x] **Code license**: MPL-2.0.
+- [x] **Interface languages**: French and English, chosen by the user in the app.

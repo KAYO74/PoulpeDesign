@@ -1,50 +1,50 @@
-# Licences et origine du contenu
+# Licenses and origin of the content
 
-Poulpe Design est construit avec l'intelligence artificielle : le créateur du projet décrit ce qu'il veut, Claude (Anthropic) écrit le code, la documentation et les images. Cette page dit d'où vient chaque partie et sous quelle licence, pour qu'on puisse vérifier qu'aucun élément n'est repris d'un logiciel propriétaire comme Photoshop, Illustrator ou Affinity.
+Poulpe Design is built with artificial intelligence: the project's creator describes what he wants, and Claude (Anthropic) writes the code, the documentation and the images. This page says where each part comes from and under which license, so that anyone can check that nothing is taken from proprietary software such as Photoshop, Illustrator or Affinity.
 
-Dernière vérification : 5 octobre 2026, sur la version 1.0.
+Last checked: October 5, 2026, on version 1.0.
 
-## Le code de Poulpe Design
+## Poulpe Design's code
 
-Tout le code des dossiers `packages/` et `apps/` a été écrit pour Poulpe Design et est distribué sous [MPL-2.0](../LICENSE). La vérification n'a trouvé aucun en-tête de licence ou de droit d'auteur d'un tiers, aucun commentaire signalant du code repris, et aucun fichier binaire propriétaire (`.psd`, `.abr`, `.icc`, polices `.ttf` ou `.otf`).
+All the code in the `packages/` and `apps/` folders was written for Poulpe Design and is distributed under the [MPL-2.0](../LICENSE). The check found no third-party license or copyright header, no comment flagging copied code, and no proprietary binary file (`.psd`, `.abr`, `.icc`, `.ttf` or `.otf` fonts).
 
-- **Formats de fichiers.** L'ouverture et l'export des fichiers Photoshop (`.psd`) passent par la bibliothèque libre [ag-psd](https://github.com/Agamnentzar/ag-psd) (MIT), et l'ouverture des PDF et des fichiers Illustrator par [pdf.js](https://github.com/mozilla/pdf.js) (Apache-2.0). Les PDF d'impression suivent les normes publiques PDF/X-4 et XMP.
-- **Couleurs d'impression.** Le profil CMJN est calculé par Poulpe Design lui-même (`packages/core/src/cmyk.ts` et `icc.ts`) ; le profil officiel FOGRA39, qui ne peut pas être redistribué, n'est pas inclus, seulement nommé.
-- **Gomme magique.** Elle reconstruit l'image à partir de la photo elle-même, avec un algorithme écrit pour Poulpe Design et sans modèle d'IA.
-- **Vectorisation.** L'algorithme est écrit pour Poulpe Design à partir de méthodes publiées (k-moyennes, suivi des bords, courbes de Schneider). Potrace, sous licence GPL incompatible, n'est pas utilisé.
-- **Détourage par IA.** Le modèle U²-Net « silueta » (Apache-2.0 pour U²-Net, MIT pour la version du projet rembg) est téléchargé à la compilation, avec son empreinte vérifiée, et exécuté par ONNX Runtime (MIT) sur l'ordinateur.
-- **Extensions.** Elles tournent dans QuickJS (MIT).
-- **Looks LUT.** Les six looks sont calculés par Poulpe Design ; les fichiers `.cube` sont un format public.
+- **File formats.** Opening and exporting Photoshop files (`.psd`) goes through the open-source library [ag-psd](https://github.com/Agamnentzar/ag-psd) (MIT), and opening PDF and Illustrator files goes through [pdf.js](https://github.com/mozilla/pdf.js) (Apache-2.0). Print PDFs follow the public PDF/X-4 and XMP standards.
+- **Print colors.** The CMYK profile is computed by Poulpe Design itself (`packages/core/src/cmyk.ts` and `icc.ts`); the official FOGRA39 profile, which cannot be redistributed, is not included, only named.
+- **Magic eraser.** It rebuilds the image from the photo itself, with an algorithm written for Poulpe Design and without any AI model.
+- **Image tracing.** The algorithm is written for Poulpe Design from published methods (k-means, edge following, Schneider curves). Potrace, whose GPL license is incompatible, is not used.
+- **AI background removal.** The U²-Net "silueta" model (Apache-2.0 for U²-Net, MIT for the rembg project's version) is downloaded at build time, with its checksum verified, and run by ONNX Runtime (MIT) on the computer.
+- **Extensions.** They run in QuickJS (MIT).
+- **LUT looks.** The six looks are computed by Poulpe Design; `.cube` files are a public format.
 
-Les mentions de ces composants sont livrées avec l'appli dans `LICENCES-TIERS.txt`.
+The notices for these components ship with the app in `LICENCES-TIERS.txt`.
 
-## Bibliothèques utilisées
+## Libraries used
 
-Toutes sont sous licences libres compatibles avec la MPL-2.0.
+All are under open-source licenses compatible with the MPL-2.0.
 
-| Partie                                                | Nombre | Licences                                                                                                                                                                       |
-| ----------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Interface et moteur (paquets npm livrés dans l'appli) | 116    | MIT pour la plupart, BSD-3-Clause, Apache-2.0 (pdf.js), MIT ou Apache-2.0 (Tauri), MPL-2.0 ou Apache-2.0 (DOMPurify), MIT et Zlib (pako), ISC, 0BSD (tslib), OFL-1.1 (polices) |
-| Appli de bureau (bibliothèques Rust)                  | 533    | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, Unlicense, MPL-2.0, CDLA-Permissive-2.0, 0BSD, CC0                                                                               |
+| Part                                                   | Count | Licenses                                                                                                                                                             |
+| ------------------------------------------------------ | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Interface and engine (npm packages shipped in the app) | 116   | Mostly MIT, BSD-3-Clause, Apache-2.0 (pdf.js), MIT or Apache-2.0 (Tauri), MPL-2.0 or Apache-2.0 (DOMPurify), MIT and Zlib (pako), ISC, 0BSD (tslib), OFL-1.1 (fonts) |
+| Desktop app (Rust libraries)                           | 533   | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, Unlicense, MPL-2.0, CDLA-Permissive-2.0, 0BSD, CC0                                                                     |
 
-Pour refaire la vérification : `pnpm licenses list --prod` et, dans `apps/desktop/src-tauri`, `cargo metadata --format-version 1`.
+To run the check again: `pnpm licenses list --prod` and, in `apps/desktop/src-tauri`, `cargo metadata --format-version 1`.
 
-## Polices
+## Fonts
 
-Les 7 polices fournies avec Poulpe Design sont sous licence libre [SIL Open Font License](https://openfontlicense.org) et viennent de [Fontsource](https://fontsource.org) : Inter, Montserrat, Playfair Display, Lora, Oswald, Bricolage Grotesque et Pacifico. Les modèles n'utilisent que celles-ci.
+The 7 fonts shipped with Poulpe Design are under the free [SIL Open Font License](https://openfontlicense.org) and come from [Fontsource](https://fontsource.org): Inter, Montserrat, Playfair Display, Lora, Oswald, Bricolage Grotesque and Pacifico. The templates use only these.
 
-Arial, Georgia, Times New Roman, Courier New, Verdana et Trebuchet MS sont seulement proposées dans la liste des polices quand elles sont déjà installées sur l'ordinateur ; elles ne sont pas fournies avec Poulpe Design.
+Arial, Georgia, Times New Roman, Courier New, Verdana and Trebuchet MS are only offered in the font list when they are already installed on the computer; they are not shipped with Poulpe Design.
 
-## Icônes, modèles et illustrations
+## Icons, templates and illustrations
 
-- **Icônes** de la bibliothèque : [Phosphor Icons](https://phosphoricons.com), licence MIT, voir [`packages/library/LICENSE-icons.md`](../packages/library/LICENSE-icons.md).
-- **Modèles, formes, cadres, illustrations et palettes** : dessinés pour Poulpe Design, sous MPL-2.0.
-- **Logo** de Poulpe Design : dessiné pour Poulpe Design.
+- **Icons** in the library: [Phosphor Icons](https://phosphoricons.com), MIT license, see [`packages/library/LICENSE-icons.md`](../packages/library/LICENSE-icons.md).
+- **Templates, shapes, frames, illustrations and palettes**: drawn for Poulpe Design, under the MPL-2.0.
+- **Logo** of Poulpe Design: drawn for Poulpe Design.
 
-## Images de la page d'accueil
+## Home page images
 
-Les captures d'écran de `docs/images/` sont prises dans Poulpe Design lui-même, avec des documents de démonstration faits pour l'occasion. Elles n'utilisent que des polices libres : les polices OFL ci-dessus pour l'interface et les designs, et DejaVu Sans Mono (licence libre Bitstream Vera) pour les chiffres de l'interface.
+The screenshots in `docs/images/` are taken in Poulpe Design itself, with demo documents made for the purpose. They use only free fonts: the OFL fonts above for the interface and the designs, and DejaVu Sans Mono (free Bitstream Vera license) for the interface's numbers.
 
-## Noms de marques
+## Trademarks
 
-Poulpe Design n'est affilié ni à Adobe ni à Serif. Photoshop, Illustrator, Affinity et Canva sont des marques de leurs propriétaires ; elles sont citées seulement pour comparer les fonctionnalités et pour nommer les formats de fichiers pris en charge.
+Poulpe Design is affiliated with neither Adobe nor Serif. Photoshop, Illustrator, Affinity and Canva are trademarks of their owners; they are mentioned only to compare features and to name the supported file formats.

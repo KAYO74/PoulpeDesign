@@ -1,60 +1,60 @@
-# Moteur Rust et carte graphique (version 1.1.1)
+# Rust engine and graphics card (version 1.1.1)
 
-10 octobre 2026
+October 10, 2026
 
-La version 1.1.1 commence la réécriture du cœur de Poulpe Design en Rust (option retenue : le moteur en Rust, l'interface actuelle gardée). Cette page fait le diagnostic des performances, décrit le nouveau moteur et ses réglages, donne les gains mesurés, la suite de la refonte et le plan de tests sur les quatre configurations types.
+Version 1.1.1 begins rewriting the core of Poulpe Design in Rust (chosen option: the engine in Rust, the current interface kept). This page diagnoses performance, describes the new engine and its settings, gives the measured gains, the next steps of the overhaul and the test plan on the four typical configurations.
 
-## Diagnostic
+## Diagnosis
 
-Ce qui a été vérifié avant de changer quoi que ce soit (même machine que [performances.md](performances.md) : Linux sans carte graphique, 4 cœurs).
+What was checked before changing anything (same machine as [performances.md](performances.md): Linux without a graphics card, 4 cores).
 
-| Point                          | Mesure avant la 1.1.1                                                          | Verdict                                      |
-| ------------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------- |
-| Démarrage (fenêtre prête)      | 0,9 à 1,1 s dans Chromium, 6 Mo de mémoire JavaScript                          | Bon ; à confirmer dans l'appli sous Linux    |
-| Zoom, défilement, survol       | 1 à 4 ms par image (plus de 250 i/s), 15 à 17 ms sur machine 4 fois plus lente | Bon depuis la 1.1.0 (cache d'images)         |
-| Flou gaussien, photo de 12 Mpx | 4,5 s, interface figée                                                         | **Principal point noir**                     |
-| Clarté, netteté (12 Mpx)       | 4,4 à 5 s, interface figée                                                     | **Principal point noir**                     |
-| Teinte / saturation (12 Mpx)   | 0,95 s, interface figée                                                        | Lent                                         |
-| Ouverture d'un gros `.poulpe`  | Décompression et conversion des images dans le fil de l'interface              | Gel de plusieurs secondes au-delà de 100 Mo  |
-| Calcul des images              | Un seul cœur, pas de carte graphique                                           | Gâche la machine                             |
-| Choix de la carte graphique    | Seulement « préférée » pour la vue web, au prochain lancement                  | Pas de choix du processeur ni de l'interface |
+| Item                        | Measurement before 1.1.1                                                    | Verdict                                   |
+| --------------------------- | --------------------------------------------------------------------------- | ----------------------------------------- |
+| Startup (window ready)      | 0.9 to 1.1 s in Chromium, 6 MB of JavaScript memory                         | Good; to be confirmed in the app on Linux |
+| Zoom, scrolling, hover      | 1 to 4 ms per frame (over 250 fps), 15 to 17 ms on a machine 4 times slower | Good since 1.1.0 (image cache)            |
+| Gaussian blur, 12 MP photo  | 4.5 s, interface frozen                                                     | **Main bottleneck**                       |
+| Clarity, sharpening (12 MP) | 4.4 to 5 s, interface frozen                                                | **Main bottleneck**                       |
+| Hue / saturation (12 MP)    | 0.95 s, interface frozen                                                    | Slow                                      |
+| Opening a large `.poulpe`   | Decompression and image conversion on the interface thread                  | Freezes for several seconds beyond 100 MB |
+| Image processing            | A single core, no graphics card                                             | Wastes the machine                        |
+| Graphics card choice        | Only "preferred" for the web view, at next launch                           | No choice of processor or graphics API    |
 
-Conclusion : l'affichage courant est déjà fluide ; ce qui fige l'appli, ce sont les calculs lourds sur les pixels (filtres, réglages, gros fichiers), faits en JavaScript sur un seul cœur dans le fil de l'interface. C'est donc par là que commence le moteur Rust.
+Conclusion: everyday display is already smooth; what freezes the app is heavy pixel computation (filters, adjustments, large files), done in JavaScript on a single core on the interface thread. So that is where the Rust engine starts.
 
-## Le moteur
+## The engine
 
 ```
-crates/poulpe-engine        moteur Rust (bibliothèque), testé seul : cargo test --features gpu
-  adjust.rs                 25 réglages et filtres, portage exact de packages/core/src/adjust.ts
-  blur.rs                   flou gaussien (trois flous en boîte), lignes et colonnes en parallèle
-  gpu.rs                    carte graphique via wgpu : choix, interface, mémoire vidéo, repli
-  tiles.rs                  découpage des grandes images en tuiles, cache de tuiles limité en mémoire
-  stats.rs                  profilage : durée des derniers calculs par sorte
-crates/poulpe-engine-wasm   le même moteur compilé en WebAssembly (270 Ko, 80 Ko compressé)
-packages/engine             chargement du WebAssembly dans la page, branché sur @poulpe/core
-apps/desktop/src-tauri/src/engine.rs   moteur natif dans l'appli de bureau (commandes Tauri)
-apps/editor/src/engine.ts   liaison avec l'éditeur (filtres, Préférences, Diagnostic)
+crates/poulpe-engine        Rust engine (library), tested on its own: cargo test --features gpu
+  adjust.rs                 25 adjustments and filters, exact port of packages/core/src/adjust.ts
+  blur.rs                   Gaussian blur (three box blurs), rows and columns in parallel
+  gpu.rs                    graphics card via wgpu: choice, API, video memory, fallback
+  tiles.rs                  splits large images into tiles, memory-bounded tile cache
+  stats.rs                  profiling: duration of the latest computations by kind
+crates/poulpe-engine-wasm   the same engine compiled to WebAssembly (270 KB, 80 KB compressed)
+packages/engine             loads the WebAssembly in the page, plugged into @poulpe/core
+apps/desktop/src-tauri/src/engine.rs   native engine in the desktop app (Tauri commands)
+apps/editor/src/engine.ts   link with the editor (filters, Preferences, Diagnostics)
 ```
 
-Le même code Rust tourne de deux façons :
+The same Rust code runs in two ways:
 
-- **Dans la page, en WebAssembly** (navigateur et appli de bureau). Le rendu du canevas l'appelle directement, image par image, pour les filtres où il est nettement plus rapide que JavaScript : flou gaussien, netteté, clarté, teinte/saturation, seuil. Pour les réglages simples (une table par canal : niveaux, courbes, exposition…), le JavaScript du navigateur est aussi rapide et la copie des pixels coûterait plus qu'elle ne rapporte : ils restent en TypeScript.
-- **En natif, dans l'appli de bureau.** Appliquer un filtre à une image de plus d'un million de pixels part au moteur natif, sur un fil à part : l'interface ne se fige plus. Le calcul se fait sur la carte graphique quand elle sait le faire (tables par canal, flou gaussien), sinon sur tous les cœurs du processeur.
+- **In the page, as WebAssembly** (browser and desktop app). Canvas rendering calls it directly, frame by frame, for the filters where it is clearly faster than JavaScript: Gaussian blur, sharpening, clarity, hue/saturation, threshold. For simple adjustments (one table per channel: levels, curves, exposure…), the browser's JavaScript is just as fast and copying the pixels would cost more than it gains: they stay in TypeScript.
+- **Natively, in the desktop app.** Applying a filter to an image of more than one million pixels goes to the native engine, on a separate thread: the interface no longer freezes. The computation runs on the graphics card when it can handle it (per-channel tables, Gaussian blur), otherwise on all processor cores.
 
-**Mêmes pixels partout.** Le portage reprend les formules du TypeScript jusqu'aux arrondis (règle d'arrondi des `Uint8ClampedArray`, nombres flottants 32 bits là où le TypeScript en utilise). Les tests (`packages/engine/test/engine.test.ts`) comparent le moteur et le TypeScript sur chacun des 25 réglages, avec et sans repères de document : 0 pixel de différence. Sur la carte graphique, les tables par canal donnent exactement le même résultat ; le flou, calculé en flottants 32 bits, peut différer d'un niveau (sur 255) sur quelques pixels.
+**Same pixels everywhere.** The port reproduces the TypeScript formulas down to the rounding (the `Uint8ClampedArray` rounding rule, 32-bit floats where the TypeScript uses them). The tests (`packages/engine/test/engine.test.ts`) compare the engine and the TypeScript on each of the 25 adjustments, with and without document guides: 0 pixels of difference. On the graphics card, per-channel tables give exactly the same result; the blur, computed in 32-bit floats, can differ by one level (out of 255) on a few pixels.
 
-**Repli.** Si le WebAssembly ne se charge pas ou échoue (mémoire épuisée), il est débranché et le TypeScript reprend la main. Si la carte graphique échoue (pilote, mémoire vidéo), le calcul est refait sur le processeur. Une carte logicielle (llvmpipe, WARP) n'est jamais choisie : le processeur seul est plus rapide.
+**Fallback.** If the WebAssembly fails to load or fails (out of memory), it is disconnected and TypeScript takes over. If the graphics card fails (driver, video memory), the computation is redone on the processor. A software card (llvmpipe, WARP) is never chosen: the processor alone is faster.
 
-### Carte graphique (wgpu)
+### Graphics card (wgpu)
 
-- Interfaces graphiques : Vulkan (Linux, Windows), Metal (macOS), DirectX 12 (Windows), OpenGL en dernier recours. Cartes NVIDIA, AMD, Intel et Apple Silicon.
-- Choix automatique : la carte dédiée si elle existe, sinon la carte intégrée. « Intégrée » inverse l'ordre ; « Processeur seulement » n'ouvre aucune carte.
-- La carte n'est ouverte qu'au premier calcul qui en a besoin : le démarrage n'est pas ralenti et l'appli au repos n'occupe pas de mémoire vidéo.
-- Mémoire vidéo : une image trop grande pour la limite choisie (ou pour les limites de la carte) est traitée par tuiles, lues avec une marge pour les filtres qui regardent les pixels voisins.
+- Graphics APIs: Vulkan (Linux, Windows), Metal (macOS), DirectX 12 (Windows), OpenGL as a last resort. NVIDIA, AMD, Intel and Apple Silicon cards.
+- Automatic choice: the dedicated card if there is one, otherwise the integrated card. "Integrated card" reverses the order; "Processor only" opens no card.
+- The card is only opened at the first computation that needs it: startup is not slowed down and the idle app uses no video memory.
+- Video memory: an image too large for the chosen limit (or for the card's limits) is processed in tiles, read with a margin for filters that look at neighboring pixels.
 
 ```rust
-// crates/poulpe-engine/src/gpu.rs : la carte graphique si elle sait faire et que l'image est assez
-// grande pour que l'aller-retour vaille la peine, sinon (ou si elle échoue) tous les cœurs.
+// crates/poulpe-engine/src/gpu.rs: the graphics card if it can do the job and the image is large
+// enough for the round trip to pay off, otherwise (or if it fails) all CPU cores.
 pub fn apply(gpu: Option<&Gpu>, data: &mut [u8], w: usize, h: usize, adj: &Adjustment, opts: &Options) -> (Where, f64) {
     let t0 = Instant::now();
     if let Some(gpu) = gpu {
@@ -67,55 +67,55 @@ pub fn apply(gpu: Option<&Gpu>, data: &mut [u8], w: usize, h: usize, adj: &Adjus
 }
 ```
 
-## Réglages (Préférences > Performances)
+## Settings (Preferences > Performance)
 
-| Réglage                                 | Valeurs                                                           | Effet                                                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Carte graphique                         | Automatique, Carte dédiée, Carte intégrée, Processeur seulement   | Moteur Rust : tout de suite. Affichage : au prochain lancement (Windows et Linux ; macOS choisit seul).                      |
-| Interface graphique                     | Automatique, Vulkan, Metal, DirectX 12, OpenGL (selon le système) | Moteur Rust : tout de suite. Sous Windows, l'affichage passe aussi par Vulkan ou OpenGL au prochain lancement.               |
-| Mémoire vidéo du moteur                 | 256 Mo à 8 Go (1 Go par défaut)                                   | Taille des tuiles envoyées à la carte graphique.                                                                             |
-| Qualité d'aperçu                        | Rapide, Équilibrée, Haute                                         | Inchangé (voir [performances.md](performances.md)).                                                                          |
-| Budget mémoire, cache d'images          | Comme avant                                                       | Limite de mémoire vive (RAM).                                                                                                |
-| Profil Économie / Équilibré / Puissance | Boutons                                                           | Mode économie (carte intégrée, 512 Mo de mémoire vidéo, aperçu rapide) ou mode performance (carte dédiée, 4 Go, aperçu net). |
-| Images par seconde dans la barre d'état | Case à cocher                                                     | Statistiques d'affichage (aussi dans Interface).                                                                             |
+| Setting                             | Values                                                                 | Effect                                                                                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Graphics card                       | Automatic, Dedicated card, Integrated card, Processor only             | Rust engine: right away. Display: at next launch (Windows and Linux; macOS chooses on its own).                               |
+| Graphics API                        | Automatic, Vulkan, Metal, DirectX 12, OpenGL (depending on the system) | Rust engine: right away. On Windows, the display also switches to Vulkan or OpenGL at next launch.                            |
+| Engine video memory                 | 256 MB to 8 GB (1 GB by default)                                       | Size of the tiles sent to the graphics card.                                                                                  |
+| Preview quality                     | Fast, Balanced, High                                                   | Unchanged (see [performances.md](performances.md)).                                                                           |
+| Memory budget, image cache          | As before                                                              | Main memory (RAM) limit.                                                                                                      |
+| Saver / Balanced / Power profile    | Buttons                                                                | Saver mode (integrated card, 512 MB of video memory, fast preview) or performance mode (dedicated card, 4 GB, sharp preview). |
+| Frames per second in the status bar | Checkbox                                                               | Display statistics (also in Interface).                                                                                       |
 
-La section montre aussi l'état du moteur : WebAssembly actif, carte utilisée par le moteur natif et cartes trouvées. L'onglet Diagnostic ajoute le nombre de calculs et leur durée moyenne (profilage), par sorte et par lieu (`gpu:gaussianBlur`, `cpu:hsl`…), et les copie dans le rapport.
+The section also shows the engine status: WebAssembly active, card used by the native engine, and cards found. The Diagnostics tab adds the number of computations and their average duration (profiling), by kind and by location (`gpu:gaussianBlur`, `cpu:hsl`…), and copies them into the report.
 
-Ces réglages sont enregistrés dans `lancement.json` (dossier de configuration de l'appli) et lus au démarrage par Rust (`apps/desktop/src-tauri/src/launch.rs`). L'ancienne case « Accélération matérielle » devient le choix « Processeur seulement » ; un réglage déjà enregistré est repris tel quel.
+These settings are saved in `lancement.json` (the app's configuration folder) and read at startup by Rust (`apps/desktop/src-tauri/src/launch.rs`). The former "Hardware acceleration" checkbox becomes the "Processor only" choice; a setting already saved is kept as is.
 
-## Les 5 gains rapides de la 1.1.1
+## The 5 quick wins of 1.1.1
 
-1. **Filtres lourds en Rust dans la page** (WebAssembly) : flous et netteté 3 fois plus rapides, teinte et seuil 2 fois, dans le navigateur comme dans l'appli.
-2. **Filtres sur les grandes images hors de l'interface** (appli de bureau) : sur tous les cœurs ou la carte graphique, jusqu'à 15 fois plus vite, et l'appli ne se fige plus pendant le calcul.
-3. **Gros fichiers `.poulpe` ouverts et enregistrés hors de l'interface** (au-delà de 4 Mo, dans un Web Worker : `apps/editor/src/file.worker.ts`).
-4. **Carte graphique, interface graphique et mémoire vidéo au choix**, appliqués tout de suite au moteur Rust.
-5. **Rien de plus au démarrage** : le WebAssembly se charge quand l'appli est inactive, la carte graphique s'ouvre au premier calcul (démarrage mesuré : 1,1 s, comme avant ; 6 Mo de mémoire JavaScript au repos).
+1. **Heavy filters in Rust in the page** (WebAssembly): blurs and sharpening 3 times faster, hue and threshold 2 times, in the browser as well as in the app.
+2. **Filters on large images off the interface** (desktop app): on all cores or the graphics card, up to 15 times faster, and the app no longer freezes during the computation.
+3. **Large `.poulpe` files opened and saved off the interface** (above 4 MB, in a Web Worker: `apps/editor/src/file.worker.ts`).
+4. **Choice of graphics card, graphics API and video memory**, applied right away to the Rust engine.
+5. **Nothing more at startup**: the WebAssembly loads when the app is idle, the graphics card opens at the first computation (measured startup: 1.1 s, as before; 6 MB of JavaScript memory at idle).
 
-## Gains mesurés
+## Measured gains
 
-Photo de 4000 × 3000 pixels (12 Mpx), Linux sans carte graphique, 4 cœurs. Commandes : `pnpm --filter @poulpe/engine test` (comparaison) et `cargo run --release --features gpu --example bench` dans `crates/poulpe-engine`.
+4000 × 3000 pixel photo (12 MP), Linux without a graphics card, 4 cores. Commands: `pnpm --filter @poulpe/engine test` (comparison) and `cargo run --release --features gpu --example bench` in `crates/poulpe-engine`.
 
-| Calcul                 | Avant (TypeScript) | Dans la page (WebAssembly) | Appli de bureau (Rust natif, 4 cœurs) |
-| ---------------------- | ------------------ | -------------------------- | ------------------------------------- |
-| Flou gaussien (r = 20) | 4 500 ms           | 1 540 ms                   | **290 ms**                            |
-| Clarté                 | 4 600 ms           | 2 200 ms                   | **300 ms**                            |
-| Netteté                | 5 000 ms           | 1 500 ms                   | **300 ms**                            |
-| Teinte / saturation    | 950 ms             | 540 ms                     | **170 ms**                            |
-| Bruit                  | 340 ms             | (TypeScript)               | 86 ms                                 |
-| Vibrance               | 140 ms             | (TypeScript)               | 68 ms                                 |
-| Niveaux                | 40 ms              | (TypeScript)               | 9 ms                                  |
+| Computation            | Before (TypeScript) | In the page (WebAssembly) | Desktop app (native Rust, 4 cores) |
+| ---------------------- | ------------------- | ------------------------- | ---------------------------------- |
+| Gaussian blur (r = 20) | 4,500 ms            | 1,540 ms                  | **290 ms**                         |
+| Clarity                | 4,600 ms            | 2,200 ms                  | **300 ms**                         |
+| Sharpening             | 5,000 ms            | 1,500 ms                  | **300 ms**                         |
+| Hue / saturation       | 950 ms              | 540 ms                    | **170 ms**                         |
+| Noise                  | 340 ms              | (TypeScript)              | 86 ms                              |
+| Vibrance               | 140 ms              | (TypeScript)              | 68 ms                              |
+| Levels                 | 40 ms               | (TypeScript)              | 9 ms                               |
 
-Avec 8 cœurs ou une vraie carte graphique, les temps natifs baissent encore ; ils sont à relever sur les quatre configurations ci-dessous. Sur la machine de mesure, la seule « carte » est logicielle (llvmpipe) : elle sert à vérifier les calculs de la carte graphique, pas à les chronométrer.
+With 8 cores or a real graphics card, native times drop further; they are to be recorded on the four configurations below. On the measurement machine, the only "card" is a software one (llvmpipe): it is used to check the graphics card computations, not to time them.
 
-## Suite de la refonte
+## Next steps of the overhaul
 
-La 1.1.1 est la première des quatre étapes annoncées. Chaque étape est une version publiée, et les fichiers `.poulpe`, les mises à jour automatiques et la version navigateur continuent de marcher.
+1.1.1 is the first of the four announced stages. Each stage is a published release, and `.poulpe` files, automatic updates and the browser version keep working.
 
-1. **Calculs sur les pixels** (1.1.1, cette version) : réglages, filtres, carte graphique, réglages de performance.
-2. **Fichiers** : lecture et écriture des `.poulpe` en Rust dans l'appli de bureau, en flux et sans tout charger (fichiers de 500 Mo et plus), images gardées en mémoire par le moteur plutôt qu'en texte base64 dans la page.
+1. **Pixel computations** (1.1.1, this release): adjustments, filters, graphics card, performance settings.
+2. **Files**: reading and writing `.poulpe` files in Rust in the desktop app, streamed and without loading everything (files of 500 MB and more), images kept in memory by the engine rather than as base64 text in the page.
 
    ```rust
-   // Lecture d'une image d'un .poulpe sans charger l'archive entière (crate zip).
+   // Reads one image from a .poulpe without loading the whole archive (zip crate).
    pub fn read_asset(path: &Path, name: &str) -> zip::result::ZipResult<Vec<u8>> {
        let mut archive = zip::ZipArchive::new(BufReader::new(File::open(path)?))?;
        let mut entry = archive.by_name(name)?;
@@ -125,10 +125,10 @@ La 1.1.1 est la première des quatre étapes annoncées. Chaque étape est une v
    }
    ```
 
-3. **Rendu** : le dessin des plans de travail (formes, dégradés, textes, effets, modes de fusion) en Rust sur la carte graphique (vello sur wgpu), par tuiles mises en cache ; export PNG, JPEG et PDF à pleine résolution par le même moteur, sans passer par la page.
+3. **Rendering**: drawing artboards (shapes, gradients, text, effects, blend modes) in Rust on the graphics card (vello on wgpu), in cached tiles; full-resolution PNG, JPEG and PDF export by the same engine, without going through the page.
 
    ```rust
-   // Une tuile du document, dessinée par vello sur la carte graphique puis gardée en cache.
+   // A document tile, drawn by vello on the graphics card and then kept in the cache.
    let mut scene = vello::Scene::new();
    for node in artboard.visible_nodes(tile.bounds()) {
        draw_node(&mut scene, node, tile.transform());
@@ -136,30 +136,30 @@ La 1.1.1 est la première des quatre étapes annoncées. Chaque étape est une v
    renderer.render_to_texture(&device, &queue, &scene, &tile.texture_view(), &params)?;
    ```
 
-4. **Calques et historique** : le modèle du document et l'annulation en Rust ; l'interface React ne fait plus qu'afficher et envoyer les gestes.
+4. **Layers and history**: the document model and undo in Rust; the React interface only displays and sends gestures.
 
-## Plan de tests sur les quatre configurations types
+## Test plan on the four typical configurations
 
-À faire sur chaque machine avec l'appli de bureau 1.1.1, après mise à jour automatique depuis la 1.1.0.
+To be done on each machine with the 1.1.1 desktop app, after an automatic update from 1.1.0.
 
-| Étape                                                                | Attendu                                                                    |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 1. Lancer l'appli, chronométrer jusqu'à l'écran d'accueil            | Moins de 3 s                                                               |
-| 2. Gestionnaire des tâches après 1 min sans rien faire               | Moins de 500 Mo pour tous les processus de l'appli                         |
-| 3. Préférences > Performances                                        | Moteur Rust actif ; la bonne carte graphique et son interface affichées    |
-| 4. Ouvrir une photo de 24 Mpx, Filtres > Flou gaussien, rayon 40     | L'appli reste réactive pendant le calcul ; Diagnostic : `gpu:gaussianBlur` |
-| 5. Carte graphique : Processeur seulement, refaire l'étape 4         | Même image ; Diagnostic : `cpu:gaussianBlur`                               |
-| 6. Ouvrir un `.poulpe` de plus de 200 Mo                             | Pas de gel ; le document s'ouvre                                           |
-| 7. Activer les images par seconde, zoomer et défiler sur ce document | 60 i/s ou plus                                                             |
-| 8. Exporter en PNG à 300 dpi                                         | Pas de gel de plus d'une seconde                                           |
-| 9. `POULPE_BENCH=1` en ligne de commande                             | Rapport de mesure sur la sortie standard (à joindre)                       |
-| 10. Diagnostic > Copier le rapport                                   | À joindre au ticket, avec les durées du moteur                             |
+| Step                                                           | Expected                                                                         |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 1. Launch the app, time it until the welcome screen            | Under 3 s                                                                        |
+| 2. Task manager after 1 min of doing nothing                   | Under 500 MB for all the app's processes                                         |
+| 3. Preferences > Performance                                   | Rust engine active; the right graphics card and its API displayed                |
+| 4. Open a 24 MP photo, Filters > Gaussian blur, radius 40      | The app stays responsive during the computation; Diagnostics: `gpu:gaussianBlur` |
+| 5. Graphics card: Processor only, redo step 4                  | Same image; Diagnostics: `cpu:gaussianBlur`                                      |
+| 6. Open a `.poulpe` larger than 200 MB                         | No freeze; the document opens                                                    |
+| 7. Turn on frames per second, zoom and scroll on this document | 60 fps or more                                                                   |
+| 8. Export to PNG at 300 dpi                                    | No freeze longer than one second                                                 |
+| 9. `POULPE_BENCH=1` on the command line                        | Benchmark report on standard output (to attach)                                  |
+| 10. Diagnostics > Copy Report                                  | To attach to the ticket, with the engine durations                               |
 
-| Configuration                        | Interface attendue     | Résultat |
-| ------------------------------------ | ---------------------- | -------- |
-| Linux + NVIDIA (pilote propriétaire) | Vulkan                 | à faire  |
-| Windows + AMD                        | DirectX 12 (ou Vulkan) | à faire  |
-| Mac Intel                            | Metal                  | à faire  |
-| Mac Apple Silicon                    | Metal                  | à faire  |
+| Configuration                       | Expected API           | Result |
+| ----------------------------------- | ---------------------- | ------ |
+| Linux + NVIDIA (proprietary driver) | Vulkan                 | to do  |
+| Windows + AMD                       | DirectX 12 (or Vulkan) | to do  |
+| Intel Mac                           | Metal                  | to do  |
+| Apple Silicon Mac                   | Metal                  | to do  |
 
-Ce qui est déjà vérifié automatiquement, à chaque modification (CI) : les 25 réglages identiques entre Rust et TypeScript, le calcul sur une carte graphique (logicielle, Vulkan llvmpipe) identique au processeur, le découpage en tuiles, le choix de la carte et la lecture des réglages, la compilation WebAssembly, et les tests de bout en bout de l'éditeur.
+What is already checked automatically on every change (CI): the 25 adjustments identical between Rust and TypeScript, computation on a graphics card (software, Vulkan llvmpipe) identical to the processor, tiling, card selection and settings loading, the WebAssembly build, and the editor's end-to-end tests.
