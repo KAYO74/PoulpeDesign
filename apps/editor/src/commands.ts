@@ -34,6 +34,7 @@ import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
+import { toggleBrushEditor } from './tools/brushes/BrushEditor';
 import { openPersona } from './workspaces';
 import { selectAdjacentLayer } from './layers';
 import { LUT_PRESETS, type LutPreset } from '@poulpe/core';
@@ -526,6 +527,7 @@ export const COMMANDS = {
     run: () => setSettings({ studioSide: ui.get().settings.studioSide === 'right' ? 'left' : 'right' }),
   },
   'view.colorPicker': { label: 'view.colorPicker', run: () => toggleColorWindow() },
+  'view.brushEditor': { label: 'view.brushEditor', run: () => toggleBrushEditor() },
   'view.resetPanels': { label: 'view.resetPanels', run: () => resetPanels() },
 
   'app.preferences': {

@@ -431,6 +431,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
           ),
         ),
         cmd('view.colorPicker'),
+        cmd('view.brushEditor'),
         cmd('view.resetPanels'),
       ],
     },

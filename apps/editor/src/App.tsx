@@ -7,6 +7,7 @@ import { MenuBar } from './components/MenuBar';
 import { StatusBar } from './components/StatusBar';
 import { ToolColumn } from './components/ToolColumn';
 import { ColorWindow } from './panels/ColorWindow';
+import { BrushEditor } from './tools/brushes/BrushEditor';
 import { Toolbar } from './components/Toolbar';
 import { Viewport } from './components/Viewport';
 import { WindowControls } from './components/WindowControls';
@@ -126,6 +127,7 @@ export function App() {
         </div>
         <Studio />
         <ColorWindow />
+        <BrushEditor />
       </main>
       <StatusBar />
       <Dialogs />

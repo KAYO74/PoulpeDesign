@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2.7-FF5F86" alt="Version 1.2.7"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2.8-FF5F86" alt="Version 1.2.8"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">

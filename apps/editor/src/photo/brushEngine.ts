@@ -13,7 +13,8 @@ import { compositeIn, nodesAboveOf } from '../tools/brushes/sample';
 import { brushOptions } from '../tools/brushes/state';
 import { brushSettings, toast, ui, type BrushSettings, type ToolId } from '../store';
 import { dabLiquify, dabSimilar, dabSmudge } from './brushDabs';
-import { LazySource, luminance, makeStamp } from './brushSources';
+import { LazySource, luminance, makeStamp, makeTipStamp } from './brushSources';
+import { tipCanvas } from '../tools/brushes/tips';
 import { paintTarget, pixelsInMask, targetPixels } from './paintTarget';
 import { runInpaint } from './photoFill';
 import { photoHooks, type Rect, type StrokeRedirect } from './photoHooks';
@@ -112,7 +113,10 @@ export class BrushEngine {
     const maskValue = erase ? 0 : luminance(color);
     const radius = (settings.size / 2) * pxScale;
     const stampColor = which === 'pixels' && tool === 'brush' ? color : '#ffffff';
-    const stamp = makeStamp(radius, tool === 'magicEraser' ? 100 : settings.hardness, stampColor);
+    const tip = tool === 'magicEraser' ? null : tipCanvas(settings.tip);
+    const stamp = tip
+      ? makeTipStamp(tip, stampColor)
+      : makeStamp(radius, tool === 'magicEraser' ? 100 : settings.hardness, stampColor);
 
     let source: Stroke['source'] = null;
     let sourceOver = false;
@@ -273,13 +277,32 @@ export class BrushEngine {
     if (s.tool === 'smudge') return dabSmudge(this, x, y);
     if (s.tool === 'liquify') return dabLiquify(this, x, y);
     if (s.similar) return dabSimilar(this, x, y, pressure);
-    const r = (s.settings.size / 2) * s.pxScale * Math.max(0.05, pressure);
+    const b = s.settings;
+    let r = (b.size / 2) * s.pxScale * Math.max(0.05, pressure);
     const ctx = s.buf.getContext('2d')!;
-    ctx.globalAlpha = s.tool === 'magicEraser' ? 1 : Math.max(0.01, s.settings.flow / 100);
+    ctx.globalAlpha = s.tool === 'magicEraser' ? 1 : Math.max(0.01, b.flow / 100);
+    // Forme créée (version 1.2.8) : variations au hasard, angle et rondeur de la touche.
+    if (b.sizeJitter) r *= Math.max(0.05, 1 - (Math.random() * b.sizeJitter) / 100);
+    if (b.scatter) {
+      const a = Math.random() * Math.PI * 2;
+      const d = Math.random() * (b.scatter / 100) * b.size * s.pxScale;
+      x += Math.cos(a) * d;
+      y += Math.sin(a) * d;
+    }
     const k = r / ((s.stamp.width - 2) / 2);
     const size = s.stamp.width * k;
-    ctx.drawImage(s.stamp, x - size / 2, y - size / 2, size, size);
-    const pad = size / 2 + 2;
+    const angle = (b.angle ?? 0) + (b.angleJitter ? (Math.random() * 2 - 1) * b.angleJitter : 0);
+    const round = Math.max(0.01, (b.roundness ?? 100) / 100);
+    if (angle || round !== 1) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((angle * Math.PI) / 180);
+      ctx.scale(1, round);
+      ctx.drawImage(s.stamp, -size / 2, -size / 2, size, size);
+      ctx.restore();
+    } else ctx.drawImage(s.stamp, x - size / 2, y - size / 2, size, size);
+    // Une touche tournée tient dans le cercle de sa diagonale.
+    const pad = (angle ? size * Math.SQRT1_2 : size / 2) + 2;
     const d = this.dirty;
     const rect = { x0: x - pad, y0: y - pad, x1: x + pad, y1: y + pad };
     this.dirty = d
@@ -307,7 +330,12 @@ export class BrushEngine {
     const dx = q.x - s.last.x,
       dy = q.y - s.last.y;
     const dist = Math.hypot(dx, dy);
-    const k = s.tool === 'smudge' ? 0.05 : s.tool === 'liquify' ? 0.08 : 0.1;
+    const k =
+      s.tool === 'smudge'
+        ? 0.05
+        : s.tool === 'liquify'
+          ? 0.08
+          : Math.max(0.01, (s.settings.spacing ?? 10) / 100);
     const spacing = Math.max(0.75, s.settings.size * s.pxScale * k);
     let tpos = spacing - s.carry;
     const from = s.last;

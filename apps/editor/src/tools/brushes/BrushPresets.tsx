@@ -3,9 +3,12 @@ import { useT } from '../../i18n';
 import { brushSettings, useStore, useUi } from '../../store';
 import { DEFAULT_PRESETS, applyPreset, deletePreset, isCurrentPreset, saveCurrentPreset } from './presets';
 import { userPresets, type BrushPreset } from './state';
+import { brushTips } from './tips';
 
 /** Aperçu d'un préréglage : une touche ronde, bord plus ou moins doux, à la taille ramenée. */
 function Dab({ p }: { p: BrushPreset }) {
+  const tip = useStore(brushTips, (s) => s.list.find((x) => x.id === p.tip));
+  if (tip) return <img className="brushes-dab tip" src={tip.data} alt="" />;
   const r = Math.max(2, Math.min(11, 2 + Math.sqrt(p.size) * 0.9));
   const h = Math.min(99, p.hardness);
   const a = (0.25 + 0.75 * (p.flow / 100)) * (p.opacity / 100);

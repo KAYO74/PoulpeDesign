@@ -2,6 +2,13 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.8
+
+- **Création de pinceau** : panneau Pinceau › Créer un pinceau…, ou Affichage › Création de pinceau. La fenêtre reste ouverte pendant qu'on essaie le pinceau sur le document, et se ferme d'un clic.
+- **Forme depuis une image** : le sombre de l'image peint (ou l'opaque d'un PNG transparent).
+- **Pinceaux Photoshop** : import des formes d'un fichier .abr.
+- **Réglages** : espacement, angle, rondeur, taille et angle au hasard, dispersion ; le pinceau s'enregistre comme préréglage avec sa forme.
+
 ## Version 1.2.7
 
 - **Sélecteur de couleur à roue** : double-clic sur le remplissage ou le contour (colonne d'outils ou barre contextuelle), ou Affichage › Sélecteur de couleur ; la fenêtre se place n'importe où.
