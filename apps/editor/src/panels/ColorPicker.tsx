@@ -17,8 +17,9 @@ import { useT } from '../i18n';
 export type Phase = 'start' | 'move' | 'end' | 'set';
 
 /**
- * Sélecteur de couleur : carré saturation / luminosité, teinte, opacité, hexadécimal, RVB, TSL ou
- * CMJN. En CMJN (`cmyk` donné), les valeurs saisies sont gardées telles quelles pour l'impression.
+ * Sélecteur de couleur : carré saturation / luminosité (ou roue des teintes autour du carré),
+ * teinte, opacité, hexadécimal, RVB, TSL ou CMJN. En CMJN (`cmyk` donné), les valeurs saisies sont
+ * gardées telles quelles pour l'impression.
  */
 export function ColorPicker({
   color,
@@ -27,6 +28,8 @@ export function ColorPicker({
   onCmyk,
   outOfGamut,
   preferCmyk,
+  wheel,
+  noAlpha,
 }: {
   color: string;
   onChange: (c: string, phase: Phase) => void;
@@ -38,6 +41,10 @@ export function ColorPicker({
   outOfGamut?: boolean;
   /** Ouvrir en mode CMJN (document d'impression). */
   preferCmyk?: boolean;
+  /** Roue des teintes autour du carré, comme dans Affinity. */
+  wheel?: boolean;
+  /** Pas de réglage d'opacité (couleurs toujours opaques). */
+  noAlpha?: boolean;
 }) {
   const t = useT();
   const [hsv, setHsv] = useState<HSVA>(() => rgbToHsv(parseColor(color)));
@@ -93,71 +100,117 @@ export function ColorPicker({
   const opaqueHex = formatColor({ ...rgb, a: 1 });
   const hueColor = formatColor(hsvToRgb({ h: hsv.h, s: 1, v: 1, a: 1 }));
 
+  /** Carré saturation / luminosité. */
+  const svSquare = (cls: string) => (
+    <div
+      className={cls}
+      style={{ background: hueColor }}
+      role="slider"
+      aria-label="Saturation"
+      aria-valuenow={Math.round(hsv.s * 100)}
+      tabIndex={0}
+      onPointerDown={(e) =>
+        drag(e.currentTarget, e, (x, y, phase) => emit({ ...hsv, s: x, v: 1 - y, a: hsv.a }, phase))
+      }
+      onKeyDown={(e) => {
+        const d = e.shiftKey ? 0.1 : 0.01;
+        if (e.key === 'ArrowRight') emit({ ...hsv, s: Math.min(1, hsv.s + d) }, 'set');
+        if (e.key === 'ArrowLeft') emit({ ...hsv, s: Math.max(0, hsv.s - d) }, 'set');
+        if (e.key === 'ArrowUp') emit({ ...hsv, v: Math.min(1, hsv.v + d) }, 'set');
+        if (e.key === 'ArrowDown') emit({ ...hsv, v: Math.max(0, hsv.v - d) }, 'set');
+      }}
+    >
+      <div className="sv-white" />
+      <div className="sv-black" />
+      <div
+        className="sv-knob"
+        style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: opaqueHex }}
+      />
+    </div>
+  );
+
   return (
     <div className="picker">
-      <div
-        className="sv"
-        style={{ background: hueColor }}
-        role="slider"
-        aria-label="Saturation"
-        aria-valuenow={Math.round(hsv.s * 100)}
-        tabIndex={0}
-        onPointerDown={(e) =>
-          drag(e.currentTarget, e, (x, y, phase) => emit({ ...hsv, s: x, v: 1 - y, a: hsv.a }, phase))
-        }
-        onKeyDown={(e) => {
-          const d = e.shiftKey ? 0.1 : 0.01;
-          if (e.key === 'ArrowRight') emit({ ...hsv, s: Math.min(1, hsv.s + d) }, 'set');
-          if (e.key === 'ArrowLeft') emit({ ...hsv, s: Math.max(0, hsv.s - d) }, 'set');
-          if (e.key === 'ArrowUp') emit({ ...hsv, v: Math.min(1, hsv.v + d) }, 'set');
-          if (e.key === 'ArrowDown') emit({ ...hsv, v: Math.max(0, hsv.v - d) }, 'set');
-        }}
-      >
-        <div className="sv-white" />
-        <div className="sv-black" />
+      {wheel ? (
+        <div className="wheel" data-testid="color-wheel">
+          <div
+            className="wheel-ring"
+            role="slider"
+            aria-label="Teinte"
+            aria-valuemin={0}
+            aria-valuemax={360}
+            aria-valuenow={Math.round(hsv.h)}
+            tabIndex={0}
+            onPointerDown={(e) =>
+              drag(e.currentTarget, e, (x, y, phase) => {
+                const deg = (Math.atan2(x - 0.5, 0.5 - y) * 180) / Math.PI;
+                emit({ ...hsv, h: Math.min(359.9, (deg + 360) % 360) }, phase);
+              })
+            }
+            onKeyDown={(e) => {
+              const d = e.shiftKey ? 10 : 1;
+              if (e.key === 'ArrowRight' || e.key === 'ArrowUp')
+                emit({ ...hsv, h: (hsv.h + d) % 360 }, 'set');
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowDown')
+                emit({ ...hsv, h: (hsv.h - d + 360) % 360 }, 'set');
+            }}
+          />
+          <div
+            className="wheel-knob"
+            style={{
+              left: `${50 + 40.5 * Math.sin((hsv.h * Math.PI) / 180)}%`,
+              top: `${50 - 40.5 * Math.cos((hsv.h * Math.PI) / 180)}%`,
+              background: hueColor,
+            }}
+          />
+          {svSquare('sv wheel-sv')}
+        </div>
+      ) : (
+        <>
+          {svSquare('sv')}
+          <div
+            className="slider hue"
+            role="slider"
+            aria-label="Teinte"
+            aria-valuemin={0}
+            aria-valuemax={360}
+            aria-valuenow={Math.round(hsv.h)}
+            tabIndex={0}
+            onPointerDown={(e) =>
+              drag(e.currentTarget, e, (x, _y, phase) => emit({ ...hsv, h: x * 359.9 }, phase))
+            }
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight')
+                emit({ ...hsv, h: Math.min(359.9, hsv.h + (e.shiftKey ? 10 : 1)) }, 'set');
+              if (e.key === 'ArrowLeft')
+                emit({ ...hsv, h: Math.max(0, hsv.h - (e.shiftKey ? 10 : 1)) }, 'set');
+            }}
+          >
+            <div className="slider-knob" style={{ left: `${(hsv.h / 360) * 100}%` }} />
+          </div>
+        </>
+      )}
+      {!noAlpha && (
         <div
-          className="sv-knob"
-          style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: opaqueHex }}
-        />
-      </div>
-      <div
-        className="slider hue"
-        role="slider"
-        aria-label="Teinte"
-        aria-valuemin={0}
-        aria-valuemax={360}
-        aria-valuenow={Math.round(hsv.h)}
-        tabIndex={0}
-        onPointerDown={(e) =>
-          drag(e.currentTarget, e, (x, _y, phase) => emit({ ...hsv, h: x * 359.9 }, phase))
-        }
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight')
-            emit({ ...hsv, h: Math.min(359.9, hsv.h + (e.shiftKey ? 10 : 1)) }, 'set');
-          if (e.key === 'ArrowLeft') emit({ ...hsv, h: Math.max(0, hsv.h - (e.shiftKey ? 10 : 1)) }, 'set');
-        }}
-      >
-        <div className="slider-knob" style={{ left: `${(hsv.h / 360) * 100}%` }} />
-      </div>
-      <div
-        className="slider alpha"
-        role="slider"
-        aria-label={t('color.opacity')}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(hsv.a * 100)}
-        tabIndex={0}
-        style={{ ['--c' as string]: opaqueHex }}
-        onPointerDown={(e) =>
-          drag(e.currentTarget, e, (x, _y, phase) => emit({ ...hsv, a: Math.round(x * 100) / 100 }, phase))
-        }
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight') emit({ ...hsv, a: Math.min(1, hsv.a + 0.01) }, 'set');
-          if (e.key === 'ArrowLeft') emit({ ...hsv, a: Math.max(0, hsv.a - 0.01) }, 'set');
-        }}
-      >
-        <div className="slider-knob" style={{ left: `${hsv.a * 100}%` }} />
-      </div>
+          className="slider alpha"
+          role="slider"
+          aria-label={t('color.opacity')}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(hsv.a * 100)}
+          tabIndex={0}
+          style={{ ['--c' as string]: opaqueHex }}
+          onPointerDown={(e) =>
+            drag(e.currentTarget, e, (x, _y, phase) => emit({ ...hsv, a: Math.round(x * 100) / 100 }, phase))
+          }
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight') emit({ ...hsv, a: Math.min(1, hsv.a + 0.01) }, 'set');
+            if (e.key === 'ArrowLeft') emit({ ...hsv, a: Math.max(0, hsv.a - 0.01) }, 'set');
+          }}
+        >
+          <div className="slider-knob" style={{ left: `${hsv.a * 100}%` }} />
+        </div>
+      )}
       <div className="picker-row">
         <HexField
           value={opaqueHex}
@@ -166,15 +219,17 @@ export function ColorPicker({
             emit({ ...c, a: hsv.a }, 'set');
           }}
         />
-        <NumberField
-          label={t('color.opacity')}
-          value={Math.round(hsv.a * 100)}
-          min={0}
-          max={100}
-          unit="%"
-          width={100}
-          onChange={(v) => emit({ ...hsv, a: v / 100 }, 'set')}
-        />
+        {!noAlpha && (
+          <NumberField
+            label={t('color.opacity')}
+            value={Math.round(hsv.a * 100)}
+            min={0}
+            max={100}
+            unit="%"
+            width={100}
+            onChange={(v) => emit({ ...hsv, a: v / 100 }, 'set')}
+          />
+        )}
       </div>
       <div className="picker-row">
         <div className="seg small" role="group">

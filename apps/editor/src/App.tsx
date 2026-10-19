@@ -6,6 +6,7 @@ import { Dialogs } from './components/Dialogs';
 import { MenuBar } from './components/MenuBar';
 import { StatusBar } from './components/StatusBar';
 import { ToolColumn } from './components/ToolColumn';
+import { ColorWindow } from './panels/ColorWindow';
 import { Toolbar } from './components/Toolbar';
 import { Viewport } from './components/Viewport';
 import { WindowControls } from './components/WindowControls';
@@ -124,6 +125,7 @@ export function App() {
           <Viewport />
         </div>
         <Studio />
+        <ColorWindow />
       </main>
       <StatusBar />
       <Dialogs />

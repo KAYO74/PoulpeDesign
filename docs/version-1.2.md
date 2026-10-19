@@ -2,6 +2,14 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.7
+
+- **Sélecteur de couleur à roue** : double-clic sur le remplissage ou le contour (colonne d'outils ou barre contextuelle), ou Affichage › Sélecteur de couleur ; la fenêtre se place n'importe où.
+- **Aucune couleur** : bouton dans la colonne d'outils, la barre contextuelle et le sélecteur.
+- **Calques** : l'œil pour masquer ou afficher reste toujours visible.
+- **Nouveau logo** : la pieuvre sombre sur fond rose, dans l'appli et ses icônes.
+- **Taille du pinceau** : Alt + clic droit glissé pendant l'utilisation du pinceau, comme dans Photoshop (Ctrl + Alt + glissé, comme dans Affinity, marche toujours).
+
 ## Version 1.2.6
 
 - **Fusionner** : clic droit sur des calques › Fusionner (union, soustraction, intersection, exclusion, division, ou en une seule image avec Ctrl+E) ; lâcher un calque sur un autre propose aussi de les grouper ou de les fusionner.

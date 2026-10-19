@@ -8,6 +8,7 @@ import { TOOL_CATALOG, smallGroups, toolGroupsFor, toolPersona, withFamilies } f
 import { setPersona } from '../photo/persona';
 import { findNode, isStyled } from '@poulpe/core';
 import { paintPreview } from './fields';
+import { openColorWindowFor, toggleColorWindow } from '../panels/ColorWindow';
 import { Icon, type IconName } from './Icon';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -223,6 +224,7 @@ export function ToolColumn() {
             title={t('ctx.primary')}
             aria-label={t('ctx.primary')}
             data-testid="brush-color"
+            onDoubleClick={(e) => toggleColorWindow(e.currentTarget)}
           />
           <button
             className="fs-swap"
@@ -240,14 +242,25 @@ export function ToolColumn() {
             style={{ background: paintPreview(stroke) }}
             title={t('color.stroke')}
             aria-label={t('color.stroke')}
+            data-testid="tool-stroke"
             onClick={() => ui.set({ colorTarget: 'stroke' })}
+            onDoubleClick={(e) => openColorWindowFor('stroke', e.currentTarget)}
           />
           <button
             className={`fs-fill${target === 'fill' ? ' on' : ''}`}
             style={{ background: paintPreview(fill) }}
             title={t('color.fill')}
             aria-label={t('color.fill')}
+            data-testid="tool-fill"
             onClick={() => ui.set({ colorTarget: 'fill' })}
+            onDoubleClick={(e) => openColorWindowFor('fill', e.currentTarget)}
+          />
+          <button
+            className="fs-none"
+            title={t('color.noColor')}
+            aria-label={t('color.noColor')}
+            data-testid="tool-none"
+            onClick={() => setPaint(target, { type: 'none' })}
           />
           <button
             className="fs-swap"

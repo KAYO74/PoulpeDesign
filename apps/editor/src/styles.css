@@ -565,6 +565,21 @@ svg.i {
   border-color: var(--sel);
   z-index: 2;
 }
+.fs-none {
+  position: absolute;
+  left: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: linear-gradient(135deg, transparent 42%, #e5484d 42%, #e5484d 58%, transparent 58%), #fff;
+}
+.chip.none-chip {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, transparent 42%, #e5484d 42%, #e5484d 58%, transparent 58%), #fff;
+}
 .fs-swap {
   position: absolute;
   right: -2px;
@@ -817,6 +832,45 @@ h4.sub {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
+/* Roue des teintes autour du carré saturation / luminosité */
+.wheel {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+.wheel-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%);
+  mask: radial-gradient(circle, transparent 62%, #000 63%);
+  clip-path: circle(50%);
+  cursor: pointer;
+  touch-action: none;
+}
+.wheel-knob {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.sv.wheel-sv {
+  position: absolute;
+  inset: 29%;
+  height: auto;
+  border-radius: 3px;
+}
+.sv.wheel-sv .sv-white,
+.sv.wheel-sv .sv-black {
+  border-radius: 3px;
+}
 .slider {
   position: relative;
   height: 12px;
@@ -966,7 +1020,8 @@ h4.sub {
 .layer-btn.on {
   color: var(--accent);
 }
-.layer:not(:hover) .layer-btn:not(.on) {
+/* L'œil reste toujours visible, comme dans Photoshop et Affinity ; les autres boutons au survol. */
+.layer:not(:hover) .layer-btn:not(.on):not(.eye) {
   opacity: 0;
 }
 .rename {
@@ -2869,4 +2924,35 @@ h4.sub .link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Sélecteur de couleur flottant (roue). */
+.float-panel.color-window {
+  display: flex;
+  flex-direction: column;
+}
+.color-window .float-title {
+  font-size: 11px;
+  color: var(--muted);
+}
+.color-window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.none-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+}
+.none-btn.on {
+  border-color: var(--sel);
+}
+.none-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: linear-gradient(135deg, transparent 42%, #e5484d 42%, #e5484d 58%, transparent 58%), #fff;
 }
