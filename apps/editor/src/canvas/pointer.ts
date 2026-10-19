@@ -18,6 +18,7 @@ import {
   worldToLocal,
   type Vec,
 } from '@poulpe/core';
+import { isBrushSizeGesture, startBrushSizeDrag } from './brushSize';
 import { cursorFor } from './cursors';
 import { clickFrame } from '../tools/text/create';
 import { setPaint } from '../actions';
@@ -64,6 +65,8 @@ export function onPointerDown(ctl: CanvasController, e: PointerEvent) {
     ctl.zoomAt(e.altKey ? z / 1.5 : z * 1.5, e.clientX - r.left, e.clientY - r.top);
     return;
   }
+  // Alt + clic droit glissé : taille du pinceau ; le menu ne s'ouvre pas.
+  if (isBrushSizeGesture(e) && startBrushSizeDrag(ctl, e)) return;
   if (e.button === 2) {
     // Clic droit : menu du canevas au relâchement s'il n'y a pas eu de glissement.
     ctl.rightDown = { x: e.clientX, y: e.clientY };

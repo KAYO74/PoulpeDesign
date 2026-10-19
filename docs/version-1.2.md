@@ -2,6 +2,31 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.10
+
+- **Projet en PSD** : Fichier › Enregistrer en PSD (Photoshop, Affinity)… donne un vrai fichier Photoshop, un calque par objet, que Photoshop et Affinity ouvrent. Le document Poulpe Design complet est rangé dedans : Poulpe Design le rouvre avec ses formes, textes et effets modifiables, et Ctrl+S réenregistre en PSD. Un document de plusieurs plans de travail montre le plan actif dans Photoshop.
+- **Rappel** : Fichier › Ouvrir lit déjà les PSD (calques), les fichiers Illustrator enregistrés compatibles PDF et les PDF. Les fichiers Affinity (.afdesign, .afphoto) ne s'ouvrent pas : leur format n'est pas publié ; il faut les exporter en PSD depuis Affinity.
+
+## Version 1.2.9
+
+- **Partager ses pinceaux** : panneau Pinceau › Partager mes pinceaux… enregistre ses pinceaux et leurs formes dans un fichier `.poulpebrushes`.
+- **Installer des pinceaux** : panneau Pinceau ou Extensions › Gérer les extensions… › Installer des pinceaux…, pour un fichier `.poulpebrushes`, Photoshop `.abr` ou Affinity `.afbrushes` (formes seulement, le format d'Affinity n'est pas publié). Chaque paquet se retire d'un clic.
+
+## Version 1.2.8
+
+- **Création de pinceau** : panneau Pinceau › Créer un pinceau…, ou Affichage › Création de pinceau. La fenêtre reste ouverte pendant qu'on essaie le pinceau sur le document, et se ferme d'un clic.
+- **Forme depuis une image** : le sombre de l'image peint (ou l'opaque d'un PNG transparent).
+- **Pinceaux Photoshop** : import des formes d'un fichier .abr.
+- **Réglages** : espacement, angle, rondeur, taille et angle au hasard, dispersion ; le pinceau s'enregistre comme préréglage avec sa forme.
+
+## Version 1.2.7
+
+- **Sélecteur de couleur à roue** : double-clic sur le remplissage ou le contour (colonne d'outils ou barre contextuelle), ou Affichage › Sélecteur de couleur ; la fenêtre se place n'importe où.
+- **Aucune couleur** : bouton dans la colonne d'outils, la barre contextuelle et le sélecteur.
+- **Calques** : l'œil pour masquer ou afficher reste toujours visible.
+- **Nouveau logo** : la pieuvre sombre sur fond rose, dans l'appli et ses icônes.
+- **Taille du pinceau** : Alt + clic droit glissé pendant l'utilisation du pinceau, comme dans Photoshop (Ctrl + Alt + glissé, comme dans Affinity, marche toujours).
+
 ## Version 1.2.6
 
 - **Fusionner** : clic droit sur des calques › Fusionner (union, soustraction, intersection, exclusion, division, ou en une seule image avec Ctrl+E) ; lâcher un calque sur un autre propose aussi de les grouper ou de les fusionner.

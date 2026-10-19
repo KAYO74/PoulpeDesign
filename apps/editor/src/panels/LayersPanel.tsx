@@ -249,7 +249,8 @@ const NodeRow = memo(function NodeRow({
           <Icon name={n.locked ? 'lock' : 'unlock'} size={14} />
         </button>
         <button
-          className={`layer-btn${!n.visible ? ' on' : ''}`}
+          className={`layer-btn eye${!n.visible ? ' on' : ''}`}
+          data-testid={`layer-eye-${n.id}`}
           aria-pressed={!n.visible}
           title={n.visible ? t('layer.hide') : t('layer.show')}
           aria-label={n.visible ? t('layer.hide') : t('layer.show')}

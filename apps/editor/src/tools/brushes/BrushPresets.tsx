@@ -3,9 +3,14 @@ import { useT } from '../../i18n';
 import { brushSettings, useStore, useUi } from '../../store';
 import { DEFAULT_PRESETS, applyPreset, deletePreset, isCurrentPreset, saveCurrentPreset } from './presets';
 import { userPresets, type BrushPreset } from './state';
+import { brushTips } from './tips';
+import { pickAndInstallBrushes, sharePresets } from './packs';
+import { toast } from '../../store';
 
 /** Aperçu d'un préréglage : une touche ronde, bord plus ou moins doux, à la taille ramenée. */
 function Dab({ p }: { p: BrushPreset }) {
+  const tip = useStore(brushTips, (s) => s.list.find((x) => x.id === p.tip));
+  if (tip) return <img className="brushes-dab tip" src={tip.data} alt="" />;
   const r = Math.max(2, Math.min(11, 2 + Math.sqrt(p.size) * 0.9));
   const h = Math.min(99, p.hardness);
   const a = (0.25 + 0.75 * (p.flow / 100)) * (p.opacity / 100);
@@ -84,6 +89,29 @@ export function BrushPresets() {
           {t('brush.savePreset')}
         </button>
       </div>
+      <div className="brushes-share">
+        <button className="chip-btn" data-testid="brushes-install" onClick={() => void installBrushes(t)}>
+          {t('brushPacks.install')}
+        </button>
+        <button
+          className="chip-btn"
+          data-testid="brushes-share"
+          disabled={!mine.length}
+          title={t('brushPacks.shareHint')}
+          onClick={() => void sharePresets(t('brushPacks.defaultName'))}
+        >
+          {t('brushPacks.share')}
+        </button>
+      </div>
     </div>
+  );
+}
+
+/** Installe un fichier de pinceaux et dit ce qui a été ajouté. */
+export async function installBrushes(t: ReturnType<typeof useT>): Promise<void> {
+  const pack = await pickAndInstallBrushes();
+  if (pack === undefined) return;
+  toast(
+    pack ? t('brushPacks.installed', { name: pack.name, n: pack.presetIds.length }) : t('brushPacks.invalid'),
   );
 }

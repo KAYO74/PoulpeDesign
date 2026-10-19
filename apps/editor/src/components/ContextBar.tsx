@@ -10,6 +10,7 @@ import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vecto
 import { canLinkSelection, linkSelection } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
+import { openColorWindowFor } from '../panels/ColorWindow';
 import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
 import { isPhotoTool } from '../photo/photoTools';
 import { SHAPE_FAMILY } from '../toolCatalog';
@@ -39,8 +40,9 @@ export function PaintSwatches({ node }: { node: SceneNode | null }) {
         style={{ background: paintPreview(fill) }}
         aria-label={t('ctx.fill')}
         title={t('ctx.fill')}
+        data-testid="ctx-fill"
         onClick={() => ui.set({ colorTarget: 'fill' })}
-        onDoubleClick={() => setPaint('fill', { type: 'none' })}
+        onDoubleClick={(e) => openColorWindowFor('fill', e.currentTarget)}
       />
       <span className="ctx-label">{t('ctx.stroke')}</span>
       <button
@@ -48,7 +50,16 @@ export function PaintSwatches({ node }: { node: SceneNode | null }) {
         style={{ background: paintPreview(stroke.paint) }}
         aria-label={t('ctx.stroke')}
         title={t('ctx.stroke')}
+        data-testid="ctx-stroke"
         onClick={() => ui.set({ colorTarget: 'stroke' })}
+        onDoubleClick={(e) => openColorWindowFor('stroke', e.currentTarget)}
+      />
+      <button
+        className="chip none-chip"
+        title={t('color.noColor')}
+        aria-label={t('color.noColor')}
+        data-testid="ctx-none"
+        onClick={() => setPaint(target, { type: 'none' })}
       />
       <NumberField
         value={stroke.width}

@@ -15,6 +15,7 @@ import {
   nodeBounds,
   type SceneNode,
   createDocument,
+  findArtboard,
   type Artboard,
   type TextFlow,
   type PoulpeDocument,
@@ -45,7 +46,18 @@ export const isDesktop = (): boolean => typeof window !== 'undefined' && '__TAUR
 const exportImages = new ImageCache();
 
 export type FileKind =
-  'poulpe' | 'png' | 'jpeg' | 'svg' | 'pdf' | 'psd' | 'zip' | 'macro' | 'extension' | 'prefs' | 'template';
+  | 'poulpe'
+  | 'png'
+  | 'jpeg'
+  | 'svg'
+  | 'pdf'
+  | 'psd'
+  | 'zip'
+  | 'macro'
+  | 'extension'
+  | 'prefs'
+  | 'template'
+  | 'brushes';
 const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   poulpe: { ext: POULPE_EXTENSION, mime: 'application/x-poulpe', label: 'Poulpe Design' },
   png: { ext: 'png', mime: 'image/png', label: 'PNG' },
@@ -58,6 +70,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   extension: { ext: 'js', mime: 'text/javascript', label: 'Extension Poulpe Design' },
   prefs: { ext: 'poulpeprefs', mime: 'application/json', label: 'Préférences Poulpe Design' },
   template: { ext: 'poulpemodele', mime: 'application/x-poulpe', label: 'Modèle Poulpe Design' },
+  brushes: { ext: 'poulpebrushes', mime: 'application/json', label: 'Pinceaux Poulpe Design' },
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */
@@ -191,6 +204,16 @@ export async function openBytes(name: string, bytes: Uint8Array): Promise<void> 
   toast(t('file.opening'));
   try {
     if (ext === 'psd') {
+      // Projet enregistré en PSD par Poulpe Design : on retrouve le document complet.
+      const { extractPoulpe } = await import('./importers/psdEmbed');
+      const own = extractPoulpe(bytes);
+      if (own) {
+        const doc = await decodeFile(own);
+        editor.load({ ...doc, name: baseName(name) });
+        ui.set({ filePath: name, dialog: null });
+        requestAnimationFrame(() => window.dispatchEvent(new Event('poulpe:fit')));
+        return;
+      }
       const { psdToDocument } = await import('./importers/psd');
       const doc = await psdToDocument(bytes, baseName(name));
       editor.load(doc, { unsaved: true });
@@ -240,6 +263,8 @@ export async function thumbnail(doc: PoulpeDocument): Promise<Uint8Array | undef
 }
 
 export async function saveDocument(saveAs = false): Promise<void> {
+  // Un projet ouvert ou enregistré en PSD se réenregistre en PSD (Ctrl+S).
+  if (!saveAs && /\.psd$/i.test(ui.get().filePath ?? '')) return savePsdDocument(false);
   const live = editor.doc;
   const doc = await materialize(live);
   const bytes = await encodeFile(doc, {
@@ -254,6 +279,31 @@ export async function saveDocument(saveAs = false): Promise<void> {
   if (editor.doc === live) editor.markSaved();
   ui.set({ filePath: path });
   toast(t('file.saved'));
+}
+
+/**
+ * Enregistre le projet en PSD (version 1.2.10) : calques lisibles par Photoshop et Affinity (plan
+ * de travail actif), et document Poulpe Design complet à l'intérieur, que Poulpe rouvre tel quel.
+ */
+export async function savePsdDocument(saveAs = true): Promise<void> {
+  const live = editor.doc;
+  const ab = findArtboard(live, editor.getState().activeArtboardId) ?? live.artboards[0];
+  if (!ab) return;
+  const doc = await materialize(live);
+  const poulpe = await encodeFile(doc, {
+    thumbnail: await thumbnail(live),
+    generator: `Poulpe Design ${__APP_VERSION__}`,
+  });
+  const { artboardToPsd } = await import('./importers/psd');
+  const { embedPoulpe } = await import('./importers/psdEmbed');
+  const bytes = embedPoulpe(await artboardToPsd(doc, ab, exportImages), poulpe);
+  const current = ui.get().filePath;
+  const existing = !saveAs && isDesktop() && current && /\.psd$/i.test(current) ? current : null;
+  const path = await saveBytes(bytes, 'psd', doc.name, existing);
+  if (!path) return;
+  if (editor.doc === live) editor.markSaved();
+  ui.set({ filePath: path });
+  toast(t(live.artboards.length > 1 ? 'psdSave.savedActive' : 'file.saved'));
 }
 
 export async function importImage(): Promise<void> {

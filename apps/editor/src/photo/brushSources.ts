@@ -78,3 +78,15 @@ export function makeStamp(radius: number, hardness: number, color: string): HTML
   ctx.fillRect(0, 0, size, size);
   return c;
 }
+
+/** Empreinte d'une forme de pinceau (image) : la forme, dans la couleur donnée, centrée dans un carré. */
+export function makeTipStamp(tip: HTMLCanvasElement, color: string): HTMLCanvasElement {
+  const side = Math.max(tip.width, tip.height) + 2;
+  const c = makeCanvas(side, side);
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(tip, (side - tip.width) / 2, (side - tip.height) / 2);
+  ctx.globalCompositeOperation = 'source-in';
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, side, side);
+  return c;
+}
