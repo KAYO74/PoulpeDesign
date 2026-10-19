@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import { BLEND_MODES, findNode, moveNodesTo, type BlendMode, type SceneNode } from '@poulpe/core';
-import { deleteSelection, updateSelected } from '../actions';
+import { deleteArtboard, deleteSelection, updateSelected } from '../actions';
 import { AdjustmentMenu } from '../components/AdjustmentMenu';
 import { COMMANDS, runCommand } from '../commands';
 import { toggleMaskEdit } from '../photo/photoActions';
@@ -10,7 +10,7 @@ import { NumberField, Select } from '../components/fields';
 import { Icon, type IconName } from '../components/Icon';
 import { useT } from '../i18n';
 import { editor, ui, useEditor, useUi } from '../store';
-import { Item, Sep } from '../components/MenuBar';
+import { Item, Sep, Sub } from '../components/MenuBar';
 import { layerRows, rangeBetween, type LayerRow } from '../layers';
 
 const TYPE_ICON: Record<SceneNode['type'], IconName> = {
@@ -85,7 +85,11 @@ const VIRTUAL_MIN = 150;
 const OVERSCAN = 12;
 
 /** Où les calques glissés vont tomber : un parent et une position dans ses enfants. */
-type Drop = { parentId: string; index: number; into?: string } | null;
+/** Point de chute : entre deux calques, dans un groupe (`into`) ou sur un calque pour les fusionner (`onto`). */
+type Drop = { parentId: string; index: number; into?: string; onto?: string } | null;
+
+/** Menu ouvert : celui d'un calque, celui d'un plan de travail, ou le choix après un lâcher sur un calque. */
+type MenuState = { x: number; y: number; kind: 'node' | 'artboard' | 'merge'; id?: string } | null;
 
 function scrollParent(el: HTMLElement | null): HTMLElement | null {
   for (let p = el?.parentElement; p; p = p.parentElement) {
@@ -143,6 +147,7 @@ interface RowHandlers {
   /** Calcule où tomberaient les calques glissés sur cette ligne ; false si c'est impossible. */
   dragOver(row: LayerRow, el: HTMLElement, clientY: number): boolean;
   drop(e: React.DragEvent): void;
+  artboardMenu(id: string, e: React.MouseEvent): void;
   toggleCollapse(id: string): void;
   rename(id: string | null, name?: string): void;
   setProp(id: string, label: string, fn: (n: SceneNode) => void): void;
@@ -274,7 +279,7 @@ export function LayersPanel() {
   const [drag, setDrag] = useState<{ ids: string[]; blocked: Set<string> } | null>(null);
   const [drop, setDrop] = useState<Drop>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [menu, setMenu] = useState<MenuState>(null);
   const anchor = useRef<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const maskEditId = useUi((s) => s.maskEditId);
@@ -286,8 +291,13 @@ export function LayersPanel() {
   const [start, end] = useVisibleRange(listRef, rows.length);
   const virtual = rows.length >= VIRTUAL_MIN;
 
-  const finishDrop = () => {
-    if (drag && drop) {
+  const finishDrop = (e?: React.DragEvent) => {
+    if (drag && drop?.onto) {
+      // Lâché sur un calque : on propose de les grouper ou de les fusionner.
+      const onto = drop.onto;
+      editor.select([...drag.ids.filter((i) => i !== onto), onto]);
+      setMenu({ x: e?.clientX ?? 0, y: e?.clientY ?? 0, kind: 'merge' });
+    } else if (drag && drop) {
       const { ids } = drag;
       editor.apply('history.order', (d) => {
         moveNodesTo(d, ids, drop.parentId, drop.index);
@@ -328,7 +338,13 @@ export function LayersPanel() {
         anchor.current = id;
         editor.select([id]);
       }
-      setMenu({ x: e.clientX, y: e.clientY });
+      setMenu({ x: e.clientX, y: e.clientY, kind: 'node' });
+    },
+    artboardMenu(id, e) {
+      e.preventDefault();
+      editor.setActiveArtboard(id);
+      editor.select([]);
+      setMenu({ x: e.clientX, y: e.clientY, kind: 'artboard', id });
     },
     dragStart(id, e) {
       const ids = selection.includes(id) ? selection.filter((s) => findNode(doc, s)) : [id];
@@ -365,15 +381,22 @@ export function LayersPanel() {
       let next: Drop;
       if (n.type === 'group' && y > 0.3 && y < 0.7)
         next = { parentId: n.id, index: n.children.length, into: n.id };
+      else if (y > 0.3 && y < 0.7) next = { parentId: row.parentId, index: row.index, onto: n.id };
       else next = { parentId: row.parentId, index: y < 0.5 ? row.index + 1 : row.index };
       setDrop((d) =>
-        d && d.parentId === next!.parentId && d.index === next!.index && d.into === next!.into ? d : next,
+        d &&
+        d.parentId === next!.parentId &&
+        d.index === next!.index &&
+        d.into === next!.into &&
+        d.onto === next!.onto
+          ? d
+          : next,
       );
       return true;
     },
     drop(e) {
       e.preventDefault();
-      finishDrop();
+      finishDrop(e);
     },
     toggleCollapse(id) {
       setCollapsed((s) => {
@@ -440,12 +463,13 @@ export function LayersPanel() {
       e.preventDefault();
       const el = listRef.current?.querySelector(`[data-layer-id="${selection[0]}"]`);
       const r = (el ?? e.currentTarget).getBoundingClientRect();
-      setMenu({ x: r.left + 24, y: r.bottom });
+      setMenu({ x: r.left + 24, y: r.bottom, kind: 'node' });
     }
   };
 
   const markOf = (row: LayerRow): DropMark => {
     if (!drop) return null;
+    if (drop.onto) return drop.onto === row.key ? 'into' : null;
     if (drop.into) return drop.into === row.key ? 'into' : null;
     if (row.kind !== 'node' || drop.parentId !== row.parentId) return null;
     if (drop.index === row.index + 1) return 'above';
@@ -485,6 +509,7 @@ export function LayersPanel() {
             editor.setActiveArtboard(ab.id);
             editor.select([]);
           }}
+          onContextMenu={(e) => h.current.artboardMenu(ab.id, e)}
         >
           <span className="layer-icon">
             <Icon name="artboard" size={14} />
@@ -566,67 +591,118 @@ export function LayersPanel() {
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Content className="menu" align="start" sideOffset={2} data-testid="layer-menu">
-            <Item id="arrange.front" />
-            <Item id="arrange.forward" />
-            <Item id="arrange.backward" />
-            <Item id="arrange.back" />
-            <Sep />
-            <Item id="edit.duplicate" />
-            <Item id="layer.group" />
-            <Item id="layer.ungroup" />
-            <Menu.Item
-              className="menu-item"
-              disabled={selection.length !== 1}
-              onSelect={() => setRenaming(selection[0])}
-            >
-              <span className="menu-check" />
-              <span className="menu-label">{t('layer.rename')}</span>
-              <span className="menu-shortcut">F2</span>
-            </Menu.Item>
-            <Sep />
-            <Item id="layer.lock" />
-            <Item id="layer.hide" />
-            <Sep />
-            <Item id="edit.delete" />
+            {menu?.kind === 'artboard' && (
+              <>
+                <Item id="document.addArtboard" />
+                <Menu.Item
+                  className="menu-item"
+                  disabled={doc.artboards.length < 2}
+                  data-testid="artboard-delete"
+                  onSelect={() => deleteArtboard(menu.id)}
+                >
+                  <span className="menu-check" />
+                  <span className="menu-label">{t('document.deleteArtboard')}</span>
+                </Menu.Item>
+              </>
+            )}
+            {menu?.kind === 'merge' && (
+              <>
+                <Item id="layer.group" />
+                <Sep />
+                <Item id="geometry.unite" />
+                <Item id="geometry.subtract" />
+                <Item id="geometry.intersect" />
+                <Item id="geometry.exclude" />
+                <Sep />
+                <Item id="layer.mergeSelected" />
+              </>
+            )}
+            {menu?.kind === 'node' && (
+              <>
+                <Item id="arrange.front" />
+                <Item id="arrange.forward" />
+                <Item id="arrange.backward" />
+                <Item id="arrange.back" />
+                <Sep />
+                <Item id="edit.duplicate" />
+                <Item id="layer.group" />
+                <Item id="layer.ungroup" />
+                <Sub label={t('layers.merge')}>
+                  <Item id="geometry.unite" />
+                  <Item id="geometry.subtract" />
+                  <Item id="geometry.intersect" />
+                  <Item id="geometry.exclude" />
+                  <Item id="geometry.divide" />
+                  <Sep />
+                  <Item id="layer.mergeSelected" />
+                </Sub>
+                <Menu.Item
+                  className="menu-item"
+                  disabled={selection.length !== 1}
+                  onSelect={() => setRenaming(selection[0])}
+                >
+                  <span className="menu-check" />
+                  <span className="menu-label">{t('layer.rename')}</span>
+                  <span className="menu-shortcut">F2</span>
+                </Menu.Item>
+                <Sep />
+                <Item id="layer.lock" />
+                <Item id="layer.hide" />
+                <Sep />
+                <Item id="edit.delete" />
+              </>
+            )}
           </Menu.Content>
         </Menu.Portal>
       </Menu.Root>
-      {persona === 'photo' && (
-        <div className="layer-actions">
-          <button
-            className="ib small"
-            title={t('layer.newPixel')}
-            aria-label={t('layer.newPixel')}
-            onClick={() => runCommand('layer.newPixel')}
-          >
-            <Icon name="pixelLayer" size={14} />
-          </button>
-          <button
-            className="ib small"
-            title={t('layer.addMask')}
-            aria-label={t('layer.addMask')}
-            disabled={!COMMANDS['layer.addMask'].enabled()}
-            onClick={() => runCommand('layer.addMask')}
-          >
-            <Icon name="addMask" size={14} />
-          </button>
-          <AdjustmentMenu small />
-          <span className="spacer" />
-          <button
-            className="ib small"
-            title={t('edit.delete')}
-            aria-label={t('edit.delete')}
-            disabled={!selection.length}
-            onClick={() => {
-              if (ui.get().maskEditId && selection.includes(ui.get().maskEditId!))
-                ui.set({ maskEditId: null });
-              deleteSelection();
-            }}
-          >
-            <Icon name="trash" size={14} />
-          </button>
-        </div>
-      )}
+      <div className="layer-actions">
+        {persona === 'photo' && (
+          <>
+            <button
+              className="ib small"
+              title={t('layer.newPixel')}
+              aria-label={t('layer.newPixel')}
+              onClick={() => runCommand('layer.newPixel')}
+            >
+              <Icon name="pixelLayer" size={14} />
+            </button>
+            <button
+              className="ib small"
+              title={t('layer.addMask')}
+              aria-label={t('layer.addMask')}
+              disabled={!COMMANDS['layer.addMask'].enabled()}
+              onClick={() => runCommand('layer.addMask')}
+            >
+              <Icon name="addMask" size={14} />
+            </button>
+            <AdjustmentMenu small />
+          </>
+        )}
+        <button
+          className="ib small"
+          title={t('layer.group')}
+          aria-label={t('layer.group')}
+          data-testid="layers-group"
+          disabled={!selection.length}
+          onClick={() => runCommand('layer.group')}
+        >
+          <Icon name="folder" size={14} />
+        </button>
+        <span className="spacer" />
+        <button
+          className="ib small"
+          title={t('edit.delete')}
+          aria-label={t('edit.delete')}
+          data-testid="layers-delete"
+          disabled={!selection.length}
+          onClick={() => {
+            if (ui.get().maskEditId && selection.includes(ui.get().maskEditId!)) ui.set({ maskEditId: null });
+            deleteSelection();
+          }}
+        >
+          <Icon name="trash" size={14} />
+        </button>
+      </div>
     </div>
   );
 }
