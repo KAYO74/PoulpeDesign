@@ -97,6 +97,17 @@ export interface BrushSettings {
   hardness: number;
   opacity: number;
   flow: number;
+  /** Forme de pinceau (tools/brushes/tips.ts) ; absente : touche ronde. */
+  tip?: string;
+  /** Espacement des touches, en % de la taille (10 par défaut). */
+  spacing?: number;
+  /** Angle (degrés) et rondeur (%, 100 = pas aplatie) de la touche. */
+  angle?: number;
+  roundness?: number;
+  /** Variations au hasard à chaque touche : taille (%), angle (degrés), dispersion (% de la taille). */
+  sizeJitter?: number;
+  angleJitter?: number;
+  scatter?: number;
 }
 
 export type Side = 'left' | 'right';

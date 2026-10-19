@@ -18,12 +18,36 @@ export const DEFAULT_PRESETS: BrushPreset[] = [
 
 /** Applique un préréglage à l'outil actif. */
 export function applyPreset(p: BrushSettings): void {
-  setBrush({ size: p.size, hardness: p.hardness, opacity: p.opacity, flow: p.flow });
+  setBrush({ ...DYNAMICS, ...settingsOf(p) });
+}
+
+/** Réglages de la forme créée (version 1.2.8), remis à zéro par un préréglage qui n'en a pas. */
+const DYNAMICS: Partial<BrushSettings> = {
+  tip: undefined,
+  spacing: undefined,
+  angle: undefined,
+  roundness: undefined,
+  sizeJitter: undefined,
+  angleJitter: undefined,
+  scatter: undefined,
+};
+
+/** Les réglages d'un pinceau, sans le nom ni l'identifiant d'un préréglage. */
+function settingsOf(p: BrushSettings): BrushSettings {
+  const { id: _id, name: _name, ...rest } = p as BrushSettings & { id?: string; name?: string };
+  return rest;
 }
 
 /** Le pinceau de l'outil actif correspond-il à ce préréglage ? */
 export function isCurrentPreset(p: BrushSettings, b: BrushSettings = brushSettings(ui.get().tool)): boolean {
-  return b.size === p.size && b.hardness === p.hardness && b.opacity === p.opacity && b.flow === p.flow;
+  return (
+    b.size === p.size &&
+    b.hardness === p.hardness &&
+    b.opacity === p.opacity &&
+    b.flow === p.flow &&
+    b.tip === p.tip &&
+    (b.spacing ?? 10) === (p.spacing ?? 10)
+  );
 }
 
 /** Enregistre le pinceau de l'outil actif sous un nom. */
@@ -31,10 +55,7 @@ export function saveCurrentPreset(name: string): void {
   const b = brushSettings(ui.get().tool);
   const id = `user-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
   userPresets.set((s) => ({
-    list: [
-      ...s.list,
-      { id, name: name.trim(), size: b.size, hardness: b.hardness, opacity: b.opacity, flow: b.flow },
-    ],
+    list: [...s.list, { ...settingsOf(b), id, name: name.trim() }],
   }));
 }
 

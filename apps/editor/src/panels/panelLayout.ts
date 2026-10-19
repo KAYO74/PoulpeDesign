@@ -13,7 +13,8 @@ import { ui } from '../store';
  * Fenêtres déplaçables : la colonne d'outils, les deux groupes du Studio, et chaque panneau
  * (Calques, Pinceau, Historique…) détaché seul de son groupe (`tab:<onglet>`).
  */
-export type PanelId = 'tools' | 'studio-top' | 'studio-bottom' | 'color-picker' | `tab:${string}`;
+export type PanelId =
+  'tools' | 'studio-top' | 'studio-bottom' | 'color-picker' | 'brush-editor' | `tab:${string}`;
 
 /** Fenêtre d'un panneau détaché seul de son groupe. */
 export const tabPanel = (tab: string): PanelId => `tab:${tab}`;
@@ -172,8 +173,8 @@ export interface DragOptions {
 }
 
 function overDock(id: PanelId, opts: DragOptions, x: number, y: number): boolean {
-  // Le sélecteur de couleur reste toujours flottant.
-  if (id === 'color-picker') return false;
+  // Le sélecteur de couleur et la création de pinceau restent toujours flottants.
+  if (id === 'color-picker' || id === 'brush-editor') return false;
   const zone = dockRect(id);
   if (zone && inRect(zone, x, y)) return true;
   const home = opts.home?.();
