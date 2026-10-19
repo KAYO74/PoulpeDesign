@@ -28,6 +28,7 @@ import type { Gesture } from './gestures';
 import * as handles from './handles';
 import type { Frame, HandleId } from './handles';
 import * as pointer from './pointer';
+import { renderDpr } from '../uiScale';
 
 export { cropFull } from './crop';
 
@@ -254,7 +255,7 @@ export class CanvasController {
   }
 
   resize(width: number, height: number): void {
-    this.dpr = window.devicePixelRatio || 1;
+    this.dpr = renderDpr();
     this.width = width;
     this.height = height;
     this.canvas.width = Math.round(width * this.dpr);

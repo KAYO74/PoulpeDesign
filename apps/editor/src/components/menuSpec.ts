@@ -187,6 +187,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('layer.rasterize'),
         cmd('image.removeBackground'),
         cmd('image.vectorize'),
+        cmd('layer.mergeSelected'),
         cmd('layer.mergeVisible'),
         sep,
         sub(t('menu.order'), [

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2.4-FF5F86" alt="Version 1.2.4"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.2.6-FF5F86" alt="Version 1.2.6"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -147,16 +147,16 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Les prochaines versions, jusqu'à la 1.3.0. Les versions déjà sorties sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
+Les versions jusqu'à la 1.3.0. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
-| Version | Contenu                                                                                                                                    | État        |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                         | 🚧 En cours |
-| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes | ⏳ À venir  |
-| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                               | ⏳ À venir  |
-| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                   | ⏳ À venir  |
-| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ⏳ À venir  |
-| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ⏳ À venir  |
+| Version | Contenu                                                                                                                                    | État          |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                         | ✅ Disponible |
+| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes | ✅ Disponible |
+| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                               | ⏳ À venir    |
+| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                   | ⏳ À venir    |
+| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ⏳ À venir    |
+| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ⏳ À venir    |
 
 La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 

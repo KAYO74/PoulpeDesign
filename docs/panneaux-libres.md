@@ -5,6 +5,7 @@ Comme dans Photoshop, les fenêtres d'outils de Poulpe Design peuvent se détach
 ## Pour l'utilisateur
 
 - **Détacher un groupe du Studio** (Couleur, Contour… ou Calques, Historique) : glisser sa barre d'onglets hors du Studio, ou double-cliquer sur la barre (à côté des onglets).
+- **Détacher un seul panneau** (Calques, Pinceau, Historique…) : glisser son onglet hors du groupe, ou double-cliquer sur l'onglet. Il devient sa propre fenêtre ; ramené sur le Studio ou sur son groupe, il y reprend sa place.
 - **Détacher la colonne d'outils** : glisser la petite poignée en haut de la colonne, ou double-cliquer dessus.
 - **Déplacer** une fenêtre flottante : la glisser par sa barre de titre.
 - **Redimensionner** : tirer un bord ou un coin. La palette d'outils flottante se réorganise en plusieurs colonnes quand on l'élargit.
@@ -18,7 +19,12 @@ La disposition est mémorisée d'une session à l'autre.
 
 - `apps/editor/src/panels/panelLayout.ts` : magasin `panels` (clé `poulpe.panels` dans le stockage local), séparé des réglages pour qu'un glissement ne redessine pas tout l'éditeur ; fonctions de glissement, de redimensionnement et d'ancrage.
 - `apps/editor/src/panels/FloatingFrame.tsx` : fenêtre flottante avec ses huit poignées.
-- Les panneaux détachables sont `tools`, `studio-top` et `studio-bottom` ; le même identifiant sert dans les trois Personas.
+- Les panneaux détachables sont `tools`, `studio-top`, `studio-bottom` et `tab:<onglet>` (un panneau seul, par exemple `tab:layers`) ; le même identifiant sert dans les trois Personas.
+
+## Taille de l'interface
+
+**Préférences › Affichage › Taille de l'interface** (de 80 % à 200 %) agrandit toute la fenêtre de l'appli de bureau : menus, panneaux, textes et icônes. Le document reste net (`renderDpr` dans `apps/editor/src/uiScale.ts`). Dans le navigateur, son propre zoom (Ctrl + / Ctrl −) fait la même chose.
+
 - Tests : `apps/editor/e2e/panels.spec.ts`.
 
 ## Espaces de travail personnalisés

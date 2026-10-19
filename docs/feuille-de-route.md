@@ -1,15 +1,15 @@
 # Poulpe Design — Feuille de route
 
-Mise à jour le 13 octobre 2026, après la version 1.2.4.
+Mise à jour le 19 octobre 2026, après la version 1.2.6.
 
-Les prochaines versions, jusqu'à la 1.3.0. Chacune sort seule, avec ses tests, sans rien casser de ce qui marche déjà. Les versions déjà sorties sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases), et leur détail dans [Version 1.0](version-1.0.md), [Version 1.1](version-1.1.md) et [Version 1.2](version-1.2.md).
+Les versions jusqu'à la 1.3.0. Chacune sort seule, avec ses tests, sans rien casser de ce qui marche déjà. Les versions déjà sorties sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases), et leur détail dans [Version 1.0](version-1.0.md), [Version 1.1](version-1.1.md) et [Version 1.2](version-1.2.md).
 
-## v1.2.5 Panneaux
+## v1.2.5 Panneaux (disponible)
 
 - Déplacer plus simplement les fenêtres Calques, Pinceau, Historique et les autres panneaux.
 - Régler la taille de l'interface dans les Préférences.
 
-## v1.2.6 Calques
+## v1.2.6 Calques (disponible)
 
 - Fusionner facilement des objets, des courbes… par clic droit ou en les glissant les uns sur les autres.
 - Supprimer des formes ou un plan de travail.

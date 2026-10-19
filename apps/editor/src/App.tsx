@@ -15,6 +15,7 @@ import { PagesPanel } from './panels/PagesPanel';
 import { Studio } from './panels/Studio';
 import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from './panels/panelLayout';
 import { editor, useEditor, useUi } from './store';
+import { applyUiScale } from './uiScale';
 
 /*
  * Appli de bureau : sur Mac, les menus vont dans la barre du haut de l'écran (nativeMenu.ts) ;
@@ -34,6 +35,10 @@ export function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
   }, [settings.theme]);
+
+  useEffect(() => {
+    void applyUiScale(settings.uiScale);
+  }, [settings.uiScale]);
 
   useEffect(() => {
     const name = filePath ? baseName(filePath) : doc.name;
@@ -71,7 +76,7 @@ export function App() {
         >
           <img
             className="appicon"
-            src="./poulpe.svg"
+            src="./poulpe.png"
             alt=""
             data-tauri-drag-region={ownTitleBar || undefined}
           />
