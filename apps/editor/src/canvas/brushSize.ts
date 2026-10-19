@@ -2,9 +2,12 @@ import { brushSettings, isBrushTool, setBrush, ui } from '../store';
 import { pathsState } from '../tools/paths/state';
 import type { CanvasController } from './controller';
 
-/** Le geste « taille du pinceau » : Alt + clic droit glissé (Photoshop), ou Ctrl + Alt + glissé (Affinity). */
+/**
+ * Le geste « taille du pinceau » de Photoshop : Alt + clic droit glissé. (Ctrl + Alt + glissé, celui
+ * d'Affinity, est géré par les pinceaux eux-mêmes.)
+ */
 export function isBrushSizeGesture(e: PointerEvent): boolean {
-  return e.altKey && (e.button === 2 || (e.button === 0 && (e.ctrlKey || e.metaKey)));
+  return e.altKey && e.button === 2;
 }
 
 /**
