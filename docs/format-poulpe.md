@@ -1,16 +1,16 @@
-# Format de fichier `.poulpe` (version 4)
+# `.poulpe` file format (version 4)
 
-Un document Poulpe Design est une archive ZIP. Tout y est lisible avec des outils standard : un logiciel de décompression suffit pour récupérer les images d'origine et le document en JSON.
+A Poulpe Design document is a ZIP archive. Everything in it can be read with standard tools: any unzip program is enough to recover the original images and the document as JSON.
 
 ```
-affiche.poulpe (ZIP)
-├── manifest.json        version du format, appli d'origine, liste des fichiers (non compressé, en premier)
-├── document.json        le document
-├── assets/images/       images importées, telles quelles (jamais recompressées), pixels retouchés et masques (PNG)
-└── thumbnail.png        aperçu du premier plan de travail, 256 px au plus (facultatif)
+poster.poulpe (ZIP)
+├── manifest.json        format version, source app, file list (uncompressed, first)
+├── document.json        the document
+├── assets/images/       imported images as they are (never recompressed), edited pixels and masks (PNG)
+└── thumbnail.png        preview of the first artboard, 256 px at most (optional)
 ```
 
-Le code de lecture et d'écriture est dans [`packages/core/src/file.ts`](../packages/core/src/file.ts), et les types dans [`packages/core/src/types.ts`](../packages/core/src/types.ts).
+The reading and writing code is in [`packages/core/src/file.ts`](../packages/core/src/file.ts), and the types in [`packages/core/src/types.ts`](../packages/core/src/types.ts).
 
 ## manifest.json
 
@@ -26,82 +26,82 @@ Le code de lecture et d'écriture est dans [`packages/core/src/file.ts`](../pack
 
 ## document.json
 
-| Champ        | Type              | Contenu                                                                                                                                |
-| ------------ | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `format`     | `"poulpe"`        | Toujours `poulpe`.                                                                                                                     |
-| `version`    | entier            | Version du format. Poulpe Design migre les anciennes versions et refuse proprement une version plus récente que la sienne.             |
-| `id`, `name` | texte             | Identifiant stable et nom du document.                                                                                                 |
-| `artboards`  | liste             | Plans de travail, chacun avec `x`, `y`, `width`, `height`, `background` (peinture) et `children`.                                      |
-| `swatches`   | liste de couleurs | Nuancier du document.                                                                                                                  |
-| `assets`     | objet             | Images, par identifiant : `mime`, `width`, `height` et `path` dans l'archive.                                                          |
-| `guides`     | objet, facultatif | Repères tirés depuis les règles : `x` (repères verticaux) et `y` (repères horizontaux), listes de positions dans l'espace du document. |
-| `layout`     | objet, facultatif | Mise en page et impression (version 4), voir plus bas.                                                                                 |
+| Field        | Type             | Content                                                                                                                  |
+| ------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `format`     | `"poulpe"`       | Always `poulpe`.                                                                                                         |
+| `version`    | integer          | Format version. Poulpe Design migrates older versions and cleanly refuses a version newer than its own.                  |
+| `id`, `name` | text             | Stable identifier and name of the document.                                                                              |
+| `artboards`  | list             | Artboards, each with `x`, `y`, `width`, `height`, `background` (paint) and `children`.                                   |
+| `swatches`   | list of colors   | Document swatches.                                                                                                       |
+| `assets`     | object           | Images, by identifier: `mime`, `width`, `height` and `path` in the archive.                                              |
+| `guides`     | object, optional | Guides dragged from the rulers: `x` (vertical guides) and `y` (horizontal guides), lists of positions in document space. |
+| `layout`     | object, optional | Layout and printing (version 4), see below.                                                                              |
 
-Toutes les coordonnées sont en pixels dans l'espace du document : un objet n'est pas relatif à son plan de travail. Chaque objet est une boîte `x`, `y`, `width`, `height` tournée de `rotation` degrés autour de son centre. Les listes `children` vont du dessous vers le dessus.
+All coordinates are in pixels in document space: an object is not relative to its artboard. Each object is an `x`, `y`, `width`, `height` box rotated by `rotation` degrees around its center. `children` lists go from bottom to top.
 
-### Pages et pages maîtres (version 5)
+### Pages and master pages (version 5)
 
-Une page est un plan de travail ; l'ordre des pages est celui de `artboards`. Deux champs facultatifs s'ajoutent aux plans de travail :
+A page is an artboard; the page order is that of `artboards`. Two optional fields are added to artboards:
 
-| Champ      | Contenu                                                                                                              |
-| ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| `master`   | `true` : page maître. Elle n'est pas une page (pas de numéro, pas exportée avec « toutes les pages »).               |
-| `masterId` | Identifiant de la page maître de cette page. Ses objets sont dessinés sous ceux de la page, au même endroit relatif. |
+| Field      | Content                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `master`   | `true`: master page. It is not a page (no number, not exported with "all pages").                                   |
+| `masterId` | Identifier of this page's master page. Its objects are drawn beneath those of the page, at the same relative place. |
 
-`layout` du document :
+Document `layout`:
 
-| Champ         | Contenu                                                                                                   |
-| ------------- | --------------------------------------------------------------------------------------------------------- |
-| `dpi`         | Pixels par pouce (96 si absent). Donne la taille réelle des pages à l'impression et dans le PDF.          |
-| `bleed`       | Fond perdu autour de chaque page, en pixels.                                                              |
-| `margins`     | `{ "top", "bottom", "inside", "outside" }` en pixels ; `inside` est du côté de la reliure.                |
-| `facing`      | `true` : pages en vis-à-vis (page 1 seule à droite, puis doubles pages ; les pages paires sont à gauche). |
-| `firstNumber` | Numéro de la première page (1 si absent).                                                                 |
+| Field         | Content                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| `dpi`         | Pixels per inch (96 if absent). Gives the real size of pages when printing and in the PDF.  |
+| `bleed`       | Bleed around each page, in pixels.                                                          |
+| `margins`     | `{ "top", "bottom", "inside", "outside" }` in pixels; `inside` is on the binding side.      |
+| `facing`      | `true`: facing pages (page 1 alone on the right, then spreads; even pages are on the left). |
+| `firstNumber` | Number of the first page (1 if absent).                                                     |
 
-Version 6, pour l'impression (facultatifs) :
+Version 6, for printing (optional):
 
-| Champ       | Contenu                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------- |
-| `colorMode` | `"rgb"` (par défaut) ou `"cmyk"` : le document est destiné à l'imprimerie (saisie CMJN, épreuvage, PDF CMJN). |
-| `cmyk`      | Valeurs CMJN exactes saisies par l'utilisateur, par couleur : `{ "#00a0e6": [100, 0, 0, 0] }` (de 0 à 100).   |
+| Field       | Content                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------------- |
+| `colorMode` | `"rgb"` (default) or `"cmyk"`: the document is meant for a print shop (CMYK input, proofing, CMYK PDF). |
+| `cmyk`      | Exact CMYK values entered by the user, per color: `{ "#00a0e6": [100, 0, 0, 0] }` (from 0 to 100).      |
 
-### Objets
+### Objects
 
-Champs communs : `id`, `name`, `x`, `y`, `width`, `height`, `rotation`, `opacity` (0 à 1), `blendMode`, `visible`, `locked`, `effects` et `mask` (facultatifs, voir plus bas).
+Common fields: `id`, `name`, `x`, `y`, `width`, `height`, `rotation`, `opacity` (0 to 1), `blendMode`, `visible`, `locked`, `effects` and `mask` (optional, see below).
 
-| `type`       | Champs propres                                                                          |
-| ------------ | --------------------------------------------------------------------------------------- |
-| `rect`       | `fill`, `stroke`, `cornerRadius`                                                        |
-| `ellipse`    | `fill`, `stroke`                                                                        |
-| `polygon`    | `fill`, `stroke`, `sides`                                                               |
-| `star`       | `fill`, `stroke`, `points`, `innerRatio`                                                |
-| `path`       | `fill`, `stroke`, `d`, `viewBox`, `fillRule` (facultatif)                               |
-| `line`       | `stroke`, `direction` (1 : haut gauche vers bas droit, -1 : bas gauche vers haut droit) |
-| `text`       | `text`, `style`, `fill`, `stroke`, `autoWidth`, `runs` et `path` (facultatifs)          |
-| `image`      | `assetId`, `crop` (facultatif)                                                          |
-| `group`      | `children`, `clip` (l'objet du dessous sert de masque d'écrêtage)                       |
-| `adjustment` | `adjustment` : réglage ou filtre dynamique (voir « Calques de réglage »)                |
-| `symbol`     | `symbolId` : instance d'un symbole du document (version 7, voir « Symboles »)           |
+| `type`       | Specific fields                                                                   |
+| ------------ | --------------------------------------------------------------------------------- |
+| `rect`       | `fill`, `stroke`, `cornerRadius`                                                  |
+| `ellipse`    | `fill`, `stroke`                                                                  |
+| `polygon`    | `fill`, `stroke`, `sides`                                                         |
+| `star`       | `fill`, `stroke`, `points`, `innerRatio`                                          |
+| `path`       | `fill`, `stroke`, `d`, `viewBox`, `fillRule` (optional)                           |
+| `line`       | `stroke`, `direction` (1: top left to bottom right, -1: bottom left to top right) |
+| `text`       | `text`, `style`, `fill`, `stroke`, `autoWidth`, `runs` and `path` (optional)      |
+| `image`      | `assetId`, `crop` (optional)                                                      |
+| `group`      | `children`, `clip` (the bottom object serves as a clipping mask)                  |
+| `adjustment` | `adjustment`: dynamic adjustment or filter (see "Adjustment layers")              |
+| `symbol`     | `symbolId`: instance of a document symbol (version 7, see "Symbols")              |
 
-`style` d'un texte : `fontFamily`, `fontSize`, `fontWeight`, `italic`, `align` (`left`, `center`, `right`, `justify`), `lineHeight` (multiplicateur), `letterSpacing` (px), `underline`, `strike`, `uppercase`. Facultatifs (version 7) : `features`, la liste des fonctions OpenType actives (`smcp`, `c2sc`, `kern`, `liga`, `dlig`, `onum`, `tnum`, `frac`, `ss01`), et `columns`, les colonnes du bloc : `{ "count": 2, "gap": 16 }` (`gap` en pixels). Un lecteur qui ne les connaît pas affiche le texte sur une colonne, sans ces fonctions : le document reste juste.
+Text `style`: `fontFamily`, `fontSize`, `fontWeight`, `italic`, `align` (`left`, `center`, `right`, `justify`), `lineHeight` (multiplier), `letterSpacing` (px), `underline`, `strike`, `uppercase`. Optional (version 7): `features`, the list of active OpenType features (`smcp`, `c2sc`, `kern`, `liga`, `dlig`, `onum`, `tnum`, `frac`, `ss01`), and `columns`, the columns of the block: `{ "count": 2, "gap": 16 }` (`gap` in pixels). A reader that does not know them shows the text in a single column, without these features: the document remains correct.
 
-`runs` d'un texte : styles par caractère, triés et sans chevauchement. Chaque plage vaut `{ "start": 8, "end": 12, "style": { … } }` : elle couvre les caractères `start` à `end - 1` (indices UTF-16 de `text`) et ne contient que ce qui diffère du `style` du texte, parmi `fontFamily`, `fontSize`, `fontWeight`, `italic`, `underline`, `strike`, `letterSpacing` et `color` (couleur unie qui remplace le remplissage). L'alignement, l'interligne et les capitales valent pour tout le texte.
+Text `runs`: per-character styles, sorted and non-overlapping. Each range is `{ "start": 8, "end": 12, "style": { … } }`: it covers characters `start` to `end - 1` (UTF-16 indices into `text`) and only contains what differs from the text's `style`, among `fontFamily`, `fontSize`, `fontWeight`, `italic`, `underline`, `strike`, `letterSpacing` and `color` (a solid color that replaces the fill). Alignment, line height and capitals apply to the whole text.
 
-`d` d'un tracé : données de tracé SVG (commandes `M L H V C S Q T A Z`, absolues ou relatives), dans le repère `viewBox` (`{ "x", "y", "width", "height" }`). Le tracé est étiré pour remplir la boîte de l'objet. `fillRule` vaut `nonzero` (par défaut) ou `evenodd`.
+Path `d`: SVG path data (commands `M L H V C S Q T A Z`, absolute or relative), in the `viewBox` coordinate system (`{ "x", "y", "width", "height" }`). The path is stretched to fill the object's box. `fillRule` is `nonzero` (default) or `evenodd`.
 
-`frame` d'un texte (version 4) : `true` pour un cadre de texte, dont la hauteur reste fixe ; le texte qui ne tient pas est caché, ou passe au cadre suivant. `next` : identifiant du cadre suivant d'une chaîne de cadres liés. Le premier cadre de la chaîne porte le texte, son style et ses plages ; le `text` des cadres suivants est ignoré (vide).
+Text `frame` (version 4): `true` for a text frame, whose height stays fixed; text that does not fit is hidden, or flows into the next frame. `next`: identifier of the next frame in a chain of linked frames. The first frame of the chain holds the text, its style and its ranges; the `text` of the following frames is ignored (empty).
 
-Champs d'un texte (version 4) : `{page}` est remplacé à l'affichage par le numéro de la page, `{pages}` par le nombre de pages. Sur une page maître, ils s'affichent « # » ; sur une page qui l'utilise, ils prennent les valeurs de cette page.
+Text fields (version 4): `{page}` is replaced on display by the page number, `{pages}` by the number of pages. On a master page, they display as "#"; on a page that uses it, they take that page's values.
 
-`path` d'un texte : courbe que suit le texte, `{ "d", "viewBox", "offset" }`. `d` et `viewBox` se lisent comme ceux d'un tracé, étirés sur la boîte du texte. `offset` (0 à 1) place le texte le long de la courbe : son début s'il est aligné à gauche, son milieu s'il est centré, sa fin s'il est aligné à droite. Un texte sur tracé ne passe pas à la ligne.
+Text `path`: curve the text follows, `{ "d", "viewBox", "offset" }`. `d` and `viewBox` are read like those of a path, stretched over the text's box. `offset` (0 to 1) places the text along the curve: its start if left-aligned, its middle if centered, its end if right-aligned. Text on a path does not wrap.
 
-`crop` d'une image : partie de l'image source affichée dans la boîte de l'objet, `{ "x", "y", "width", "height" }` en fractions (0 à 1) de l'image. Sans `crop`, l'image entière remplit la boîte.
+Image `crop`: part of the source image shown in the object's box, `{ "x", "y", "width", "height" }` as fractions (0 to 1) of the image. Without `crop`, the whole image fills the box.
 
-`blendMode` : `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity` (mêmes noms qu'en CSS).
+`blendMode`: `normal`, `multiply`, `screen`, `overlay`, `darken`, `lighten`, `color-dodge`, `color-burn`, `hard-light`, `soft-light`, `difference`, `exclusion`, `hue`, `saturation`, `color`, `luminosity` (same names as in CSS).
 
-### Peintures
+### Paints
 
-Les couleurs sont en hexadécimal `#rrggbb` ou `#rrggbbaa`.
+Colors are in hexadecimal `#rrggbb` or `#rrggbbaa`.
 
 ```json
 { "type": "none" }
@@ -112,26 +112,26 @@ Les couleurs sont en hexadécimal `#rrggbb` ou `#rrggbbaa`.
 { "type": "pattern", "assetId": "img_…", "scale": 1, "angle": 0 }
 ```
 
-L'angle d'un dégradé linéaire est en degrés (0 : de gauche à droite, 90 : de haut en bas) et la ligne du dégradé couvre toute la boîte, comme en CSS. Le centre et le rayon d'un dégradé radial sont des fractions de la boîte (le rayon, de sa plus grande dimension).
+The angle of a linear gradient is in degrees (0: left to right, 90: top to bottom) and the gradient line covers the whole box, as in CSS. The center and radius of a radial gradient are fractions of the box (the radius, of its largest dimension).
 
-Un dégradé conique (version 7) tourne autour de son centre : `angle` donne la direction de l'arrêt 0, les `offset` des arrêts sont des fractions du tour. Un motif (version 7) répète l'image `assetId` ; `scale` multiplie la taille de la tuile et `angle` la fait tourner. Le SVG exporté approche un dégradé conique par des secteurs, car SVG n'en a pas.
+A conic gradient (version 7) turns around its center: `angle` gives the direction of stop 0, and the stops' `offset` values are fractions of a full turn. A pattern (version 7) repeats the `assetId` image; `scale` multiplies the tile size and `angle` rotates it. The exported SVG approximates a conic gradient with sectors, since SVG has none.
 
-Un contour vaut `{ "paint": <peinture>, "width": <px> }`, centré sur le tracé. Champs facultatifs (version 3) :
+A stroke is `{ "paint": <paint>, "width": <px> }`, centered on the path. Optional fields (version 3):
 
-| Champ          | Valeurs                                                                                                |
+| Field          | Values                                                                                                 |
 | -------------- | ------------------------------------------------------------------------------------------------------ |
-| `cap`          | `butt`, `round` (par défaut), `square` : extrémités des traits                                         |
-| `join`         | `miter`, `round` (par défaut), `bevel` : jonctions des traits                                          |
-| `dash`         | longueurs alternées trait / espace, en multiples de l'épaisseur (`[3, 2]`) ; absent : trait plein      |
-| `start`, `end` | `none`, `triangle`, `arrow`, `circle`, `square`, `bar` : flèche au début et à la fin d'un tracé ouvert |
-| `align`        | `center` (par défaut), `inside`, `outside` : position du trait par rapport au tracé (version 7)        |
-| `profile`      | largeur variable : multiplicateurs de l'épaisseur du début (0) à la fin (1), `[0.05, 1, 0.05]` (v. 7)  |
+| `cap`          | `butt`, `round` (default), `square`: line ends                                                         |
+| `join`         | `miter`, `round` (default), `bevel`: line joins                                                        |
+| `dash`         | alternating dash / gap lengths, in multiples of the width (`[3, 2]`); absent: solid line               |
+| `start`, `end` | `none`, `triangle`, `arrow`, `circle`, `square`, `bar`: arrowhead at the start and end of an open path |
+| `align`        | `center` (default), `inside`, `outside`: position of the stroke relative to the path (version 7)       |
+| `profile`      | variable width: multipliers of the width from the start (0) to the end (1), `[0.05, 1, 0.05]` (v. 7)   |
 
-Un objet peut aussi porter `strokes` (version 7) : des contours dessinés **sous** son `stroke`, du premier au dernier de la liste. Un lecteur qui ne connaît pas `strokes` n'affiche que le contour principal.
+An object can also carry `strokes` (version 7): strokes drawn **beneath** its `stroke`, from the first to the last in the list. A reader that does not know `strokes` shows only the main stroke.
 
-### Effets
+### Effects
 
-`effects` est une liste d'au plus un effet de chaque type, dessinés dans cet ordre : ombre portée et lueur externe sous l'objet, l'objet lui-même (flouté par `blur`), puis ombre interne et lueur interne à l'intérieur de l'objet. Chaque effet a `type` et `enabled` (un effet désactivé est gardé avec ses réglages). Couleurs avec transparence (`#rrggbbaa`), distances en pixels.
+`effects` is a list of at most one effect of each type, drawn in this order: drop shadow and outer glow beneath the object, the object itself (blurred by `blur`), then inner shadow and inner glow inside the object. Each effect has `type` and `enabled` (a disabled effect is kept with its settings). Colors with transparency (`#rrggbbaa`), distances in pixels.
 
 ```json
 { "type": "dropShadow", "enabled": true, "color": "#00000066", "x": 4, "y": 6, "blur": 10 }
@@ -142,48 +142,48 @@ Un objet peut aussi porter `strokes` (version 7) : des contours dessinés **sous
 { "type": "bevel", "enabled": true, "style": "bevel", "angle": 135, "depth": 6, "softness": 4, "intensity": 70, "light": "#ffffff", "shadow": "#000000" }
 ```
 
-Le biseau (version 7) simule un relief éclairé depuis `angle` degrés : `depth` en pixels, `softness` adoucit l'arête, `intensity` (0 à 100) dose lumière et ombre. `style` vaut `bevel` (relief vers l'extérieur) ou `emboss` (vers l'intérieur).
+The bevel (version 7) simulates relief lit from `angle` degrees: `depth` in pixels, `softness` softens the edge, `intensity` (0 to 100) balances light and shadow. `style` is `bevel` (raised outward) or `emboss` (inward).
 
-### Masques de calque
+### Layer masks
 
-`mask` vaut `{ "assetId": "img_…", "enabled": true }`. L'image désignée (PNG) est étirée sur la boîte de l'objet, comme une image ; seule son opacité compte : opaque, l'objet est visible, transparent, il est caché. Un masque désactivé (`enabled: false`) est gardé mais n'agit pas.
+`mask` is `{ "assetId": "img_…", "enabled": true }`. The referenced image (PNG) is stretched over the object's box, like an image; only its opacity counts: where it is opaque the object is visible, where it is transparent the object is hidden. A disabled mask (`enabled: false`) is kept but has no effect.
 
-Un objet `image` retouché (pinceau, gomme, gomme magique, filtres) pointe simplement vers une nouvelle image PNG dans `assets` : l'image d'origine n'est jamais modifiée sur place.
+An edited `image` object (brush, eraser, magic eraser, filters) simply points to a new PNG image in `assets`: the original image is never modified in place.
 
-### Calques de réglage
+### Adjustment layers
 
-Un objet `adjustment` modifie tout ce qui est dessous lui dans le même parent (plan de travail ou groupe), sans toucher aux pixels : on peut le régler, le masquer ou le supprimer à tout moment. Son `opacity` dose l'effet, son `mask` le limite à une zone. Le champ `adjustment` a un `kind` et ses réglages :
+An `adjustment` object modifies everything beneath it in the same parent (artboard or group), without touching the pixels: it can be tweaked, hidden or deleted at any time. Its `opacity` sets the strength of the effect, its `mask` limits it to an area. The `adjustment` field has a `kind` and its settings:
 
-| `kind`               | Réglages                                                                                     |
-| -------------------- | -------------------------------------------------------------------------------------------- |
-| `brightnessContrast` | `brightness`, `contrast` (−100 à 100)                                                        |
-| `levels`             | `black`, `white`, `outBlack`, `outWhite` (0 à 255), `gamma` (0,1 à 10)                       |
-| `curves`             | `rgb`, `r`, `g`, `b` : points `[entrée, sortie]` de 0 à 1                                    |
-| `exposure`           | `exposure` (IL, −5 à 5), `offset`, `gamma`                                                   |
-| `hsl`                | `hue` (−180 à 180), `saturation`, `lightness` (−100 à 100)                                   |
-| `vibrance`           | `vibrance`, `saturation` (−100 à 100)                                                        |
-| `whiteBalance`       | `temperature`, `tint` (−100 à 100)                                                           |
-| `colorBalance`       | `shadows`, `midtones`, `highlights` : `[cyan↔rouge, magenta↔vert, jaune↔bleu]` de −100 à 100 |
-| `blackWhite`         | `red`, `green`, `blue` : part de chaque canal en %                                           |
-| `photoFilter`        | `color`, `density` (0 à 100)                                                                 |
-| `gradientMap`        | `stops` : arrêts de dégradé, du plus sombre au plus clair                                    |
-| `invert`             | (aucun)                                                                                      |
-| `threshold`          | `level` (0 à 255)                                                                            |
-| `posterize`          | `levels` (2 à 32)                                                                            |
-| `gaussianBlur`       | `radius` (px du document)                                                                    |
-| `unsharpMask`        | `amount` (%), `radius` (px), `threshold` (0 à 255)                                           |
-| `clarity`            | `amount` (−100 à 100)                                                                        |
-| `noise`              | `amount` (%), `monochrome`                                                                   |
-| `vignette`           | `amount` (−100 à 100), `size`, `softness` (0 à 100)                                          |
-| `pixelate`           | `size` (px du document)                                                                      |
+| `kind`               | Settings                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------- |
+| `brightnessContrast` | `brightness`, `contrast` (−100 to 100)                                                         |
+| `levels`             | `black`, `white`, `outBlack`, `outWhite` (0 to 255), `gamma` (0.1 to 10)                       |
+| `curves`             | `rgb`, `r`, `g`, `b`: `[input, output]` points from 0 to 1                                     |
+| `exposure`           | `exposure` (EV, −5 to 5), `offset`, `gamma`                                                    |
+| `hsl`                | `hue` (−180 to 180), `saturation`, `lightness` (−100 to 100)                                   |
+| `vibrance`           | `vibrance`, `saturation` (−100 to 100)                                                         |
+| `whiteBalance`       | `temperature`, `tint` (−100 to 100)                                                            |
+| `colorBalance`       | `shadows`, `midtones`, `highlights`: `[cyan↔red, magenta↔green, yellow↔blue]` from −100 to 100 |
+| `blackWhite`         | `red`, `green`, `blue`: share of each channel in %                                             |
+| `photoFilter`        | `color`, `density` (0 to 100)                                                                  |
+| `gradientMap`        | `stops`: gradient stops, from darkest to lightest                                              |
+| `invert`             | (none)                                                                                         |
+| `threshold`          | `level` (0 to 255)                                                                             |
+| `posterize`          | `levels` (2 to 32)                                                                             |
+| `gaussianBlur`       | `radius` (document px)                                                                         |
+| `unsharpMask`        | `amount` (%), `radius` (px), `threshold` (0 to 255)                                            |
+| `clarity`            | `amount` (−100 to 100)                                                                         |
+| `noise`              | `amount` (%), `monochrome`                                                                     |
+| `vignette`           | `amount` (−100 to 100), `size`, `softness` (0 to 100)                                          |
+| `pixelate`           | `size` (document px)                                                                           |
 
-Un logiciel qui ne connaît pas les calques de réglage peut les ignorer : le reste du document reste juste, seules les corrections manquent.
+Software that does not know adjustment layers can ignore them: the rest of the document remains correct, only the corrections are missing.
 
-Depuis la version 7, le `blendMode` d'un calque de réglage est appliqué comme celui d'un objet ordinaire.
+Since version 7, the `blendMode` of an adjustment layer is applied like that of an ordinary object.
 
-### Symboles et styles enregistrés (version 7)
+### Symbols and saved styles (version 7)
 
-`symbols` range les symboles du document, par identifiant :
+`symbols` holds the document's symbols, by identifier:
 
 ```json
 "symbols": {
@@ -196,16 +196,16 @@ Depuis la version 7, le `blendMode` d'un calque de réglage est appliqué comme 
 }
 ```
 
-Les objets d'un symbole sont exprimés dans sa `box`. Chaque objet `symbol` du document les ramène dans sa propre boîte (position, taille et rotation comprises), si bien que modifier le symbole met à jour toutes ses instances. Un lecteur qui ne connaît pas les symboles peut dessiner le contenu du symbole à la place de l'instance, ou l'ignorer.
+A symbol's objects are expressed in its `box`. Each `symbol` object in the document maps them into its own box (position, size and rotation included), so editing the symbol updates all its instances. A reader that does not know symbols can draw the symbol's content in place of the instance, or ignore it.
 
-`styles` est la liste des styles enregistrés. Chaque style porte `id`, `name` et seulement ce qu'il applique : `fill`, `stroke`, `strokes`, `effects`, `opacity`, `blendMode` et `text` (réglages de caractère, pour les textes). Les champs absents ne touchent pas à l'objet. Les styles ne changent rien à l'affichage du document : ils sont là pour l'interface.
+`styles` is the list of saved styles. Each style carries `id`, `name` and only what it applies: `fill`, `stroke`, `strokes`, `effects`, `opacity`, `blendMode` and `text` (character settings, for text objects). Absent fields leave the object untouched. Styles change nothing in how the document is displayed: they are there for the interface.
 
 ## Versions
 
-- **1** (Poulpe Design 0.1) : version initiale.
-- **2** (Poulpe Design 0.2) : ajout des objets `path`. Un fichier de version 1 s'ouvre sans changement ; un fichier de version 2 ne s'ouvre pas dans Poulpe Design 0.1.
-- **3** (Poulpe Design 0.3) : contours avancés (`cap`, `join`, `dash`, `start`, `end`), `effects` sur tous les objets, `path` sur les textes. Tous ces champs sont facultatifs : un fichier de version 1 ou 2 s'ouvre sans changement ; un fichier de version 3 ne s'ouvre pas dans Poulpe Design 0.2.
-- **4** (Poulpe Design 0.4) : objets `adjustment` (calques de réglage et filtres dynamiques) et `mask` sur tous les objets. Un fichier des versions 1 à 3 s'ouvre sans changement ; un fichier de version 4 ne s'ouvre pas dans Poulpe Design 0.3.
-- **5** (Poulpe Design 0.5, mise en page) : `layout` du document, `master` et `masterId` des plans de travail, `frame` et `next` des textes, champs `{page}` et `{pages}`. Tous facultatifs : les fichiers des versions 1 à 4 s'ouvrent sans changement ; un fichier de version 5 ne s'ouvre pas dans Poulpe Design 0.4.
-- **7** (Poulpe Design 0.6, outils vectoriels) : objets `symbol`, `symbols` et `styles` du document, peintures `conic` et `pattern`, `align`, `profile` et `strokes` des contours, effet `bevel`, `features` et `columns` des textes. Tous facultatifs : les fichiers des versions 1 à 6 s'ouvrent sans changement ; un fichier de version 7 ne s'ouvre pas dans Poulpe Design 0.5.
-- **6** (Poulpe Design 0.5, impression) : `colorMode` et `cmyk` dans `layout`. Facultatifs : les fichiers des versions 1 à 5 s'ouvrent sans changement ; un fichier de version 6 ne s'ouvre pas dans une version de Poulpe Design qui ne connaît que la version 5.
+- **1** (Poulpe Design 0.1): initial version.
+- **2** (Poulpe Design 0.2): added `path` objects. A version 1 file opens unchanged; a version 2 file does not open in Poulpe Design 0.1.
+- **3** (Poulpe Design 0.3): advanced strokes (`cap`, `join`, `dash`, `start`, `end`), `effects` on all objects, `path` on text. All these fields are optional: a version 1 or 2 file opens unchanged; a version 3 file does not open in Poulpe Design 0.2.
+- **4** (Poulpe Design 0.4): `adjustment` objects (adjustment layers and dynamic filters) and `mask` on all objects. A file from versions 1 to 3 opens unchanged; a version 4 file does not open in Poulpe Design 0.3.
+- **5** (Poulpe Design 0.5, layout): document `layout`, artboard `master` and `masterId`, text `frame` and `next`, `{page}` and `{pages}` fields. All optional: files from versions 1 to 4 open unchanged; a version 5 file does not open in Poulpe Design 0.4.
+- **7** (Poulpe Design 0.6, vector tools): `symbol` objects, document `symbols` and `styles`, `conic` and `pattern` paints, stroke `align`, `profile` and `strokes`, `bevel` effect, text `features` and `columns`. All optional: files from versions 1 to 6 open unchanged; a version 7 file does not open in Poulpe Design 0.5.
+- **6** (Poulpe Design 0.5, printing): `colorMode` and `cmyk` in `layout`. Optional: files from versions 1 to 5 open unchanged; a version 6 file does not open in a version of Poulpe Design that only knows version 5.

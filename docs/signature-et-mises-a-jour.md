@@ -1,44 +1,44 @@
-# Signature des installeurs et mises à jour automatiques
+# Installer signing and automatic updates
 
-Ce qui est prêt dans Poulpe Design, et ce qu'il reste à faire de votre côté, partie par partie. Chaque partie est indépendante : le workflow « Installeurs de bureau » l'active dès que ses secrets existent (dépôt GitHub > Settings > Secrets and variables > Actions), et continue sinon à produire des installeurs non signés, comme avant.
+What is ready in Poulpe Design, and what is left for you to do, part by part. Each part is independent: the "Installeurs de bureau" (desktop installers) workflow turns it on as soon as its secrets exist (GitHub repository > Settings > Secrets and variables > Actions), and otherwise keeps producing unsigned installers, as before.
 
-## 1. Mises à jour automatiques (gratuit)
+## 1. Automatic updates (free)
 
-**Prêt :** l'appli cherche une nouvelle version au lancement et dans Aide > Rechercher les mises à jour…, la télécharge, vérifie sa signature et redémarre. La clé publique est dans `apps/desktop/src-tauri/tauri.conf.json`.
+**Ready:** the app checks for a new version at launch and in Help > Check for Updates…, downloads it, verifies its signature and restarts. The public key is in `apps/desktop/src-tauri/tauri.conf.json`.
 
-**À faire :**
+**To do:**
 
-1. Ajouter le secret `TAURI_SIGNING_PRIVATE_KEY` avec la clé privée créée sur son ordinateur par `npx @tauri-apps/cli signer generate -w ~/Documents/poulpe-maj.key --ci` (la clé publique correspondante est dans `tauri.conf.json` ; la clé privée ne doit jamais être publiée ni perdue : sans elle, plus aucune mise à jour ne peut être signée pour les applis déjà installées). Pas de mot de passe : `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` n'est pas nécessaire.
-2. Rendre les versions téléchargeables publiquement : l'appli lit `https://github.com/KAYO74/PoulpeDesign/releases/latest/download/latest.json`, qu'un dépôt privé ne sert pas. Tant que le dépôt est privé, l'appli ne trouve simplement pas de mise à jour.
-3. Publier une version comme d'habitude (onglet Actions, « Installeurs de bureau ») : le fichier `latest.json` et les fichiers de mise à jour signés s'ajoutent tout seuls aux installeurs.
+1. Add the `TAURI_SIGNING_PRIVATE_KEY` secret with the private key created on your own computer by `npx @tauri-apps/cli signer generate -w ~/Documents/poulpe-maj.key --ci` (the matching public key is in `tauri.conf.json`; the private key must never be published or lost: without it, no update can ever be signed again for apps already installed). No password: `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` is not needed.
+2. Make releases publicly downloadable: the app reads `https://github.com/KAYO74/PoulpeDesign/releases/latest/download/latest.json`, which a private repository does not serve. As long as the repository is private, the app simply finds no update.
+3. Publish a release as usual (Actions tab, "Installeurs de bureau"): the `latest.json` file and the signed update files are added to the installers automatically.
 
-Sous Linux, la mise à jour automatique concerne l'AppImage ; les paquets `.deb` et Flathub se mettent à jour par le gestionnaire de paquets.
+On Linux, automatic updates apply to the AppImage; the `.deb` and Flathub packages are updated by the package manager.
 
-## 2. Windows (payant, ou gratuit pour un projet libre public)
+## 2. Windows (paid, or free for a public open-source project)
 
-Sans signature, Windows affiche « Windows a protégé votre ordinateur » au premier lancement.
+Without a signature, Windows shows "Windows protected your PC" on first launch.
 
-- **Azure Trusted Signing** (Microsoft), environ 10 dollars par mois, pour une personne ou une entreprise vérifiée. **Prêt dans le workflow** : créer un compte Trusted Signing et un profil de certificat, puis ajouter les secrets `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` et les variables `AZURE_SIGNING_ENDPOINT` (par exemple `https://weu.codesigning.azure.net`), `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE`.
-- **SignPath Foundation** : gratuit pour les logiciels libres, sur demande, mais seulement pour un dépôt public. À demander une fois le dépôt rendu public ; le workflow devra alors appeler leur service (petite modification).
-- Un certificat classique (« OV ») coûte 200 à 400 euros par an et doit désormais être stocké sur une clé matérielle, peu pratique avec GitHub Actions.
+- **Azure Trusted Signing** (Microsoft), about 10 dollars a month, for a verified individual or company. **Ready in the workflow**: create a Trusted Signing account and a certificate profile, then add the secrets `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` and the variables `AZURE_SIGNING_ENDPOINT` (for example `https://weu.codesigning.azure.net`), `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE`.
+- **SignPath Foundation**: free for open-source software, on request, but only for a public repository. To be requested once the repository is public; the workflow will then need to call their service (a small change).
+- A classic ("OV") certificate costs 200 to 400 euros a year and must now be stored on a hardware key, which is impractical with GitHub Actions.
 
-## 3. macOS (99 dollars par an)
+## 3. macOS (99 dollars a year)
 
-Sans signature ni notarisation, macOS dit que l'appli « ne peut pas être ouverte ».
+Without signing and notarization, macOS says the app "cannot be opened".
 
-**À faire :** s'inscrire à l'Apple Developer Program (99 dollars par an), créer un certificat « Developer ID Application », l'exporter en `.p12`, puis ajouter les secrets : `APPLE_CERTIFICATE` (le `.p12` en base64), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY` (par exemple `Developer ID Application: Prénom Nom (ABCDE12345)`), `APPLE_ID`, `APPLE_PASSWORD` (un mot de passe d'application créé sur appleid.apple.com) et `APPLE_TEAM_ID`. Le workflow signe et fait notariser l'appli automatiquement.
+**To do:** join the Apple Developer Program (99 dollars a year), create a "Developer ID Application" certificate, export it as `.p12`, then add the secrets: `APPLE_CERTIFICATE` (the `.p12` in base64), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY` (for example `Developer ID Application: Prénom Nom (ABCDE12345)`), `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password created on appleid.apple.com) and `APPLE_TEAM_ID`. The workflow signs and notarizes the app automatically.
 
-## 4. Linux : Flathub (gratuit)
+## 4. Linux: Flathub (free)
 
-**Prêt :** `packaging/flathub/` contient le manifeste Flatpak, la fiche AppStream (vérifiée avec `appstreamcli validate`) et le raccourci de bureau, sous l'identifiant `io.github.kayo74.Poulpe` (Flathub exige un identifiant lié à un domaine ou à un compte GitHub qu'on contrôle).
+**Ready:** `packaging/flathub/` contains the Flatpak manifest, the AppStream metadata (checked with `appstreamcli validate`) and the desktop entry, under the identifier `io.github.kayo74.Poulpe` (Flathub requires an identifier tied to a domain or a GitHub account you control).
 
-**À faire, une fois le dépôt public et la version 1.0.0 publiée :** remplacer dans le manifeste l'empreinte `sha256` par celle du `.deb` publié, puis proposer l'appli sur Flathub (une demande d'intégration sur github.com/flathub/flathub, en suivant leur guide). Flathub relit la demande et héberge ensuite les mises à jour.
+**To do, once the repository is public and version 1.0.0 is released:** replace the `sha256` hash in the manifest with that of the published `.deb`, then submit the app to Flathub (a submission on github.com/flathub/flathub, following their guide). Flathub reviews the submission and then hosts the updates.
 
-## Résumé des coûts
+## Cost summary
 
-| Partie                    | Coût                              | Condition                  |
-| ------------------------- | --------------------------------- | -------------------------- |
-| Mises à jour automatiques | Gratuit                           | Dépôt (ou versions) public |
-| Windows                   | ~10 $/mois, ou gratuit (SignPath) | SignPath : dépôt public    |
-| macOS                     | 99 $/an                           | Compte Apple Developer     |
-| Linux (Flathub)           | Gratuit                           | Dépôt public               |
+| Part              | Cost                           | Condition                       |
+| ----------------- | ------------------------------ | ------------------------------- |
+| Automatic updates | Free                           | Public repository (or releases) |
+| Windows           | ~$10/month, or free (SignPath) | SignPath: public repository     |
+| macOS             | $99/year                       | Apple Developer account         |
+| Linux (Flathub)   | Free                           | Public repository               |

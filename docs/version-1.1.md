@@ -1,17 +1,17 @@
 # Version 1.1
 
-La version 1.1 réunit tout ce qui a été ajouté depuis la 1.0 : le nouveau nom Poulpe Design, la gestion avancée des calques ([calques.md](calques.md)), la fenêtre Préférences et la page Diagnostic, l'optimisation du rendu ([performances.md](performances.md)), la colonne d'outils à la carte ([panneaux-libres.md](panneaux-libres.md)) et le choix de la langue à l'installation, décrit ici. Les installations 1.0 se mettent à jour toutes seules.
+Version 1.1 brings together everything added since 1.0: the new name Poulpe Design, advanced layer management ([calques.md](calques.md)), the Preferences window and the Diagnostics page, rendering optimization ([performances.md](performances.md)), the customizable tools column ([panneaux-libres.md](panneaux-libres.md)) and choosing the language at installation, described here. 1.0 installations update themselves automatically.
 
-## Langue choisie à l'installation
+## Language chosen at installation
 
-- **Windows (installeur `.exe`)** : l'assistant d'installation demande d'abord la langue (français ou anglais). Un petit script de l'installeur, `apps/desktop/src-tauri/windows/langue.nsh`, écrit ce choix dans `langue.txt`, à côté de `Poulpe.exe`. Au lancement, l'appli le lit (commande `installer_language` de `src-tauri/src/lib.rs`) et l'applique.
-  - Le choix de l'installeur est appliqué une seule fois : les mises à jour automatiques reprennent la même langue sans redemander, et ne défont donc pas un changement fait ensuite dans les Préférences. Une réinstallation avec une autre langue la change.
-  - La mise à jour depuis la 1.0 demande la langue une fois, puisque l'ancien installeur ne l'avait pas enregistrée.
-- **macOS, Linux et installeur `.msi`** : sans assistant qui pose la question, une fenêtre bilingue la demande au tout premier lancement (`apps/editor/src/startLanguage.ts`). Quelqu'un qui utilisait déjà l'appli garde sa langue sans être dérangé.
-- **Version navigateur** : la langue du navigateur, comme avant.
+- **Windows (`.exe` installer)**: the setup wizard first asks for the language (French or English). A small installer script, `apps/desktop/src-tauri/windows/langue.nsh`, writes this choice to `langue.txt`, next to `Poulpe.exe`. At launch, the app reads it (the `installer_language` command in `src-tauri/src/lib.rs`) and applies it.
+  - The installer's choice is applied only once: automatic updates keep the same language without asking again, and so do not undo a change made later in Preferences. Reinstalling with a different language changes it.
+  - Updating from 1.0 asks for the language once, since the old installer did not record it.
+- **macOS, Linux and `.msi` installer**: with no wizard to ask the question, a bilingual window asks for it on the very first launch (`apps/editor/src/startLanguage.ts`). Someone who was already using the app keeps their language without being bothered.
+- **Browser version**: the browser's language, as before.
 
-La langue est choisie avant l'écran d'accueil, qui s'affiche donc directement dans la bonne langue.
+The language is chosen before the welcome screen, which therefore appears directly in the right language.
 
-## Langue et thème dans les Préférences seulement
+## Language and theme in Preferences only
 
-Les boutons de langue et de thème de la barre d'outils, et les sous-menus Affichage > Thème et Affichage > Langue, sont retirés. Les deux réglages se trouvent dans **Édition > Préférences** : la langue dans Général, le thème sombre ou clair dans Affichage.
+The language and theme buttons in the toolbar, and the View > Theme and View > Language submenus, have been removed. Both settings are in **Edit > Preferences**: the language under General, the dark or light theme under Display.

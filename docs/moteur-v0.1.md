@@ -1,88 +1,88 @@
-# Moteur d'édition v0.1 : état et organisation du code
+# Editing engine v0.1: status and code organization
 
-5 octobre 2026
+October 5, 2026
 
-Cette page dit ce que contient le code de la v0.1, comment le code est découpé, ce que donne la mesure des performances sous Linux et les limites connues.
+This page describes what the v0.1 code contains, how the code is split up, what the performance measurements under Linux show, and the known limitations.
 
-## Lancer Poulpe Design
+## Running Poulpe Design
 
-Il faut Node 20 ou plus et pnpm 10 (`corepack enable` suffit).
+You need Node 20 or later and pnpm 10 (`corepack enable` is enough).
 
 ```sh
 pnpm install
-pnpm dev            # éditeur dans le navigateur : http://localhost:5173
-pnpm test           # tests du moteur
-pnpm e2e            # tests de bout en bout dans Chromium
+pnpm dev            # editor in the browser: http://localhost:5173
+pnpm test           # engine tests
+pnpm e2e            # end-to-end tests in Chromium
 ```
 
-Appli de bureau : il faut en plus [Rust et les dépendances système de Tauri](https://v2.tauri.app/start/prerequisites/).
+Desktop app: you also need [Rust and Tauri's system dependencies](https://v2.tauri.app/start/prerequisites/).
 
 ```sh
-pnpm desktop:dev    # fenêtre de bureau qui recharge le code à chaud
-pnpm desktop:build  # installeurs pour le système courant (dans apps/desktop/src-tauri/target/release/bundle)
+pnpm desktop:dev    # desktop window with hot reload
+pnpm desktop:build  # installers for the current system (in apps/desktop/src-tauri/target/release/bundle)
 ```
 
-Les installeurs des trois systèmes sont produits par GitHub Actions (`.github/workflows/desktop.yml`), lancé à la main, sur une étiquette `v*` ou quand une PR touche l'appli de bureau.
+The installers for all three operating systems are built by GitHub Actions (`.github/workflows/desktop.yml`), run manually, on a `v*` tag, or when a PR touches the desktop app.
 
-## Organisation
+## Organization
 
-| Dossier           | Rôle                                                                                                                                                                         |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core`   | Modèle de document, géométrie, couleurs, mise en page du texte, commandes et historique, export SVG, fichier `.poulpe`. Aucune dépendance au navigateur : testé avec Vitest. |
-| `packages/render` | Rendu du document sur un canevas, export PNG et JPEG.                                                                                                                        |
-| `apps/editor`     | L'interface (React + Vite) : fenêtre façon Affinity, outils, panneaux, menus, raccourcis, entrées et sorties de fichiers.                                                    |
-| `apps/desktop`    | L'appli de bureau Tauri 2 qui embarque `apps/editor` : fenêtre, association des fichiers `.poulpe`, polices installées.                                                      |
+| Folder            | Role                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core`   | Document model, geometry, colors, text layout, commands and history, SVG export, `.poulpe` file. No browser dependency: tested with Vitest. |
+| `packages/render` | Rendering the document onto a canvas, PNG and JPEG export.                                                                                  |
+| `apps/editor`     | The interface (React + Vite): Affinity-style window, tools, panels, menus, shortcuts, file input and output.                                |
+| `apps/desktop`    | The Tauri 2 desktop app that embeds `apps/editor`: window, `.poulpe` file association, installed fonts.                                     |
 
-Un geste devient une commande, la commande modifie le document, et le canevas se redessine. Les documents sont immuables (immer) : chaque commande produit un nouveau document qui partage tout ce qui n'a pas changé avec le précédent, ce qui rend l'annulation illimitée et peu coûteuse. Un geste (glisser, redimensionner, régler une couleur au curseur) ne laisse qu'une seule entrée dans l'historique.
+A gesture becomes a command, the command modifies the document, and the canvas redraws. Documents are immutable (immer): each command produces a new document that shares everything that has not changed with the previous one, which makes undo unlimited and cheap. A gesture (dragging, resizing, adjusting a color with a slider) leaves only one entry in the history.
 
-## Ce que fait la v0.1
+## What v0.1 does
 
-- **Fenêtre façon Affinity** : menus, barre d'outils, barre contextuelle, colonne d'outils à droite (ou à gauche), Studio à onglets (Couleur, Contour, Transformation, Caractère, Calques, Historique) à droite ou à gauche, thème sombre ou clair, français ou anglais. Les réglages sont mémorisés.
-- **Outils** : déplacer, sélection directe (dans les groupes), plan de travail, rectangle (coins arrondis), ellipse, polygone, étoile, ligne, texte, image, pipette, main, zoom. Raccourcis clavier à une touche comme dans Affinity.
-- **Objets** : sélection au clic et au lasso, déplacement, redimensionnement (Maj garde les proportions, Alt depuis le centre), rotation (Maj par pas de 15°), duplication par Alt + glisser, alignement, répartition, retournement, rotation de 90°, magnétisme sur les bords et centres des objets, des plans de travail et des repères, règles, repères et grille.
-- **Repères** : glisser depuis une règle pour poser un repère, le glisser pour le déplacer, le ramener sur la règle pour le retirer ; Affichage > Effacer les repères. Ils sont enregistrés dans le document.
-- **Calques** : arbre des plans de travail et des objets, glisser-déposer pour réordonner ou ranger dans un groupe, groupes, verrouillage, visibilité, renommage, opacité, 16 modes de fusion, masque d'écrêtage simple.
-- **Couleur** : remplissage et contour, sélecteur TSV avec teinte et opacité, saisie hexadécimale, RVB ou TSL, couleurs récentes, nuancier du document, dégradés linéaires et radiaux avec éditeur d'arrêts.
-- **Texte** : texte artistique (clic) ou bloc de texte (glisser), édition sur le canevas, police (7 polices libres fournies et polices installées), graisse, taille, italique, souligné, barré, majuscules, interlettrage, interligne, alignement et justification. Police, taille, graisse, italique, souligné, barré, interlettrage et couleur peuvent changer à l'intérieur d'un même texte : on sélectionne des caractères pendant l'édition et on règle le panneau Caractère ou Couleur ; sans sélection, le réglage vaut pour la suite de la saisie.
-- **Images** : import, recadrage (double-clic sur l'image ou bouton Recadrer : les poignées changent le cadre, glisser déplace l'image dans le cadre, la partie cachée reste visible en transparence), retour à l'image entière.
-- **Document** : plusieurs plans de travail, formats prédéfinis, annuler et rétablir illimités avec panneau Historique, copier, couper, coller, dupliquer.
-- **Fichiers** : enregistrement et ouverture du format `.poulpe` ([spécification](format-poulpe.md)), import d'images (menu ou glisser-déposer), export PNG et JPEG (échelle, qualité, fond transparent), SVG vectoriel et PDF vectoriel multipage avec les polices intégrées.
-- **Brouillons** : le document non enregistré est copié dans le navigateur (IndexedDB) peu après chaque modification. Si la fenêtre se ferme sans enregistrer, Poulpe Design propose de le rouvrir au lancement suivant. Le brouillon est effacé à l'enregistrement.
-- **Polices du PDF** : les polices fournies avec Poulpe Design sont intégrées au PDF (lues dans leurs fichiers WOFF et converties en TrueType). Les polices installées le sont aussi dans l'appli de bureau, et dans le navigateur quand il donne accès aux polices locales (Chrome, Edge). Une police PostScript (OpenType CFF) ou introuvable est remplacée par une police standard, et Poulpe Design le signale à l'export.
-- **Bureau** : appli Tauri, installeurs Windows, macOS et Linux, double-clic sur un `.poulpe` pour l'ouvrir, liste des polices installées.
+- **Affinity-style window**: menus, toolbar, context toolbar, tools column on the right (or left), tabbed Studio (Color, Stroke, Transform, Character, Layers, History) on the right or left, dark or light theme, French or English. Settings are remembered.
+- **Tools**: move, direct selection (inside groups), artboard, rectangle (rounded corners), ellipse, polygon, star, line, text, image, color picker, hand, zoom. Single-key keyboard shortcuts as in Affinity.
+- **Objects**: click and marquee selection, moving, resizing (Shift keeps proportions, Alt from the center), rotation (Shift in 15° steps), duplication with Alt + drag, alignment, distribution, flipping, 90° rotation, snapping to the edges and centers of objects, artboards and guides, rulers, guides and grid.
+- **Guides**: drag from a ruler to place a guide, drag it to move it, drag it back onto the ruler to remove it; View > Clear guides. They are saved in the document.
+- **Layers**: tree of artboards and objects, drag and drop to reorder or put into a group, groups, locking, visibility, renaming, opacity, 16 blend modes, simple clipping mask.
+- **Color**: fill and stroke, HSV picker with hue and opacity, hexadecimal, RGB or HSL input, recent colors, document swatches, linear and radial gradients with a stop editor.
+- **Text**: artistic text (click) or text block (drag), on-canvas editing, font (7 bundled free fonts and installed fonts), weight, size, italic, underline, strikethrough, capitals, letter spacing, line spacing, alignment and justification. Font, size, weight, italic, underline, strikethrough, letter spacing and color can change within a single text: select characters while editing and adjust the Character or Color panel; with no selection, the setting applies to what you type next.
+- **Images**: import, cropping (double-click the image or the Crop button: the handles change the frame, dragging moves the image within the frame, the hidden part stays visible as a transparent overlay), reset to the full image.
+- **Document**: multiple artboards, preset sizes, unlimited undo and redo with a History panel, copy, cut, paste, duplicate.
+- **Files**: saving and opening the `.poulpe` format ([specification](format-poulpe.md)), image import (menu or drag and drop), PNG and JPEG export (scale, quality, transparent background), vector SVG and multi-page vector PDF with embedded fonts.
+- **Drafts**: the unsaved document is copied to the browser (IndexedDB) shortly after each change. If the window closes without saving, Poulpe Design offers to reopen it on the next launch. The draft is cleared on save.
+- **PDF fonts**: the fonts bundled with Poulpe Design are embedded in the PDF (read from their WOFF files and converted to TrueType). Installed fonts are embedded too in the desktop app, and in the browser when it gives access to local fonts (Chrome, Edge). A PostScript font (OpenType CFF) or a font that cannot be found is replaced with a standard font, and Poulpe Design reports it on export.
+- **Desktop**: Tauri app, Windows, macOS and Linux installers, double-click a `.poulpe` file to open it, list of installed fonts.
 
-## Écarts avec le cadrage, assumés pour cette première version
+## Deviations from the scope, accepted for this first version
 
-- **Rendu en Canvas 2D au lieu de CanvasKit.** Tout le dessin passe par `packages/render`, si bien que CanvasKit pourra le remplacer sans toucher au reste. Canvas 2D suffit pour la v0.1, utilise directement les polices du système et ne charge pas 7 Mo de WebAssembly ; CanvasKit devient utile en v0.3 pour les opérations booléennes.
-- **PDF par jsPDF et svg2pdf au lieu de pdf-lib.** Le PDF est fabriqué à partir de l'export SVG, ce qui garde les dégradés et les tracés vectoriels ; pdf-lib ne sait pas dessiner de dégradés.
-- **Menus dans la fenêtre** plutôt que menus natifs du système, identiques dans le navigateur et sur le bureau.
+- **Canvas 2D rendering instead of CanvasKit.** All drawing goes through `packages/render`, so CanvasKit can replace it without touching anything else. Canvas 2D is enough for v0.1, uses the system fonts directly and does not load 7 MB of WebAssembly; CanvasKit becomes useful in v0.3 for Boolean operations.
+- **PDF through jsPDF and svg2pdf instead of pdf-lib.** The PDF is built from the SVG export, which keeps gradients and vector paths; pdf-lib cannot draw gradients.
+- **In-window menus** rather than native system menus, identical in the browser and on the desktop.
 
-## Performances de l'appli de bureau sous Linux
+## Desktop app performance under Linux
 
-Le cadrage demandait de mesurer l'appli de bureau sous Linux, où Tauri s'appuie sur WebKitGTK, avant de garder Tauri plutôt qu'Electron. La mesure est intégrée à Poulpe Design : `?bench` dans l'adresse de l'éditeur, ou `POULPE_BENCH=1 poulpe` pour l'appli de bureau, qui écrit son rapport sur la sortie standard. Elle dessine 1 000 objets (formes, dégradés, contours, rotations, 40 blocs de texte) sur un plan de travail 1920 × 1080 et chronomètre 60 images par scénario, en forçant la fin du dessin à chaque image.
+The scope asked us to measure the desktop app under Linux, where Tauri relies on WebKitGTK, before keeping Tauri rather than Electron. The benchmark is built into Poulpe Design: `?bench` in the editor's address, or `POULPE_BENCH=1 poulpe` for the desktop app, which writes its report to standard output. It draws 1,000 objects (shapes, gradients, strokes, rotations, 40 text blocks) on a 1920 × 1080 artboard and times 60 frames per scenario, forcing drawing to finish on each frame.
 
-Première mesure, le 5 octobre 2026, sur une machine virtuelle Linux sans carte graphique (Ubuntu 24.04, 4 cœurs Xeon à 2,8 GHz, écran virtuel Xvfb, fenêtre de 1056 × 718 px de canevas). Temps moyen pour dessiner une image, et nombre d'images par seconde correspondant :
+First measurement, on October 5, 2026, on a Linux virtual machine without a graphics card (Ubuntu 24.04, 4 Xeon cores at 2.8 GHz, Xvfb virtual display, 1056 × 718 px canvas window). Average time to draw one frame, and the corresponding frames per second:
 
-| Scénario                        | Chromium 141     | Appli de bureau (WebKitGTK 2.52) | Écart |
-| ------------------------------- | ---------------- | -------------------------------- | ----- |
-| Redessin, 720 formes unies      | 16 ms (61 i/s)   | 74 ms (13 i/s)                   | × 4,5 |
-| Redessin, 240 formes en dégradé | 8,9 ms (113 i/s) | 39 ms (26 i/s)                   | × 4,4 |
-| Redessin, 40 blocs de texte     | 2,6 ms (381 i/s) | 25 ms (40 i/s)                   | × 9,5 |
-| Redessin complet (1 000 objets) | 26 ms (38 i/s)   | 103 ms (10 i/s)                  | × 3,9 |
-| Déplacement de 50 objets        | 32 ms (31 i/s)   | 121 ms (8 i/s)                   | × 3,8 |
-| Zoom et défilement              | 58 ms (17 i/s)   | 186 ms (5 i/s)                   | × 3,2 |
+| Scenario                    | Chromium 141     | Desktop app (WebKitGTK 2.52) | Ratio |
+| --------------------------- | ---------------- | ---------------------------- | ----- |
+| Redraw, 720 solid shapes    | 16 ms (61 fps)   | 74 ms (13 fps)               | × 4.5 |
+| Redraw, 240 gradient shapes | 8.9 ms (113 fps) | 39 ms (26 fps)               | × 4.4 |
+| Redraw, 40 text blocks      | 2.6 ms (381 fps) | 25 ms (40 fps)               | × 9.5 |
+| Full redraw (1,000 objects) | 26 ms (38 fps)   | 103 ms (10 fps)              | × 3.9 |
+| Moving 50 objects           | 32 ms (31 fps)   | 121 ms (8 fps)               | × 3.8 |
+| Zooming and scrolling       | 58 ms (17 fps)   | 186 ms (5 fps)               | × 3.2 |
 
-Ce qu'on en retient :
+Takeaways:
 
-- **Sans carte graphique, WebKitGTK dessine environ 4 fois plus lentement que Chromium**, et le texte jusqu'à 10 fois plus lentement. Le coût est proportionnel au nombre d'objets : environ 0,1 ms par objet dans l'appli de bureau contre 0,03 ms dans Chromium.
-- Estimation tirée de ce coût par objet : un document courant (affiche, publication de réseau social : quelques dizaines d'objets) se dessine en moins de 16 ms, donc à 60 images par seconde, dans les deux cas ; dans l'appli de bureau, sur ce type de machine, la fluidité baisse au-delà de 150 à 200 objets.
-- Ces chiffres sont un plancher : WebKitGTK n'a pas pu utiliser d'accélération graphique ici. Il faut refaire la mesure sur un vrai poste Linux (`POULPE_BENCH=1 poulpe`) avant de trancher entre Tauri et Electron.
-- Déjà fait : la mise en page des textes et le tracé des formes sont mémorisés tant qu'un objet ne change pas (gain de 10 à 25 % sur le texte). Pistes suivantes, dans l'ordre : pendant un déplacement, garder en image les objets qui ne bougent pas et ne redessiner que la sélection ; puis le rendu CanvasKit (WebGL) prévu en v0.3, qui ne passe plus par le Canvas 2D de WebKitGTK.
+- **Without a graphics card, WebKitGTK draws about 4 times slower than Chromium**, and text up to 10 times slower. The cost is proportional to the number of objects: about 0.1 ms per object in the desktop app versus 0.03 ms in Chromium.
+- Estimate based on this per-object cost: a typical document (poster, social media post: a few dozen objects) draws in under 16 ms, so at 60 frames per second, in both cases; in the desktop app, on this kind of machine, smoothness drops beyond 150 to 200 objects.
+- These figures are a floor: WebKitGTK could not use any graphics acceleration here. The measurement must be repeated on a real Linux workstation (`POULPE_BENCH=1 poulpe`) before deciding between Tauri and Electron.
+- Already done: text layout and shape paths are cached as long as an object does not change (a 10 to 25% gain on text). Next leads, in order: during a move, keep the objects that do not move as an image and redraw only the selection; then the CanvasKit (WebGL) rendering planned for v0.3, which no longer goes through WebKitGTK's Canvas 2D.
 
-## Reste à faire
+## Still to do
 
-La v0.1 est complète. Les limites connues, à reprendre dans les versions suivantes :
+v0.1 is complete. Known limitations, to be addressed in later versions:
 
-- L'export PDF n'intègre que les polices TrueType ; les polices PostScript (OpenType CFF) sont remplacées par une police standard.
-- Les polices fournies ne couvrent que l'alphabet latin.
-- Les flèches haut et bas, Début et Fin suivent la mise en page de Poulpe Design ; les raccourcis de mot (Ctrl + flèches) suivent ceux de la zone de saisie du système, qui peuvent différer légèrement sur un texte à plusieurs tailles.
+- PDF export only embeds TrueType fonts; PostScript fonts (OpenType CFF) are replaced with a standard font.
+- The bundled fonts only cover the Latin alphabet.
+- The up and down arrows, Home and End follow Poulpe Design's layout; word shortcuts (Ctrl + arrows) follow those of the system's text input field, which may differ slightly on text with several sizes.

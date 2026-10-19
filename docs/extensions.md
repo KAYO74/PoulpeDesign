@@ -1,14 +1,14 @@
-# Écrire une extension Poulpe Design
+# Writing a Poulpe Design extension
 
-Une extension est un fichier JavaScript (`.js`) qui ajoute des commandes au menu **Extensions**. On l'installe depuis Extensions > Gérer les extensions… > Installer depuis un fichier…. Trois exemples complets sont dans [`apps/editor/src/extensions/examples/`](../apps/editor/src/extensions/examples/).
+An extension is a JavaScript file (`.js`) that adds commands to the **Extensions** menu. You install it from Extensions > Manage Extensions… > Install from File…. Three complete examples are in [`apps/editor/src/extensions/examples/`](../apps/editor/src/extensions/examples/).
 
-## Le plus petit exemple
+## The smallest example
 
 ```js
-poulpe.extension({ id: 'com.exemple.carre', name: 'Carré rouge', version: '1.0.0', author: 'Moi' });
+poulpe.extension({ id: 'com.example.square', name: 'Red Square', version: '1.0.0', author: 'Me' });
 
 poulpe.command({
-  id: 'carre',
+  id: 'square',
   title: { fr: 'Ajouter un carré rouge', en: 'Add a Red Square' },
   run: function () {
     var ab = poulpe.artboard();
@@ -25,49 +25,43 @@ poulpe.command({
 });
 ```
 
-## Ce qu'une extension peut faire
+## What an extension can do
 
-Le code tourne dans un interpréteur JavaScript isolé (QuickJS) : il n'y a ni `window`, ni `document`, ni `fetch`, ni accès aux fichiers. Une commande est arrêtée après 5 secondes de calcul ; la mémoire est limitée à 64 Mo. Tout passe par l'objet `poulpe` :
+The code runs in an isolated JavaScript interpreter (QuickJS): there is no `window`, no `document`, no `fetch` and no file access. A command is stopped after 5 seconds of computation; memory is limited to 64 MB. Everything goes through the `poulpe` object:
 
-| Fonction                                                         | Rôle                                                                                                                                             |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `poulpe.extension({ id, name, version, description?, author? })` | Obligatoire, une fois. `id` : lettres, chiffres, points, tirets (par exemple `com.exemple.outil`).                                               |
-| `poulpe.command({ id, title, params?, needsSelection?, run })`   | Ajoute une commande. `title` : texte, ou `{ fr, en }`. `run(réglages)` est appelée quand on choisit la commande.                                 |
-| `poulpe.lang`                                                    | Langue de l'interface : `'fr'` ou `'en'`.                                                                                                        |
-| `poulpe.document()`                                              | Nom du document et liste des plans de travail (`id`, `name`, `x`, `y`, `width`, `height`).                                                       |
-| `poulpe.artboard()`                                              | Plan de travail actif, avec ses objets (`children`).                                                                                             |
-| `poulpe.selection()`                                             | Copies des objets sélectionnés.                                                                                                                  |
-| `poulpe.find(id)`                                                | Copie d'un objet, ou `null`.                                                                                                                     |
-| `poulpe.create(forme)`                                           | Crée un objet, renvoie son id (voir ci-dessous). `parent` : id d'un plan de travail ou d'un groupe (par défaut le plan actif).                   |
-| `poulpe.update(id, changements)`                                 | Change `x`, `y`, `width`, `height`, `rotation`, `opacity`, `name`, `visible`, `locked`, `fill`, `stroke`, `strokeWidth`, `cornerRadius`, `text`. |
-| `poulpe.remove(id ou [ids])`                                     | Supprime des objets.                                                                                                                             |
-| `poulpe.group([ids], nom?)`                                      | Groupe des objets, renvoie l'id du groupe.                                                                                                       |
-| `poulpe.select([ids])`                                           | Change la sélection.                                                                                                                             |
-| `poulpe.toast(message)`                                          | Affiche un court message.                                                                                                                        |
-| `console.log(…)`                                                 | Écrit dans la console de développement.                                                                                                          |
+| Function                                                         | Purpose                                                                                                                                           |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `poulpe.extension({ id, name, version, description?, author? })` | Required, once. `id`: letters, digits, dots, hyphens (for example `com.exemple.outil`).                                                           |
+| `poulpe.command({ id, title, params?, needsSelection?, run })`   | Adds a command. `title`: a string, or `{ fr, en }`. `run(settings)` is called when the command is chosen.                                         |
+| `poulpe.lang`                                                    | Interface language: `'fr'` or `'en'`.                                                                                                             |
+| `poulpe.document()`                                              | Document name and list of artboards (`id`, `name`, `x`, `y`, `width`, `height`).                                                                  |
+| `poulpe.artboard()`                                              | Active artboard, with its objects (`children`).                                                                                                   |
+| `poulpe.selection()`                                             | Copies of the selected objects.                                                                                                                   |
+| `poulpe.find(id)`                                                | Copy of an object, or `null`.                                                                                                                     |
+| `poulpe.create(shape)  `                                         | Creates an object and returns its id (see below). `parent`: id of an artboard or a group (defaults to the active artboard).                       |
+| `poulpe.update(id, changements)`                                 | Changes `x`, `y`, `width`, `height`, `rotation`, `opacity`, `name`, `visible`, `locked`, `fill`, `stroke`, `strokeWidth`, `cornerRadius`, `text`. |
+| `poulpe.remove(id or [ids])`                                     | Deletes objects.                                                                                                                                  |
+| `poulpe.group([ids], name?)`                                     | Groups objects and returns the group's id.                                                                                                        |
+| `poulpe.select([ids])`                                           | Changes the selection.                                                                                                                            |
+| `poulpe.toast(message)`                                          | Shows a short message.                                                                                                                            |
+| `console.log(…)`                                                 | Writes to the developer console.                                                                                                                  |
 
-Les coordonnées sont en pixels du document (pas relatives au plan de travail). Les couleurs s'écrivent `#rrggbb` ou `#rrggbbaa` ; `null` veut dire « aucun ».
+Coordinates are in document pixels (not relative to the artboard). Colors are written `#rrggbb` or `#rrggbbaa`; `null` means "none".
 
-Toutes les modifications d'une commande forment **une seule étape d'historique** : Ctrl+Z annule la commande en entier. Si la commande lève une erreur, rien n'est modifié et un message s'affiche.
+All the changes made by a command form **a single history step**: Ctrl+Z undoes the whole command. If the command throws an error, nothing is changed and a message is shown.
 
-### Formes
+### Shapes
 
-`poulpe.create({ type, … })` accepte `type` : `rect`, `ellipse`, `polygon` (`sides`), `star` (`points`, `innerRatio`), `line`, `text` (`text`, `fontSize`, `fontFamily`, `fontWeight`) et `path` (`d` : données de tracé SVG, en coordonnées du document ; la boîte suit le tracé). Communs : `x`, `y`, `width`, `height`, `name`, `fill`, `stroke`, `strokeWidth`, `opacity`, `rotation`, `cornerRadius` (rectangle).
+`poulpe.create({ type, … })` accepts `type`: `rect`, `ellipse`, `polygon` (`sides`), `star` (`points`, `innerRatio`), `line`, `text` (`text`, `fontSize`, `fontFamily`, `fontWeight`) and `path` (`d`: SVG path data, in document coordinates; the bounding box follows the path). Common to all: `x`, `y`, `width`, `height`, `name`, `fill`, `stroke`, `strokeWidth`, `opacity`, `rotation`, `cornerRadius` (rectangle).
 
-### Réglages d'une commande
+### Command settings
 
-Avec `params`, Poulpe Design demande les réglages dans une fenêtre avant d'appeler `run(réglages)`. Chaque réglage : `{ id, label, type, default, … }` avec `type` :
+With `params`, Poulpe Design asks for the settings in a dialog before calling `run(settings)`. Each setting: `{ id, label, type, default, … }` with `type`:
 
 - `number` (`min`, `max`, `step`),
 - `text`,
-- `color` (valeur `#rrggbb`),
-- `boolean` (case à cocher),
+- `color` (a `#rrggbb` value),
+- `boolean` (checkbox),
 - `select` (`options: [{ value, label }]`).
 
-Les commandes d'extension s'enregistrent dans les macros avec leurs réglages, et peuvent recevoir un raccourci (Aide > Raccourcis clavier).
-
----
-
-# Writing a Poulpe Design extension (English summary)
-
-An extension is a single JavaScript file that adds commands to the **Extensions** menu. It runs in an isolated QuickJS interpreter (no `window`, network or file access; 5 s and 64 MB limits) and talks to Poulpe Design only through the `poulpe` object above: declare it with `poulpe.extension({ id, name, version })`, add commands with `poulpe.command({ id, title, params, run })`, then read the document (`document`, `artboard`, `selection`, `find`) and change it (`create`, `update`, `remove`, `group`, `select`). All changes made by one command are a single undo step. See the examples in `apps/editor/src/extensions/examples/`.
+Extension commands are recorded in macros with their settings, and can be given a shortcut (Help > Keyboard Shortcuts).
