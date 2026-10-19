@@ -7,6 +7,7 @@ La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page
 - **Sélecteur de couleur à roue** : double-clic sur le remplissage ou le contour (colonne d'outils ou barre contextuelle), ou Affichage › Sélecteur de couleur ; la fenêtre se place n'importe où.
 - **Aucune couleur** : bouton dans la colonne d'outils, la barre contextuelle et le sélecteur.
 - **Calques** : l'œil pour masquer ou afficher reste toujours visible.
+- **Nouveau logo** : la pieuvre sombre sur fond rose, dans l'appli et ses icônes.
 - **Taille du pinceau** : Alt + clic droit glissé pendant l'utilisation du pinceau, comme dans Photoshop (Ctrl + Alt + glissé, comme dans Affinity, marche toujours).
 
 ## Version 1.2.6
