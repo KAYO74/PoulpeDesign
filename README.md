@@ -28,7 +28,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/dessin-modele.png" alt="L'éditeur Poulpe Design en thème sombre : un modèle « Soldes d'été » ouvert, avec la bibliothèque de modèles à gauche et la barre de l'outil Déplacer en haut" width="100%">
+  <img src="docs/images/dessin-modele.png" alt="L'appli Poulpe Design sous Windows ou Linux : les menus dans la barre de titre, le modèle « Concours » ouvert, la bibliothèque de modèles à gauche" width="100%">
 </p>
 
 > [!NOTE]
@@ -60,7 +60,7 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
 <table>
   <tr>
     <td width="50%"><img src="docs/images/formes.png" alt="Neuf des nouvelles formes de la version 1.2 sur un plan de travail ; l'engrenage sélectionné montre ses poignées rouges"></td>
-    <td width="50%"><img src="docs/images/habillage.png" alt="La Persona Mise en page : un texte sur deux colonnes contourne un cadre d'image en ellipse"></td>
+    <td width="50%"><img src="docs/images/habillage.png" alt="La Persona Mise en page : un cadre de texte contourne une ellipse rose"></td>
   </tr>
   <tr>
     <td align="center">Une vingtaine de formes, réglables sur la toile</td>
@@ -83,8 +83,8 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
     <td align="center">Mise en page sur plusieurs pages</td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/vectoriser.png" alt="La fenêtre « Vectoriser l'image » : une illustration de poulpe et son aperçu en tracés de six couleurs"></td>
-    <td width="50%"><img src="docs/images/panneaux-libres.png" alt="Les panneaux Calques et Outils détachés en fenêtres flottantes autour d'une affiche"></td>
+    <td width="50%"><img src="docs/images/vectoriser.png" alt="La fenêtre « Vectoriser l'image » : un coucher de soleil et son aperçu en tracés de six couleurs"></td>
+    <td width="50%"><img src="docs/images/panneaux-libres.png" alt="Les panneaux Calques et Outils détachés en fenêtres flottantes à côté d'une publication"></td>
   </tr>
   <tr>
     <td align="center">Vectoriser une image en un clic</td>
@@ -92,7 +92,7 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
   </tr>
   <tr>
     <td width="50%"><img src="docs/images/espace-de-travail.png" alt="La fenêtre « Nouvel espace de travail » : nom, type (vectoriel, pixel, présentation), outils et panneaux affichés"></td>
-    <td width="50%"><img src="docs/images/extensions.png" alt="Trois rosaces dessinées par une extension, le menu Extensions ouvert et l'onglet Macros du Studio"></td>
+    <td width="50%"><img src="docs/images/extensions.png" alt="Trois rosaces dessinées par une extension, avec le menu Extensions ouvert"></td>
   </tr>
   <tr>
     <td align="center">Vos propres espaces de travail, comme dans Affinity</td>
@@ -147,21 +147,19 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-| Version   | Contenu                                                                                                                           | État               |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| v0.1      | Moteur d'édition, export, appli de bureau                                                                                         | ✅ Disponible      |
-| v0.2      | Côté Canva : modèles, bibliothèque d'éléments, formats réseaux sociaux                                                            | ✅ Disponible      |
-| v0.3      | Vectoriel pro : plume, nœuds, géométrie, effets (Illustrator, Affinity Designer)                                                  | ✅ Disponible      |
-| v0.4      | Retouche photo : pinceaux, sélections, réglages, gomme magique (Photoshop, Affinity Photo)                                        | ✅ Disponible      |
-| v0.5      | Mise en page et impression : pages, CMJN, PDF/X, fichiers PSD, PDF et AI (Affinity Publisher)                                     | ✅ Disponible      |
-| v0.6      | Outils Photoshop et Affinity manquants : correcteur, fluidité, cutter, symboles, LUT…                                             | ✅ Disponible      |
-| v1.0      | Vectorisation, détourage par IA locale, macros, extensions, mises à jour automatiques                                             | ✅ Disponible      |
-| v1.1      | Langue choisie à l'installation, Préférences, calques avancés, appli plus fluide, colonne d'outils                                | ✅ Disponible      |
-| v1.2      | Chaque outil au niveau d'Affinity : formes, plume, texte, cadres, tableaux, recadrage, retouche                                   | ✅ Disponible      |
-| v1.3      | Documentation en anglais, panneaux plus faciles à déplacer, roue de couleurs, pinceaux à créer et partager, taille de l'interface | 🚧 À venir         |
-| Plus tard | Appli signée (Windows, macOS), Flathub, accessibilité vérifiée                                                                    | ⏸️ Pas prioritaire |
+Les versions jusqu'à la 1.3.0. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
-Le détail est dans la [feuille de route des fonctionnalités](docs/feuille-de-route.md).
+| Version | Contenu                                                                                                                                    | État          |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                         | ✅ Disponible |
+| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes | ✅ Disponible |
+| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                               | ✅ Disponible |
+| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                   | ✅ Disponible |
+| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ✅ Disponible |
+| v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                             | ✅ Disponible |
+| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ✅ Disponible |
+
+La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 
 ## Contribuer
 
