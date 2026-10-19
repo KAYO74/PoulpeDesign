@@ -15,7 +15,7 @@ import {
   subscribeCommands,
   unregisterCommand,
 } from './registry';
-import { exportDocument, importImage, isDesktop, openDocument, saveDocument } from './io';
+import { exportDocument, importImage, isDesktop, openDocument, saveDocument, savePsdDocument } from './io';
 import { startPlaceImage } from './tools/frames/frameActions';
 import { duplicateWithRepeat } from './tools/move/actions';
 import { checkForUpdates } from './updater';
@@ -95,6 +95,7 @@ export const COMMANDS = {
   'file.open': { label: 'file.open', shortcut: 'Mod+O', run: () => void openDocument() },
   'file.save': { label: 'file.save', shortcut: 'Mod+S', run: () => void saveDocument() },
   'file.saveAs': { label: 'file.saveAs', shortcut: 'Mod+Shift+S', run: () => void saveDocument(true) },
+  'file.saveAsPsd': { label: 'file.saveAsPsd', run: () => void savePsdDocument() },
   'file.importImage': { label: 'file.importImage', shortcut: 'Mod+Shift+I', run: () => void importImage() },
   'file.openPhoto': { label: 'file.openPhoto', shortcut: 'Mod+Alt+O', run: () => void openPhoto() },
   'file.export': { label: 'file.export', shortcut: 'Mod+Shift+E', run: () => ui.set({ dialog: 'export' }) },

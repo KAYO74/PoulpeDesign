@@ -2,6 +2,11 @@
 
 La version 1.2 reprend chaque outil des espaces Vectoriel, Pixel et Mise en page et le met au niveau d'Affinity : mêmes gestes, mêmes raccourcis, mêmes options dans la barre contextuelle, dans l'apparence de Poulpe Design. Les fichiers restent au format 7 : les nouveautés n'ajoutent que des champs facultatifs. Les installations 1.1.5 se mettent à jour toutes seules.
 
+## Version 1.2.10
+
+- **Projet en PSD** : Fichier › Enregistrer en PSD (Photoshop, Affinity)… donne un vrai fichier Photoshop, un calque par objet, que Photoshop et Affinity ouvrent. Le document Poulpe Design complet est rangé dedans : Poulpe Design le rouvre avec ses formes, textes et effets modifiables, et Ctrl+S réenregistre en PSD. Un document de plusieurs plans de travail montre le plan actif dans Photoshop.
+- **Rappel** : Fichier › Ouvrir lit déjà les PSD (calques), les fichiers Illustrator enregistrés compatibles PDF et les PDF. Les fichiers Affinity (.afdesign, .afphoto) ne s'ouvrent pas : leur format n'est pas publié ; il faut les exporter en PSD depuis Affinity.
+
 ## Version 1.2.9
 
 - **Partager ses pinceaux** : panneau Pinceau › Partager mes pinceaux… enregistre ses pinceaux et leurs formes dans un fichier `.poulpebrushes`.
