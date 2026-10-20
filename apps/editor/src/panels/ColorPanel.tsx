@@ -16,7 +16,17 @@ import { NumberField, paintPreview } from '../components/fields';
 import { Icon } from '../components/Icon';
 import { useT } from '../i18n';
 import { editingStyle, isEditingText } from '../canvas/textEdit';
-import { editor, pushRecentColor, ui, useEditor, useStore, useTextSelection, useUi } from '../store';
+import {
+  editor,
+  pushRecentColor,
+  setSettings,
+  ui,
+  useEditor,
+  useStore,
+  useTextSelection,
+  useUi,
+  type ColorShape,
+} from '../store';
 import { paintStore } from '../tools/paint/state';
 import { ColorPicker, type Phase } from './ColorPicker';
 
@@ -96,6 +106,7 @@ export function ColorPanel() {
   const photo = useUi((s) => s.persona) === 'photo';
   // Document d'impression : le sélecteur s'ouvre en CMJN et signale les couleurs hors gamut.
   const print = doc.layout?.colorMode === 'cmyk';
+  const shape = useUi((s) => s.settings.colorShape) ?? 'box';
 
   const switchType = (type: Paint['type']) => {
     const base = firstColor(paint);
@@ -266,9 +277,30 @@ export function ColorPanel() {
           />
         </div>
       )}
+      {editColor !== null && (
+        <div className="seg small full color-shape" role="group" aria-label={t('color.shape')}>
+          {(
+            [
+              ['box', 'color.shapeBox'],
+              ['wheel', 'color.shapeWheel'],
+              ['triangle', 'color.shapeTriangle'],
+            ] as const
+          ).map(([s, key]) => (
+            <button
+              key={s}
+              aria-pressed={shape === s}
+              data-testid={`color-shape-${s}`}
+              onClick={() => setSettings({ colorShape: s as ColorShape })}
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+      )}
       {editColor !== null ? (
         <ColorPicker
           color={editColor}
+          shape={shape}
           onChange={onColor}
           cmyk={photo ? undefined : colorToCmyk(editColor, doc)}
           onCmyk={(c, cmyk) => withCmyk(opaque(c), cmyk, () => onColor(c, 'set'))}

@@ -168,7 +168,11 @@ export interface Settings {
   perfMeter: boolean;
   /** Taille de l'interface (1 = 100 %), appli de bureau. */
   uiScale: number;
+  /** Forme du sélecteur du panneau Couleur : carré, roue avec carré, ou roue avec triangle. */
+  colorShape: ColorShape;
 }
+
+export type ColorShape = 'box' | 'wheel' | 'triangle';
 
 export interface View {
   zoom: number;
@@ -266,6 +270,7 @@ function loadSettings(): Settings {
     autoUpdate: true,
     perfMeter: false,
     uiScale: 1,
+    colorShape: 'box',
   };
   try {
     return { ...fallback, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') };

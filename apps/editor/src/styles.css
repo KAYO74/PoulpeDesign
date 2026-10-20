@@ -867,6 +867,22 @@ h4.sub {
   height: auto;
   border-radius: 3px;
 }
+.wheel-tri {
+  position: absolute;
+  inset: 21%;
+  cursor: crosshair;
+  touch-action: none;
+  border-radius: 50%;
+}
+.wheel-tri canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.color-shape {
+  margin-bottom: 6px;
+}
 .sv.wheel-sv .sv-white,
 .sv.wheel-sv .sv-black {
   border-radius: 3px;
