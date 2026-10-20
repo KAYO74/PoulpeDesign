@@ -168,11 +168,7 @@ export function ColorPicker({
               background: hueColor,
             }}
           />
-          {shape === 'triangle' ? (
-            <HsvTriangle hsv={hsv} drag={drag} emit={emit} />
-          ) : (
-            svSquare('sv wheel-sv')
-          )}
+          {shape === 'triangle' ? <HsvTriangle hsv={hsv} drag={drag} emit={emit} /> : svSquare('sv wheel-sv')}
         </div>
       ) : (
         <>
