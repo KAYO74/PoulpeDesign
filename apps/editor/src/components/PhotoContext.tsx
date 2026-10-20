@@ -183,7 +183,6 @@ export function PhotoContext({ tool }: { tool: ToolId }) {
   const tolerance = useUi((s) => s.tolerance);
   const contiguous = useUi((s) => s.contiguous);
   const maskEditId = useUi((s) => s.maskEditId);
-  const color = useUi((s) => s.brushColor);
   const straightenFill = useUi((s) => s.straightenFill);
   const perspectiveId = useUi((s) => s.perspectiveId);
   const { doc } = useEditor();
@@ -198,18 +197,6 @@ export function PhotoContext({ tool }: { tool: ToolId }) {
     tool === 'quickSelect';
   return (
     <>
-      {(isBrushTool(tool) || tool === 'fill') && tool !== 'magicEraser' && (
-        <label className="field">
-          <span className="field-label">{t('ctx.primary')}</span>
-          <input
-            type="color"
-            className="color-input"
-            value={color.slice(0, 7)}
-            aria-label={t('ctx.primary')}
-            onChange={(e) => ui.set({ brushColor: e.target.value })}
-          />
-        </label>
-      )}
       {select && <ModeButtons />}
       {(tool === 'marqueeRect' || tool === 'marqueeEllipse' || tool === 'lasso' || tool === 'polyLasso') && (
         <NumberField

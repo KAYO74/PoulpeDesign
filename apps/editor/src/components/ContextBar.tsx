@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { FORMAT_PRESETS, findArtboard, findNode, isStyled, localToWorld, type SceneNode } from '@poulpe/core';
-import { setPaint, updateArtboard, updateSelected } from '../actions';
+import { updateArtboard, updateSelected } from '../actions';
 import { useT } from '../i18n';
 import { editor, ui, useEditor, useUi, type ToolId } from '../store';
 import { getController } from './Viewport';
@@ -10,7 +10,6 @@ import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vecto
 import { canLinkSelection, linkSelection } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
-import { openColorWindowFor } from '../panels/ColorWindow';
 import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
 import { isPhotoTool } from '../photo/photoTools';
 import { SHAPE_FAMILY } from '../toolCatalog';
@@ -18,12 +17,10 @@ import { SHAPE_FAMILY } from '../toolCatalog';
 /** Outils de forme : leurs réglages viennent de tools/shapes (barre ajoutée en fin de barre). */
 const SHAPES: ToolId[] = SHAPE_FAMILY;
 
-/** Couleurs de remplissage et de contour (de l'objet, ou des prochains objets) et épaisseur du trait. */
+/** Épaisseur du trait (de l'objet, ou des prochains objets) ; les couleurs se choisissent dans la colonne d'outils et le panneau Couleur. */
 export function PaintSwatches({ node }: { node: SceneNode | null }) {
   const t = useT();
   const defaults = useUi((s) => s.defaults);
-  const target = useUi((s) => s.colorTarget);
-  const fill = node && isStyled(node) ? node.fill : defaults.fill;
   const stroke = node && isStyled(node) ? node.stroke : defaults.stroke;
   const setWidth = (w: number) => {
     if (node)
@@ -34,33 +31,6 @@ export function PaintSwatches({ node }: { node: SceneNode | null }) {
   };
   return (
     <>
-      <span className="ctx-label">{t('ctx.fill')}</span>
-      <button
-        className={`chip${target === 'fill' ? ' on' : ''}`}
-        style={{ background: paintPreview(fill) }}
-        aria-label={t('ctx.fill')}
-        title={t('ctx.fill')}
-        data-testid="ctx-fill"
-        onClick={() => ui.set({ colorTarget: 'fill' })}
-        onDoubleClick={(e) => openColorWindowFor('fill', e.currentTarget)}
-      />
-      <span className="ctx-label">{t('ctx.stroke')}</span>
-      <button
-        className={`chip ring${target === 'stroke' ? ' on' : ''}`}
-        style={{ background: paintPreview(stroke.paint) }}
-        aria-label={t('ctx.stroke')}
-        title={t('ctx.stroke')}
-        data-testid="ctx-stroke"
-        onClick={() => ui.set({ colorTarget: 'stroke' })}
-        onDoubleClick={(e) => openColorWindowFor('stroke', e.currentTarget)}
-      />
-      <button
-        className="chip none-chip"
-        title={t('color.noColor')}
-        aria-label={t('color.noColor')}
-        data-testid="ctx-none"
-        onClick={() => setPaint(target, { type: 'none' })}
-      />
       <NumberField
         value={stroke.width}
         min={0}

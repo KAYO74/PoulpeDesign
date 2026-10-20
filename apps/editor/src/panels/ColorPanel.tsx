@@ -12,11 +12,21 @@ import {
 } from '@poulpe/core';
 import { addSwatch, removeSwatch, setPaint, withCmyk } from '../actions';
 import { pickPatternImage } from '../vectorActions';
-import { NumberField, paintPreview } from '../components/fields';
+import { NumberField, Select, paintPreview } from '../components/fields';
 import { Icon } from '../components/Icon';
 import { useT } from '../i18n';
 import { editingStyle, isEditingText } from '../canvas/textEdit';
-import { editor, pushRecentColor, ui, useEditor, useStore, useTextSelection, useUi } from '../store';
+import {
+  editor,
+  pushRecentColor,
+  setSettings,
+  ui,
+  useEditor,
+  useStore,
+  useTextSelection,
+  useUi,
+  type ColorShape,
+} from '../store';
 import { paintStore } from '../tools/paint/state';
 import { ColorPicker, type Phase } from './ColorPicker';
 
@@ -96,6 +106,7 @@ export function ColorPanel() {
   const photo = useUi((s) => s.persona) === 'photo';
   // Document d'impression : le sélecteur s'ouvre en CMJN et signale les couleurs hors gamut.
   const print = doc.layout?.colorMode === 'cmyk';
+  const shape = useUi((s) => s.settings.colorShape) ?? 'box';
 
   const switchType = (type: Paint['type']) => {
     const base = firstColor(paint);
@@ -151,17 +162,30 @@ export function ColorPanel() {
         </div>
         <span className="chip big" style={{ background: paintPreview(paint) }} aria-hidden="true" />
       </div>
-      <div className="seg full" role="group" aria-label="Type">
-        {(['solid', 'linear', 'radial', 'conic', 'pattern', 'none'] as const).map((type) => (
-          <button
-            key={type}
-            aria-pressed={paint.type === type}
-            data-testid={`paint-${type}`}
-            onClick={() => switchType(type)}
-          >
-            {t(`color.${type}`)}
-          </button>
-        ))}
+      <div className="picker-row color-selects">
+        <Select
+          label={t('color.type')}
+          value={paint.type}
+          testId="color-paint-type"
+          options={(['solid', 'linear', 'radial', 'conic', 'pattern', 'none'] as const).map((type) => ({
+            value: type,
+            label: t(`color.${type}`),
+          }))}
+          onChange={switchType}
+        />
+        {editColor !== null && (
+          <Select
+            label={t('color.shape')}
+            value={shape}
+            testId="color-shape"
+            options={[
+              { value: 'box' as ColorShape, label: t('color.shapeBox') },
+              { value: 'wheel' as ColorShape, label: t('color.shapeWheel') },
+              { value: 'triangle' as ColorShape, label: t('color.shapeTriangle') },
+            ]}
+            onChange={(v) => setSettings({ colorShape: v })}
+          />
+        )}
       </div>
       {gradient && (
         <GradientBar
@@ -269,6 +293,7 @@ export function ColorPanel() {
       {editColor !== null ? (
         <ColorPicker
           color={editColor}
+          shape={shape}
           onChange={onColor}
           cmyk={photo ? undefined : colorToCmyk(editColor, doc)}
           onCmyk={(c, cmyk) => withCmyk(opaque(c), cmyk, () => onColor(c, 'set'))}
@@ -297,6 +322,15 @@ export function ColorPanel() {
       )}
       <h4 className="sub">{t('color.document')}</h4>
       <div className="swatches">
+        {!photo && (
+          <button
+            className={`swatch none-swatch${paint.type === 'none' ? ' on' : ''}`}
+            title={t('color.noColor')}
+            aria-label={t('color.noColor')}
+            data-testid="swatch-none"
+            onClick={() => applyPaint(target, { type: 'none' }, 'set')}
+          />
+        )}
         {doc.swatches.map((c) => (
           <button
             key={c}

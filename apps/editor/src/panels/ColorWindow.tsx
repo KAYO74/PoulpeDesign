@@ -44,6 +44,8 @@ export function ColorWindow() {
   const { paint, target } = useCurrentPaint();
   const photo = useUi((s) => s.persona) === 'photo';
   const recent = useUi((s) => s.recentColors);
+  // La fenêtre garde toujours une roue ; elle prend le triangle s'il est choisi dans le panneau.
+  const shape = useUi((s) => s.settings.colorShape) === 'triangle' ? 'triangle' : 'wheel';
   const stop = useStore(paintStore, (s) => s.stop);
   const gradient = isGradient(paint) ? paint : null;
   const si = gradient ? Math.min(stop, gradient.stops.length - 1) : 0;
@@ -96,7 +98,7 @@ export function ColorWindow() {
             <span className="chip big" style={{ background: paintPreview(paint) }} aria-hidden="true" />
           </div>
         )}
-        <ColorPicker color={color} onChange={onColor} wheel />
+        <ColorPicker color={color} onChange={onColor} shape={shape} />
         {!photo && (
           <button
             className={`chip-btn none-btn${paint.type === 'none' ? ' on' : ''}`}

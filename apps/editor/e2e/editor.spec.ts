@@ -252,10 +252,10 @@ test('applique un dégradé et groupe des objets', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.keyboard.press('e');
   await drag([300, 300], [450, 450]);
-  await page.getByTestId('paint-linear').click();
+  await page.getByTestId('color-paint-type').selectOption('linear');
   await page.keyboard.press('u');
   await drag([500, 300], [650, 450]);
-  await page.getByTestId('paint-radial').click();
+  await page.getByTestId('color-paint-type').selectOption('radial');
   let s = await snapshot(page);
   expect(s.nodes.map((n) => n.fill)).toEqual(['linear', 'radial']);
   await page.keyboard.press('Control+a');
