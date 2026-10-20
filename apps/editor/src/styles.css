@@ -880,8 +880,19 @@ h4.sub {
   display: block;
   pointer-events: none;
 }
-.color-shape {
-  margin-bottom: 6px;
+.color-selects > .field {
+  flex: 1;
+  min-width: 0;
+}
+.color-selects select {
+  width: 100%;
+}
+.swatch.none-swatch {
+  border-radius: 4px;
+}
+.swatch.none-swatch.on {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .sv.wheel-sv .sv-white,
 .sv.wheel-sv .sv-black {

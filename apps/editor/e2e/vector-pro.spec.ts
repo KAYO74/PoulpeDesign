@@ -128,7 +128,7 @@ test('enregistre un style et l’applique à un autre objet', async ({ page }) =
   const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
-  await page.getByTestId('paint-linear').click();
+  await page.getByTestId('color-paint-type').selectOption('linear');
   await page.getByTestId('lib-tab-styles').click();
   await page.getByTestId('save-style').click();
   const d = await doc(page);
@@ -163,7 +163,7 @@ test('applique un biseau et un dégradé conique', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [550, 550]);
-  await page.getByTestId('paint-conic').click();
+  await page.getByTestId('color-paint-type').selectOption('conic');
   await page.getByTestId('tab-effects').click();
   await page.getByRole('checkbox', { name: 'Biseau' }).check();
   await page.getByTestId('effect-bevel-depth').fill('10');

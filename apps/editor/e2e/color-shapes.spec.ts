@@ -35,11 +35,11 @@ test('le panneau Couleur passe en roue puis en triangle, et le choix reste', asy
   await rect(page);
   const panel = page.getByTestId('studio');
   await panel.getByTestId('tab-color').click();
-  await panel.getByTestId('color-shape-wheel').click();
+  await panel.getByTestId('color-shape').selectOption('wheel');
   const wheel = panel.getByTestId('color-wheel');
   await expect(wheel).toBeVisible();
 
-  await panel.getByTestId('color-shape-triangle').click();
+  await panel.getByTestId('color-shape').selectOption('triangle');
   await expect(panel.getByTestId('color-triangle')).toBeVisible();
   const ring = (await wheel.boundingBox())!;
   // Bas de la roue : teinte cyan (180°) ; le triangle tourne, son sommet coloré passe en bas.
@@ -60,4 +60,14 @@ test('le panneau Couleur passe en roue puis en triangle, et le choix reste', asy
   await page.reload();
   await expect(page.getByTestId('canvas')).toBeVisible();
   expect(await page.evaluate(() => (window as any).poulpe.ui.get().settings.colorShape)).toBe('triangle');
+});
+
+test('la couleur barrée retire le remplissage', async ({ page }) => {
+  await rect(page);
+  const panel = page.getByTestId('studio');
+  await panel.getByTestId('tab-color').click();
+  await panel.getByTestId('swatch-none').click();
+  expect(
+    await page.evaluate(() => (window as any).poulpe.editor.doc.artboards[0].children[0].fill.type),
+  ).toBe('none');
 });

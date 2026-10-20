@@ -12,7 +12,7 @@ import {
 } from '@poulpe/core';
 import { addSwatch, removeSwatch, setPaint, withCmyk } from '../actions';
 import { pickPatternImage } from '../vectorActions';
-import { NumberField, paintPreview } from '../components/fields';
+import { NumberField, Select, paintPreview } from '../components/fields';
 import { Icon } from '../components/Icon';
 import { useT } from '../i18n';
 import { editingStyle, isEditingText } from '../canvas/textEdit';
@@ -162,17 +162,30 @@ export function ColorPanel() {
         </div>
         <span className="chip big" style={{ background: paintPreview(paint) }} aria-hidden="true" />
       </div>
-      <div className="seg full" role="group" aria-label="Type">
-        {(['solid', 'linear', 'radial', 'conic', 'pattern', 'none'] as const).map((type) => (
-          <button
-            key={type}
-            aria-pressed={paint.type === type}
-            data-testid={`paint-${type}`}
-            onClick={() => switchType(type)}
-          >
-            {t(`color.${type}`)}
-          </button>
-        ))}
+      <div className="picker-row color-selects">
+        <Select
+          label={t('color.type')}
+          value={paint.type}
+          testId="color-paint-type"
+          options={(['solid', 'linear', 'radial', 'conic', 'pattern', 'none'] as const).map((type) => ({
+            value: type,
+            label: t(`color.${type}`),
+          }))}
+          onChange={switchType}
+        />
+        {editColor !== null && (
+          <Select
+            label={t('color.shape')}
+            value={shape}
+            testId="color-shape"
+            options={[
+              { value: 'box' as ColorShape, label: t('color.shapeBox') },
+              { value: 'wheel' as ColorShape, label: t('color.shapeWheel') },
+              { value: 'triangle' as ColorShape, label: t('color.shapeTriangle') },
+            ]}
+            onChange={(v) => setSettings({ colorShape: v })}
+          />
+        )}
       </div>
       {gradient && (
         <GradientBar
@@ -277,26 +290,6 @@ export function ColorPanel() {
           />
         </div>
       )}
-      {editColor !== null && (
-        <div className="seg small full color-shape" role="group" aria-label={t('color.shape')}>
-          {(
-            [
-              ['box', 'color.shapeBox'],
-              ['wheel', 'color.shapeWheel'],
-              ['triangle', 'color.shapeTriangle'],
-            ] as const
-          ).map(([s, key]) => (
-            <button
-              key={s}
-              aria-pressed={shape === s}
-              data-testid={`color-shape-${s}`}
-              onClick={() => setSettings({ colorShape: s as ColorShape })}
-            >
-              {t(key)}
-            </button>
-          ))}
-        </div>
-      )}
       {editColor !== null ? (
         <ColorPicker
           color={editColor}
@@ -329,6 +322,15 @@ export function ColorPanel() {
       )}
       <h4 className="sub">{t('color.document')}</h4>
       <div className="swatches">
+        {!photo && (
+          <button
+            className={`swatch none-swatch${paint.type === 'none' ? ' on' : ''}`}
+            title={t('color.noColor')}
+            aria-label={t('color.noColor')}
+            data-testid="swatch-none"
+            onClick={() => applyPaint(target, { type: 'none' }, 'set')}
+          />
+        )}
         {doc.swatches.map((c) => (
           <button
             key={c}
