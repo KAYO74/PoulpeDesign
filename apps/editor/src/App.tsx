@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { baseName, isDesktop } from './io';
+import { dropFiles, hasFiles } from './dropFiles';
 import { handleKeyDown, handleKeyUp, isMac } from './commands';
 import { ContextBar } from './components/ContextBar';
 import { Dialogs } from './components/Dialogs';
@@ -16,7 +17,7 @@ import { Library } from './panels/Library';
 import { PagesPanel } from './panels/PagesPanel';
 import { Studio } from './panels/Studio';
 import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from './panels/panelLayout';
-import { editor, useEditor, useUi } from './store';
+import { editor, ui, useEditor, useUi } from './store';
 import { applyAccent } from './accentColor';
 import { applyUiScale } from './uiScale';
 
@@ -61,7 +62,24 @@ export function App() {
       if (!isDesktop() && editor.getState().dirty) e.preventDefault();
     };
     window.addEventListener('beforeunload', beforeUnload);
+    // Fichiers lâchés hors de la zone de travail (écran d'accueil, panneaux) : sans cela,
+    // la fenêtre afficherait le fichier à la place de l'éditeur.
+    const dragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'copy';
+    };
+    const drop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      const dialog = ui.get().dialog;
+      if (!dialog || dialog === 'new') void dropFiles([...e.dataTransfer!.files]);
+    };
+    window.addEventListener('dragover', dragOver);
+    window.addEventListener('drop', drop);
     return () => {
+      window.removeEventListener('dragover', dragOver);
+      window.removeEventListener('drop', drop);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('beforeunload', beforeUnload);
