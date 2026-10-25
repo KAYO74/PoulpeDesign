@@ -48,16 +48,12 @@ test('double-clic sur le remplissage ouvre la roue, qui colore la forme', async 
   await expect(win).toBeHidden();
 });
 
-test('le sélecteur s’ouvre depuis le menu et la barre contextuelle', async ({ page }) => {
+test('le sélecteur s’ouvre depuis le contour de la colonne d’outils', async ({ page }) => {
   await rect(page);
-  await page.getByTestId('ctx-stroke').dblclick();
+  await page.getByTestId('tool-stroke').dblclick();
   await expect(page.getByTestId('float-color-picker')).toBeVisible();
   expect((await ui(page)).colorTarget).toBe('stroke');
   await page.getByTestId('color-window-close').click();
-  await page.getByTestId('ctx-none').click();
-  expect(
-    (await page.evaluate(() => (window as any).poulpe.editor.doc.artboards[0].children[0].stroke.paint)).type,
-  ).toBe('none');
   await page.getByTestId('tool-none').click();
   await expect
     .poll(

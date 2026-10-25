@@ -867,6 +867,33 @@ h4.sub {
   height: auto;
   border-radius: 3px;
 }
+.wheel-tri {
+  position: absolute;
+  inset: 21%;
+  cursor: crosshair;
+  touch-action: none;
+  border-radius: 50%;
+}
+.wheel-tri canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.color-selects > .field {
+  flex: 1;
+  min-width: 0;
+}
+.color-selects select {
+  width: 100%;
+}
+.swatch.none-swatch {
+  border-radius: 4px;
+}
+.swatch.none-swatch.on {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .sv.wheel-sv .sv-white,
 .sv.wheel-sv .sv-black {
   border-radius: 3px;

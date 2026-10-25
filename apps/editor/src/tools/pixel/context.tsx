@@ -2,7 +2,7 @@ import { Icon } from '../../components/Icon';
 import { Slider } from '../../components/PhotoContext';
 import { NumberField, Select } from '../../components/fields';
 import { useT } from '../../i18n';
-import { brushSettings, setBrush, ui, useStore, useUi, type ToolId } from '../../store';
+import { brushSettings, setBrush, useStore, useUi, type ToolId } from '../../store';
 import { crop } from './crop';
 import { quickMaskOn, toggleQuickMask } from './quickMask';
 import { pixelStore, type CropOverlay, type CropRatio, type PixelToolState } from './store';
@@ -32,49 +32,6 @@ function Check({
       />
       {label}
     </label>
-  );
-}
-
-/** Couleur principale (et secondaire), comme dans la barre du pinceau. */
-function Colors({ second }: { second?: boolean }) {
-  const t = useT();
-  const c1 = useUi((s) => s.brushColor);
-  const c2 = useUi((s) => s.brushColor2);
-  return (
-    <>
-      <label className="field">
-        <span className="field-label">{t('ctx.primary')}</span>
-        <input
-          type="color"
-          className="color-input"
-          value={c1.slice(0, 7)}
-          aria-label={t('ctx.primary')}
-          onChange={(e) => ui.set({ brushColor: e.target.value })}
-        />
-      </label>
-      {second && (
-        <>
-          <button
-            className="ib small"
-            title={`${t('pixel.swapColors')} (X)`}
-            aria-label={t('pixel.swapColors')}
-            onClick={() => ui.set((s) => ({ brushColor: s.brushColor2, brushColor2: s.brushColor }))}
-          >
-            <Icon name="swap" size={14} />
-          </button>
-          <label className="field">
-            <span className="field-label">{t('pixel.secondary')}</span>
-            <input
-              type="color"
-              className="color-input"
-              value={c2.slice(0, 7)}
-              aria-label={t('pixel.secondary')}
-              onChange={(e) => ui.set({ brushColor2: e.target.value })}
-            />
-          </label>
-        </>
-      )}
-    </>
   );
 }
 
@@ -256,7 +213,6 @@ export function GradientContext() {
   const s = useStore(pixelStore, (x) => x);
   return (
     <>
-      <Colors second />
       <Select
         label={t('pixel.gradient.kind')}
         value={s.gradientKind}
@@ -355,7 +311,6 @@ export function ColorReplaceContext() {
   const s = useStore(pixelStore, (x) => x);
   return (
     <>
-      <Colors />
       <BrushSliders tool="colorReplace" />
       <Tolerance value={s.replaceTolerance} onChange={(replaceTolerance) => set({ replaceTolerance })} />
       <Check
