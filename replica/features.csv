@@ -1,0 +1,25 @@
+feature,area,priority,original,clone,notes
+Couleur du thème personnalisable (accent),Interface,must,aucun des deux (Poulpe en plus),yes,Préférences › Affichage › Couleur du thème; 8 pastilles + couleur libre; thème sombre/clair inchangé
+Filtres en direct (non destructifs) comme calques,Photo,must,Affinity Live Filters / Photoshop Smart Filters,no,existe pour les réglages; à étendre à flou/netteté/bruit
+Objets dynamiques / images liées,Calques,must,Photoshop Smart Objects / Affinity Linked & Embedded,no,mise à l'échelle sans perte + fichier lié qui se met à jour
+Développement RAW,Photo,must,Affinity Develop Persona / Camera Raw,no,persona dédiée; lecture DNG/CR2/NEF via LibRaw côté Rust
+Remplissage selon le contenu (zone),Photo,should,Photoshop Content-Aware Fill,no,gomme magique existe; ajouter la version sélection + aperçu
+Plages de fusion (Blend If),Calques,should,Affinity Blend Ranges / Photoshop Blend If,no,courbe source/sous-jacent par calque
+Déformation libre (maillage),Photo,should,Photoshop Warp / Affinity Mesh Warp,no,grille de points sur calque pixel
+Marionnette (Puppet Warp),Photo,could,Photoshop Puppet Warp,no,
+Fluidité en persona plein écran,Photo,could,Affinity Liquify Persona,partial,outil Fluidité (K) existe; manque masque de gel et maillage visible
+Persona Export (tranches),Export,should,Affinity Export Persona / Photoshop Export As,no,tranches par calque ou zone; plusieurs formats et tailles en un clic
+Instantanés d'historique,Historique,should,Photoshop Snapshots / Affinity Snapshots,no,
+Panneau Couches (canaux),Photo,should,Photoshop Channels / Affinity Channels,no,canaux RVB/alpha + couches de réserve depuis sélection
+Séparation de fréquences,Photo,could,Affinity Frequency Separation,no,filtre qui crée deux calques
+Assemblage panorama,Photo,could,Affinity Panorama / Photomerge,no,lourd; Rust
+Fusion de mise au point,Photo,could,Affinity Focus Merge,no,
+Fusion HDR et mappage de tons,Photo,could,Affinity HDR / Tone Mapping Persona,no,
+Grille isométrique et plans,Dessin,could,Affinity Isometric Grid,no,
+Contraintes (ancrage dans un cadre),Dessin,could,Affinity Constraints,no,
+Compositions de calques,Calques,could,Photoshop Layer Comps,no,
+16 et 32 bits par canal,Moteur,could,les deux,no,dépend du moteur Rust GPU
+Remplissage génératif (IA en ligne),Photo,skip,Photoshop Generative Fill,no,service payant Adobe Firefly; seulement local si un modèle libre suffit
+Bibliothèques Adobe / Stock,Ressources,skip,Adobe Stock / CC Libraries,no,contenu sous licence et service cloud
+Format .afphoto/.afdesign,Fichiers,skip,Affinity,no,format fermé; passer par PSD
+Polices et pinceaux propriétaires,Ressources,skip,les deux,no,licences; .abr importable par l'utilisateur

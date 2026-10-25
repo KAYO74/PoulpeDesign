@@ -2553,6 +2553,33 @@ h4.sub .link {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px 12px;
 }
+.accent-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.accent-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid var(--line-2);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.accent-swatch[aria-pressed='true'] {
+  border-color: var(--fg);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+.accent-custom {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
 .row-buttons {
   display: flex;
   flex-wrap: wrap;

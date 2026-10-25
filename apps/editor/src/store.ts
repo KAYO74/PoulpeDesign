@@ -170,6 +170,8 @@ export interface Settings {
   uiScale: number;
   /** Forme du sélecteur du panneau Couleur : carré, roue avec carré, ou roue avec triangle. */
   colorShape: ColorShape;
+  /** Couleur du thème (accent) choisie par l'utilisateur, ou null pour la couleur d'origine. */
+  accent: string | null;
 }
 
 export type ColorShape = 'box' | 'wheel' | 'triangle';
@@ -271,6 +273,7 @@ function loadSettings(): Settings {
     perfMeter: false,
     uiScale: 1,
     colorShape: 'box',
+    accent: null,
   };
   try {
     return { ...fallback, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') };
