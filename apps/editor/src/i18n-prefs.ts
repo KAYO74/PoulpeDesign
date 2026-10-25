@@ -86,6 +86,9 @@ export const frPrefs = {
   'prefs.resetPerf': 'Réinitialiser les performances',
 
   'prefs.theme': 'Thème',
+  'prefs.accent': 'Couleur du thème',
+  'prefs.accentDefault': 'Couleur d’origine (rose Poulpe)',
+  'prefs.accentCustom': 'Autre couleur…',
   'prefs.perfMeter': 'Images par seconde et mémoire dans la barre d’état',
   'prefs.interface': 'Interface',
   'prefs.canvas': 'Plan de travail',
@@ -264,6 +267,9 @@ export const enPrefs: Record<MessageKeyPrefs, string> = {
   'prefs.resetPerf': 'Reset performance settings',
 
   'prefs.theme': 'Theme',
+  'prefs.accent': 'Theme color',
+  'prefs.accentDefault': 'Original color (Poulpe pink)',
+  'prefs.accentCustom': 'Other color…',
   'prefs.perfMeter': 'Frames per second and memory in the status bar',
   'prefs.interface': 'Interface',
   'prefs.canvas': 'Canvas',

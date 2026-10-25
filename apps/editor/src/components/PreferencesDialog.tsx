@@ -37,6 +37,7 @@ import { NumberField, Select } from './fields';
 import { Icon, type IconName } from './Icon';
 import { ShortcutsEditor } from './ShortcutsDialog';
 import { renderStats, type RenderStats } from '../perf';
+import { ACCENT_PRESETS } from '../accentColor';
 import { UI_SCALES, uiScaleAvailable } from '../uiScale';
 import {
   nativeEngineInfo,
@@ -500,6 +501,7 @@ function DisplayPane() {
             ]}
             onChange={(v) => setSettings({ theme: v })}
           />
+          <AccentPicker />
           <Select
             label={t('prefs.uiScale')}
             testId="prefs-ui-scale"
@@ -573,6 +575,40 @@ function DisplayPane() {
         />
       </Section>
     </>
+  );
+}
+
+/** Couleur du thème : pastilles prêtes à l'emploi, couleur libre, et retour à la couleur d'origine. */
+function AccentPicker() {
+  const t = useT();
+  const accent = useUi((st) => st.settings.accent);
+  const current = accent ?? ACCENT_PRESETS[0];
+  return (
+    <div className="field">
+      <span className="field-label">{t('prefs.accent')}</span>
+      <div className="accent-row" data-testid="prefs-accent">
+        {ACCENT_PRESETS.map((c, i) => (
+          <button
+            key={c}
+            className="accent-swatch"
+            style={{ background: c }}
+            aria-pressed={current.toLowerCase() === c}
+            aria-label={i === 0 ? t('prefs.accentDefault') : c}
+            title={i === 0 ? t('prefs.accentDefault') : c}
+            onClick={() => setSettings({ accent: i === 0 ? null : c })}
+          />
+        ))}
+        <input
+          type="color"
+          className="accent-custom"
+          value={current}
+          title={t('prefs.accentCustom')}
+          aria-label={t('prefs.accentCustom')}
+          data-testid="prefs-accent-custom"
+          onChange={(e) => setSettings({ accent: e.target.value })}
+        />
+      </div>
+    </div>
   );
 }
 

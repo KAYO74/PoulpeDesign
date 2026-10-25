@@ -18,6 +18,7 @@ import { PagesPanel } from './panels/PagesPanel';
 import { Studio } from './panels/Studio';
 import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from './panels/panelLayout';
 import { editor, ui, useEditor, useUi } from './store';
+import { applyAccent } from './accentColor';
 import { applyUiScale } from './uiScale';
 
 /*
@@ -37,7 +38,8 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
-  }, [settings.theme]);
+    applyAccent(settings.accent, settings.theme);
+  }, [settings.theme, settings.accent]);
 
   useEffect(() => {
     void applyUiScale(settings.uiScale);
