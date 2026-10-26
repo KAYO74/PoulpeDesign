@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Droits de la fenêtre principale : taille de l'interface (zoom), barre de titre de l'éditeur (déplacer, réduire, agrandir, fermer) et menus du Mac, dialogues d'ouverture et d'enregistrement, lecture et écriture des fichiers choisis par l'utilisateur, date de modification des images liées. Recherche, téléchargement et installation des mises à jour signées, puis redémarrage.",
+  "description": "Droits de la fenêtre principale : taille de l'interface (zoom), barre de titre de l'éditeur (déplacer, réduire, agrandir, fermer) et menus du Mac, dialogues d'ouverture et d'enregistrement, lecture et écriture des fichiers choisis par l'utilisateur, date de modification des images liées, lecture des dossiers de photos de la Photothèque. Recherche, téléchargement et installation des mises à jour signées, puis redémarrage.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -20,6 +20,14 @@
     "dialog:allow-confirm",
     {
       "identifier": "fs:allow-read-file",
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
       "allow": [
         {
           "path": "**"

@@ -33,6 +33,10 @@ export interface LibraryPhoto {
   exif: Exif;
   /** Vignette JPEG (data URL). */
   thumb: string;
+  /** Photo laissée dans son dossier du disque (appli de bureau) : chemin du fichier. */
+  path?: string;
+  /** Photo laissée dans son dossier (navigateur) : le fichier est lu par sa poignée. */
+  linked?: boolean;
 }
 
 export interface LibraryState {
@@ -112,7 +116,7 @@ async function tx<T>(
 }
 
 /** Fichiers gardés en mémoire quand IndexedDB n'est pas disponible. */
-const memoryFiles = new Map<string, Blob>();
+const memoryFiles = new Map<string, Blob | FileSystemFileHandle>();
 
 /** Lit la bibliothèque enregistrée (une seule fois). */
 export async function loadLibrary(): Promise<void> {
@@ -132,11 +136,33 @@ async function savePhotos(photos: LibraryPhoto[]): Promise<void> {
   });
 }
 
-/** Fichier d'origine d'une photo. */
+/** Fichier d'origine d'une photo : copie importée, ou fichier relu dans son dossier. */
 export async function photoFile(id: string): Promise<Blob | undefined> {
-  return (
-    memoryFiles.get(id) ?? (await tx<Blob>(['files'], 'readonly', (t) => t.objectStore('files').get(id)))
-  );
+  const p = library.get().photos.find((q) => q.id === id);
+  if (p?.path) {
+    try {
+      const { readFile } = await import('@tauri-apps/plugin-fs');
+      return new File([(await readFile(p.path)) as BlobPart], p.name);
+    } catch {
+      return undefined;
+    }
+  }
+  const stored =
+    memoryFiles.get(id) ??
+    (await tx<Blob | FileSystemFileHandle>(['files'], 'readonly', (t) => t.objectStore('files').get(id)));
+  if (stored && 'getFile' in stored) {
+    try {
+      const h = stored as FileSystemFileHandle & {
+        requestPermission?: (o: { mode: 'read' }) => Promise<PermissionState>;
+      };
+      if (h.requestPermission && (await h.requestPermission({ mode: 'read' })) !== 'granted')
+        return undefined;
+      return await h.getFile();
+    } catch {
+      return undefined;
+    }
+  }
+  return stored as Blob | undefined;
 }
 
 // --- Import ----------------------------------------------------------------------------------
@@ -180,29 +206,55 @@ const folderOf = (f: File) => {
   return rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
 };
 
+/** Photo à ajouter : le fichier se lit à la demande, `store` dit où le retrouver ensuite. */
+interface Source {
+  name: string;
+  folder: string;
+  size: number;
+  lastModified: number;
+  read: () => Promise<File>;
+  link?: { path: string } | { handle: FileSystemFileHandle };
+}
+
+const sourceOf = (f: File): Source => ({
+  name: f.name,
+  folder: folderOf(f),
+  size: f.size,
+  lastModified: f.lastModified,
+  read: async () => f,
+});
+
 /**
  * Importe des photos. Les fichiers déjà présents (même nom, même taille, même dossier) et ceux
  * qui ne sont pas des photos sont ignorés. Rend le nombre de photos ajoutées et de refusées.
  */
 export async function importPhotos(files: File[]): Promise<{ added: LibraryPhoto[]; failed: number }> {
+  return addSources(files.map(sourceOf), files.length);
+}
+
+async function addSources(
+  all: Source[],
+  total = all.length,
+): Promise<{ added: LibraryPhoto[]; failed: number }> {
   await loadLibrary();
-  const photos = files.filter((f) => isPhotoFile(f.name));
+  const photos = all.filter((f) => isPhotoFile(f.name));
   const known = new Set(library.get().photos.map((p) => `${p.folder}/${p.name}/${p.size}`));
-  const todo = photos.filter((f) => !known.has(`${folderOf(f)}/${f.name}/${f.size}`));
+  const todo = photos.filter((f) => !known.has(`${f.folder}/${f.name}/${f.size}`));
   const added: LibraryPhoto[] = [];
-  let failed = files.length - photos.length;
+  let failed = total - photos.length;
   library.set({ importing: { done: 0, total: todo.length } });
-  for (const [i, f] of todo.entries()) {
-    const thumb = await makeThumb(f);
-    if (thumb) {
+  for (const [i, src] of todo.entries()) {
+    const f = await src.read().catch(() => null);
+    const thumb = f && (await makeThumb(f).catch(() => null));
+    if (f && thumb) {
       const head = new Uint8Array(await f.slice(0, 1 << 20).arrayBuffer());
       const exif = readExif(head);
       const p: LibraryPhoto = {
         id: newId(),
-        name: f.name,
-        folder: folderOf(f),
-        size: f.size,
-        date: exif.taken ?? f.lastModified ?? Date.now(),
+        name: src.name,
+        folder: src.folder,
+        size: src.size,
+        date: exif.taken ?? src.lastModified ?? Date.now(),
         added: Date.now(),
         width: thumb.width,
         height: thumb.height,
@@ -213,11 +265,16 @@ export async function importPhotos(files: File[]): Promise<{ added: LibraryPhoto
         exif,
         thumb: thumb.thumb,
       };
+      if (src.link && 'path' in src.link) p.path = src.link.path;
+      else if (src.link) p.linked = true;
       const stored = await tx(['photos', 'files'], 'readwrite', (t) => {
         t.objectStore('photos').put(p);
-        t.objectStore('files').put(f, p.id);
+        // Photo liée : seule la fiche est gardée (chemin) ou la poignée du fichier, pas une copie.
+        if (!src.link) t.objectStore('files').put(f, p.id);
+        else if ('handle' in src.link) t.objectStore('files').put(src.link.handle, p.id);
       });
-      if (stored === undefined && !(await db())) memoryFiles.set(p.id, f);
+      if (src.link && 'handle' in src.link) memoryFiles.set(p.id, src.link.handle);
+      else if (stored === undefined && !(await db()) && !src.link) memoryFiles.set(p.id, f);
       added.push(p);
       library.set((s) => ({ photos: [...s.photos, p] }));
     } else failed++;
@@ -225,6 +282,77 @@ export async function importPhotos(files: File[]): Promise<{ added: LibraryPhoto
   }
   library.set({ importing: null });
   return { added, failed };
+}
+
+type DirHandle = FileSystemDirectoryHandle & {
+  values: () => AsyncIterable<FileSystemHandle & { kind: 'file' | 'directory' }>;
+};
+
+/** Le navigateur sait-il ouvrir un dossier du disque sans le copier ? */
+export const canLinkFolder = (): boolean =>
+  isTauri() ||
+  typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker === 'function';
+
+const isTauri = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+/**
+ * Ouvre un dossier du disque, sous-dossiers compris, sans copier les photos : la bibliothèque
+ * retient où elles sont (chemin sur le bureau, poignée de fichier dans le navigateur) et les
+ * relit quand on les ouvre. Rien n'est à importer pour travailler directement dans ses dossiers.
+ */
+export async function linkFolder(): Promise<{ added: LibraryPhoto[]; failed: number } | null> {
+  if (isTauri()) {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const { readDir, readFile, stat } = await import('@tauri-apps/plugin-fs');
+    const root = await open({ directory: true, multiple: false });
+    if (!root || Array.isArray(root)) return null;
+    const rootName = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
+    const sources: Source[] = [];
+    const walk = async (dir: string, rel: string) => {
+      for (const e of await readDir(dir)) {
+        const path = `${dir.replace(/[\\/]$/, '')}/${e.name}`;
+        if (e.isDirectory) await walk(path, `${rel}/${e.name}`);
+        else if (e.isFile && isPhotoFile(e.name)) {
+          const info = await stat(path).catch(() => null);
+          sources.push({
+            name: e.name,
+            folder: rel,
+            size: info?.size ?? 0,
+            lastModified: info?.mtime ? new Date(info.mtime).getTime() : Date.now(),
+            read: async () => new File([(await readFile(path)) as BlobPart], e.name),
+            link: { path },
+          });
+        }
+      }
+    };
+    await walk(root, rootName);
+    return addSources(sources);
+  }
+  const picker = (window as unknown as { showDirectoryPicker?: (o?: object) => Promise<DirHandle> })
+    .showDirectoryPicker;
+  if (!picker) return null;
+  const root = await picker.call(window, { mode: 'read' }).catch(() => null);
+  if (!root) return null;
+  const sources: Source[] = [];
+  const walk = async (dir: DirHandle, rel: string) => {
+    for await (const e of dir.values()) {
+      if (e.kind === 'directory') await walk(e as DirHandle, `${rel}/${e.name}`);
+      else if (isPhotoFile(e.name)) {
+        const handle = e as FileSystemFileHandle;
+        const f = await handle.getFile();
+        sources.push({
+          name: e.name,
+          folder: rel,
+          size: f.size,
+          lastModified: f.lastModified,
+          read: async () => handle.getFile(),
+          link: { handle },
+        });
+      }
+    }
+  };
+  await walk(root, root.name);
+  return addSources(sources);
 }
 
 // --- Modifications ---------------------------------------------------------------------------

@@ -8,6 +8,9 @@ export const frPhotoLib = {
   'plib.close': 'Retour au document',
   'plib.import': 'Importer des photos…',
   'plib.importFolder': 'Importer un dossier…',
+  'plib.openFolder': 'Ouvrir un dossier…',
+  'plib.openFolderHint':
+    'Travaille directement dans le dossier : rien n’est copié, les photos restent où elles sont.',
   'plib.importing': 'Import des photos : {done} sur {total}',
   'plib.imported': '{n} photo(s) ajoutée(s)',
   'plib.importFailed': '{n} fichier(s) ignoré(s) (pas une photo ou illisible)',
@@ -68,7 +71,7 @@ export const frPhotoLib = {
   'plib.remove': 'Retirer de la bibliothèque',
   'plib.removeConfirm':
     'Retirer {n} photo(s) de la bibliothèque ? Les fichiers sur votre disque ne sont pas touchés.',
-  'plib.missing': 'Fichier de la photo introuvable : réimportez-la.',
+  'plib.missing': 'Photo introuvable (déplacée, renommée ou accès refusé) : rouvrez son dossier.',
   'plib.shortcuts':
     'Raccourcis : 0 à 5 note · P retenir · X rejeter · U sans drapeau · 6 à 9 couleur · Entrée ouvrir · Suppr retirer',
 } as const;
@@ -81,6 +84,8 @@ export const enPhotoLib: Record<MessageKeyPhotoLib, string> = {
   'plib.close': 'Back to the document',
   'plib.import': 'Import photos…',
   'plib.importFolder': 'Import a folder…',
+  'plib.openFolder': 'Open a folder…',
+  'plib.openFolderHint': 'Works straight in the folder: nothing is copied, photos stay where they are.',
   'plib.importing': 'Importing photos: {done} of {total}',
   'plib.imported': '{n} photo(s) added',
   'plib.importFailed': '{n} file(s) skipped (not a photo or unreadable)',
@@ -140,7 +145,7 @@ export const enPhotoLib: Record<MessageKeyPhotoLib, string> = {
   'plib.develop': 'Develop the RAW',
   'plib.remove': 'Remove from library',
   'plib.removeConfirm': 'Remove {n} photo(s) from the library? The files on your disk are not touched.',
-  'plib.missing': 'Photo file not found: import it again.',
+  'plib.missing': 'Photo not found (moved, renamed or access denied): open its folder again.',
   'plib.shortcuts':
     'Shortcuts: 0 to 5 rating · P pick · X reject · U unflag · 6 to 9 color · Enter open · Delete remove',
 };

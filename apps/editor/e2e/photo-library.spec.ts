@@ -103,3 +103,34 @@ test('retire une photo et ferme la bibliothèque avec Échap', async ({ page }) 
   await page.keyboard.press('Escape');
   await expect(lib).toBeHidden();
 });
+
+test('ouvre un dossier du disque sans copier les photos', async ({ page }) => {
+  // Faux sélecteur de dossier : un dossier « voyage » avec une photo et un sous-dossier.
+  await page.addInitScript((b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const file = (name: string) => ({
+      kind: 'file',
+      name,
+      getFile: async () => new File([bytes], name, { type: 'image/png', lastModified: 1_700_000_000_000 }),
+    });
+    const dir = (name: string, entries: unknown[]): unknown => ({
+      kind: 'directory',
+      name,
+      values: async function* () {
+        yield* entries as never[];
+      },
+    });
+    (window as any).showDirectoryPicker = async () =>
+      dir('voyage', [file('a.png'), file('notes.txt'), dir('jour2', [file('b.png')])]);
+  }, PNG.toString('base64'));
+  await page.reload();
+  await page.getByTestId('persona-library').click();
+  const lib = page.getByTestId('photo-library');
+  await page.getByTestId('plib-open-folder').click();
+  await expect(lib.getByRole('option')).toHaveCount(2);
+  await expect(lib.getByRole('button', { name: /^jour2/ })).toBeVisible();
+  // La photo est relue dans son dossier à l'ouverture.
+  await lib.getByRole('option', { name: 'b.png' }).dblclick();
+  await expect(lib).toBeHidden();
+  await expect(page.getByTestId('persona-photo')).toHaveAttribute('aria-pressed', 'true');
+});

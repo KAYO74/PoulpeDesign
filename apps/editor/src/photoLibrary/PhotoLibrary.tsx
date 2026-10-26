@@ -13,7 +13,9 @@ import {
   cleanKeyword,
   filterPhotos,
   groups,
+  canLinkFolder,
   importPhotos,
+  linkFolder,
   isRaw,
   loadLibrary,
   mimeOf,
@@ -93,9 +95,12 @@ export function PhotoLibrary() {
   const current = selected.length ? selected[selected.length - 1] : null;
   const patch = (f: Partial<LibraryFilter>) => setFilter((s) => ({ ...s, ...f }));
 
-  const runImport = async (files: File[]) => {
-    if (!files.length) return;
-    const { added, failed } = await importPhotos(files);
+  const runImport = async (
+    files: File[] | null | Promise<{ added: LibraryPhoto[]; failed: number } | null>,
+  ) => {
+    const r = Array.isArray(files) ? (files.length ? await importPhotos(files) : null) : await files;
+    if (!r) return;
+    const { added, failed } = r;
     if (added.length) toast(t('plib.imported', { n: added.length }));
     if (failed) toast(t('plib.importFailed', { n: failed }));
     if (added.length) setSel([added[added.length - 1].id]);
@@ -229,9 +234,14 @@ export function PhotoLibrary() {
             <Icon name="import" />
             {t('plib.import')}
           </button>
-          <button className="btn" onClick={() => folderInput.current?.click()}>
+          <button
+            className="btn"
+            onClick={() => (canLinkFolder() ? void runImport(linkFolder()) : folderInput.current?.click())}
+            title={canLinkFolder() ? t('plib.openFolderHint') : undefined}
+            data-testid="plib-open-folder"
+          >
             <Icon name="folder" />
-            {t('plib.importFolder')}
+            {canLinkFolder() ? t('plib.openFolder') : t('plib.importFolder')}
           </button>
           <input
             ref={filesInput}
