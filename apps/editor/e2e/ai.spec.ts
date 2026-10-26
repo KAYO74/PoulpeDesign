@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * IA connectées : un modèle local (Ollama, simulé ici) ajouté dans Préférences › IA répond dans
@@ -28,7 +29,7 @@ test('une IA locale se connecte, répond et génère une image', async ({ page }
   await page.goto('/');
 
   await page.evaluate(() => (window as any).poulpe.ui.set({ dialog: 'preferences', prefsTab: 'ai' }));
-  await page.getByTestId('ai-preset').selectOption('ollama');
+  await choose(page.getByTestId('ai-preset'), 'ollama');
   await page.getByTestId('ai-add').click();
   await page.getByTestId('ai-test').click();
   await expect(page.getByText('Connexion réussie : 2 modèles')).toBeVisible();

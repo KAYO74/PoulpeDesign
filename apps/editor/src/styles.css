@@ -193,31 +193,48 @@ svg.i {
   font-weight: 600;
 }
 
-/* Menus déroulants */
+/* Menus déroulants : sobres, arrondis, survol doux à la couleur du thème. */
 .menu {
   min-width: 230px;
+  max-height: var(--radix-dropdown-menu-content-available-height, 80vh);
+  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 4px;
+  border-radius: 10px;
+  padding: 5px;
   box-shadow: var(--shadow);
-  z-index: 50;
+  z-index: 1000;
   color: var(--fg);
   font: 12px/1.35 var(--ui);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin, top left);
+  animation: menu-in 0.12s ease-out;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
 }
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border-radius: 5px;
+  gap: 8px;
+  min-height: 26px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 6px;
   outline: none;
   cursor: default;
   user-select: none;
 }
 .menu-item[data-highlighted] {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+.menu-item[data-state='checked'] {
+  color: var(--accent-hi);
+}
+:root[data-theme='light'] .menu-item[data-state='checked'] {
+  color: var(--accent);
 }
 .menu-item[data-disabled] {
   opacity: 0.4;
@@ -229,19 +246,57 @@ svg.i {
 .menu-label {
   flex: 1;
 }
+.menu-tick {
+  display: inline-flex;
+  margin-left: 8px;
+}
 .menu-shortcut {
   color: var(--faint);
   font-family: var(--mono);
   font-size: 11px;
 }
 .menu-item[data-highlighted] .menu-shortcut {
-  color: inherit;
-  opacity: 0.8;
+  color: var(--muted);
 }
 .menu-sep {
   height: 1px;
   background: var(--line);
-  margin: 4px 6px;
+  margin: 5px 8px;
+}
+/* Liste déroulante (fields.tsx) : même largeur que son bouton, au moins. */
+.select-menu {
+  min-width: max(140px, var(--radix-dropdown-menu-trigger-width));
+}
+.select-field {
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.select-field:hover:not(:disabled) {
+  border-color: var(--line-2);
+}
+.select-field[data-state='open'] {
+  border-color: var(--accent);
+}
+.select-field:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.select-field .select-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-field > svg {
+  color: var(--muted);
+  transition: transform 0.12s;
+}
+.select-field[data-state='open'] > svg {
+  transform: rotate(180deg);
 }
 
 /* ——— Barre d'outils principale ——— */
@@ -883,9 +938,6 @@ h4.sub {
 .color-selects > .field {
   flex: 1;
   min-width: 0;
-}
-.color-selects select {
-  width: 100%;
 }
 .swatch.none-swatch {
   border-radius: 4px;
@@ -2815,7 +2867,7 @@ h4.sub .link {
   gap: 10px;
   padding: 4px 0 8px;
 }
-.frames-dialog .field select,
+.frames-dialog .select-field,
 .frames-dialog .text-input {
   min-width: 200px;
 }
@@ -3313,4 +3365,160 @@ h4.sub .link {
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 6px;
+}
+
+/* Couleurs de la barre du haut (panels/ColorPopover.tsx) : pastilles arrondies et petite fenêtre
+ * Échantillons / Couleur / Dégradé, comme dans Affinity, à notre thème. */
+.paint-chip {
+  flex: none;
+  width: 34px;
+  height: 22px;
+  padding: 2px;
+  border-radius: 7px;
+  border: 1px solid var(--line-2);
+  background: var(--input);
+  transition: border-color 0.12s;
+}
+.paint-chip > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+}
+.paint-chip.ring > span {
+  -webkit-mask:
+    linear-gradient(#000 0 0) exclude,
+    linear-gradient(#000 0 0) content-box;
+  mask:
+    linear-gradient(#000 0 0) exclude,
+    linear-gradient(#000 0 0) content-box;
+  padding: 4px;
+}
+.paint-chip:hover {
+  border-color: var(--muted);
+}
+.paint-chip[data-state='open'] {
+  border-color: var(--accent);
+}
+.color-pop {
+  width: 272px;
+  max-height: var(--radix-popover-content-available-height, 80vh);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  color: var(--fg);
+  font: 12px/1.35 var(--ui);
+  animation: menu-in 0.12s ease-out;
+}
+.color-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.color-pop-tabs {
+  flex: 1;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--input);
+  border-radius: 8px;
+}
+.color-pop-tabs button {
+  flex: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.color-pop-tabs button:hover {
+  color: var(--fg);
+}
+.color-pop-tabs button[aria-selected='true'] {
+  background: var(--panel-2);
+  color: var(--fg);
+  font-weight: 600;
+}
+.color-pop-head .none-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex: none;
+}
+.color-pop-swatches,
+.color-pop-gradient {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.color-pop-swatches h4.sub {
+  margin: 0;
+}
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+}
+.palette-grid .swatch {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  border: 0;
+}
+.palette-grid .swatch:hover {
+  outline: 2px solid var(--fg);
+  outline-offset: 0;
+  z-index: 1;
+}
+.color-pop-gradient .seg {
+  display: flex;
+}
+.color-pop-gradient .seg button {
+  flex: 1;
+}
+
+/* Préférences : interrupteurs sobres à la place des cases à cocher. */
+.prefs-section .check input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  margin: 0 4px 0 0;
+  border-radius: 8px;
+  background: var(--line-2);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.prefs-section .check input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.prefs-section .check input[type='checkbox']:checked {
+  background: var(--accent);
+}
+.prefs-section .check input[type='checkbox']:checked::after {
+  transform: translateX(12px);
+}
+.prefs-section .check input[type='checkbox']:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.prefs-section .check {
+  color: var(--fg);
 }

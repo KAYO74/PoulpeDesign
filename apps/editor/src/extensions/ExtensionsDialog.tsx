@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../components/Dialogs';
-import { NumberField } from '../components/fields';
+import { NumberField, Select } from '../components/fields';
 import { useT } from '../i18n';
 import { pickFile } from '../io';
 import { ui, useStore } from '../store';
@@ -207,16 +207,16 @@ export function ExtensionParamsDialog() {
               );
             case 'select':
               return (
-                <label key={p.id} className="field">
-                  <span className="field-label">{label}</span>
-                  <select value={String(values[p.id])} onChange={(e) => set(p.id, e.target.value)}>
-                    {(p.options ?? []).map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {localized(o.label)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select
+                  key={p.id}
+                  label={label}
+                  value={String(values[p.id])}
+                  options={(p.options ?? []).map((o) => ({
+                    value: String(o.value),
+                    label: localized(o.label),
+                  }))}
+                  onChange={(v) => set(p.id, v)}
+                />
               );
             default:
               return (

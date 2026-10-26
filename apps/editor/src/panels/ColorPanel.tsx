@@ -36,9 +36,14 @@ const DEFAULT_STOPS = (c: string): GradientStop[] => [
 ];
 
 /** Peinture courante de la cible (remplissage ou contour) : sélection, ou réglage des nouveaux objets. */
-export function useCurrentPaint(): { paint: Paint; target: 'fill' | 'stroke'; hasSelection: boolean } {
+export function useCurrentPaint(only?: 'fill' | 'stroke'): {
+  paint: Paint;
+  target: 'fill' | 'stroke';
+  hasSelection: boolean;
+} {
   const { doc, selection } = useEditor();
-  const target = useUi((s) => s.colorTarget);
+  const chosen = useUi((s) => s.colorTarget);
+  const target = only ?? chosen;
   const defaults = useUi((s) => s.defaults);
   const persona = useUi((s) => s.persona);
   const brushColor = useUi((s) => s.brushColor);
@@ -95,6 +100,28 @@ function firstColor(p: Paint): string {
   return '#2ba59a';
 }
 
+/** Change le type de peinture (uni, dégradé, motif, aucune) en gardant sa première couleur. */
+export function switchPaintType(target: 'fill' | 'stroke', paint: Paint, type: Paint['type']): void {
+  const base = firstColor(paint);
+  const stops = isGradient(paint) ? paint.stops : DEFAULT_STOPS(base);
+  if (type === 'pattern') {
+    // Un motif a besoin d'une image : on la demande tout de suite.
+    void pickPatternImage();
+    return;
+  }
+  const next: Paint =
+    type === 'none'
+      ? { type: 'none' }
+      : type === 'solid'
+        ? { type: 'solid', color: base }
+        : type === 'linear'
+          ? { type: 'linear', angle: paint.type === 'linear' ? paint.angle : 90, stops }
+          : type === 'conic'
+            ? { type: 'conic', angle: 0, cx: 0.5, cy: 0.5, stops }
+            : { type: 'radial', cx: 0.5, cy: 0.5, r: 0.5, stops };
+  applyPaint(target, next, 'set');
+}
+
 export function ColorPanel() {
   const t = useT();
   const { paint, target, hasSelection } = useCurrentPaint();
@@ -108,26 +135,7 @@ export function ColorPanel() {
   const print = doc.layout?.colorMode === 'cmyk';
   const shape = useUi((s) => s.settings.colorShape) ?? 'box';
 
-  const switchType = (type: Paint['type']) => {
-    const base = firstColor(paint);
-    const stops = isGradient(paint) ? paint.stops : DEFAULT_STOPS(base);
-    if (type === 'pattern') {
-      // Un motif a besoin d'une image : on la demande tout de suite.
-      void pickPatternImage();
-      return;
-    }
-    const next: Paint =
-      type === 'none'
-        ? { type: 'none' }
-        : type === 'solid'
-          ? { type: 'solid', color: base }
-          : type === 'linear'
-            ? { type: 'linear', angle: paint.type === 'linear' ? paint.angle : 90, stops }
-            : type === 'conic'
-              ? { type: 'conic', angle: 0, cx: 0.5, cy: 0.5, stops }
-              : { type: 'radial', cx: 0.5, cy: 0.5, r: 0.5, stops };
-    applyPaint(target, next, 'set');
-  };
+  const switchType = (type: Paint['type']) => switchPaintType(target, paint, type);
 
   const gradient = isGradient(paint) ? paint : null;
   const pattern = paint.type === 'pattern' ? paint : null;
@@ -361,7 +369,7 @@ export function ColorPanel() {
 }
 
 /** Barre d'arrêts d'un dégradé. */
-function GradientBar({
+export function GradientBar({
   paint,
   selected,
   onSelect,

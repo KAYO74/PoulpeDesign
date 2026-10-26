@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /* Vectoriel pro (v0.3) : plume, nœuds, crayon, géométrie, contours, effets, texte sur tracé, import SVG. */
 
@@ -384,8 +385,8 @@ test('règle pointillés, flèches et effets', async ({ page }) => {
   await page.keyboard.press('l');
   await drag([300, 300], [600, 300]);
   await page.getByTestId('tab-stroke').click();
-  await page.getByLabel('Style').selectOption('dashed');
-  await page.getByLabel('Fin').selectOption('triangle');
+  await choose(page.getByLabel('Style'), 'dashed');
+  await choose(page.getByLabel('Fin'), 'triangle');
   let [line] = await nodes(page);
   expect(line.stroke.dash).toEqual([3, 2]);
   expect(line.stroke.end).toBe('triangle');

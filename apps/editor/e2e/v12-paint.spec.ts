@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /* Version 1.2 : outils Remplissage, Transparence, Contour et Largeur de trait comme dans Affinity. */
 
@@ -82,7 +83,7 @@ test('Remplissage : tracé exact, poignées, arrêts et types', async ({ page })
   await page.getByTestId('paint-reverse').click();
   [r] = await nodes(page);
   expect(r.fill.stops.map((s: AnyNode) => s.color)).toEqual([...colors].reverse());
-  await page.getByTestId('paint-type').selectOption('elliptical');
+  await choose(page.getByTestId('paint-type'), 'elliptical');
   [r] = await nodes(page);
   expect(r.fill.type).toBe('radial');
   expect(r.fill.ratio).toBe(0.5);
@@ -93,7 +94,7 @@ test('Remplissage : tracé exact, poignées, arrêts et types', async ({ page })
   expect(r.fill.angle).toBeCloseTo(angle + 90, 0);
   // Remplissage ou contour : le dégradé va sur le contour.
   await page.getByTestId('paint-target-stroke').click();
-  await page.getByTestId('paint-type').selectOption('conic');
+  await choose(page.getByTestId('paint-type'), 'conic');
   [r] = await nodes(page);
   expect(r.stroke.paint.type).toBe('conic');
   expect(r.fill.type).toBe('radial');
@@ -146,7 +147,7 @@ test('Transparence : tout l’objet s’efface sans toucher au remplissage', asy
   });
   expect(svg).toContain('<mask');
   // Type, opacité d'un arrêt, puis retrait.
-  await page.getByTestId('transparency-type').selectOption('radial');
+  await choose(page.getByTestId('transparency-type'), 'radial');
   [r] = await nodes(page);
   expect(r.transparency.type).toBe('radial');
   await page.getByTestId('paint-stop-opacity').fill('50');
@@ -172,7 +173,7 @@ test('Contour : décalage modifiable, retiré, puis appliqué par Convertir en c
   expect(r.contour.radius).toBeGreaterThan(0);
   await page.getByTestId('contour-radius').fill('12');
   await page.getByTestId('contour-radius').press('Enter');
-  await page.getByTestId('contour-join').selectOption('miter');
+  await choose(page.getByTestId('contour-join'), 'miter');
   [r] = await nodes(page);
   expect(r.contour).toEqual({ radius: 12, join: 'miter', miterLimit: 4 });
   await page.getByTestId('contour-remove').click();

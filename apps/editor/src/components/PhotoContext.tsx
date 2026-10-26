@@ -1,3 +1,4 @@
+import { PaintChip } from '../panels/ColorPopover';
 import { findNode, type LiquifyMode } from '@poulpe/core';
 import { getController } from './Viewport';
 import { useT } from '../i18n';
@@ -197,6 +198,7 @@ export function PhotoContext({ tool }: { tool: ToolId }) {
     tool === 'quickSelect';
   return (
     <>
+      {(isBrushTool(tool) || tool === 'fill') && tool !== 'magicEraser' && <PaintChip target="fill" />}
       {select && <ModeButtons />}
       {(tool === 'marqueeRect' || tool === 'marqueeEllipse' || tool === 'lasso' || tool === 'polyLasso') && (
         <NumberField
