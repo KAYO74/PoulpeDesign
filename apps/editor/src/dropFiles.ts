@@ -3,17 +3,10 @@
  * Un document (Poulpe Design, PSD, PDF, Illustrator, modèle) s'ouvre. Une image ou un SVG se
  * place dans le document ouvert, là où on le lâche ; sur l'écran d'accueil, il ouvre un document.
  */
+import { makeRoomForDocument } from './docTabs';
 import { createDocument, createGroup, importSvg, translateNode } from '@poulpe/core';
 import { t } from './i18n';
-import {
-  OPEN_EXTENSIONS,
-  baseName,
-  confirmDiscard,
-  loadBytes,
-  openBytes,
-  openPhotoBytes,
-  placeImageBytes,
-} from './io';
+import { OPEN_EXTENSIONS, baseName, loadBytes, openBytes, openPhotoBytes, placeImageBytes } from './io';
 import { editor, toast, ui } from './store';
 import { placeSvg } from './vectorActions';
 
@@ -44,7 +37,7 @@ export async function dropFiles(files: File[], at?: { x: number; y: number }): P
     if (!isDocument(ext) && !isVisual(ext)) toast(t('file.dropUnsupported', { name: f.name }));
   }
   if (doc) {
-    if (!confirmDiscard()) return;
+    makeRoomForDocument();
     const bytes = new Uint8Array(await doc.arrayBuffer());
     // Un modèle s'ouvre comme un nouveau document, sans écraser le fichier du modèle.
     if (extOf(doc.name) === 'poulpemodele') {
@@ -56,7 +49,7 @@ export async function dropFiles(files: File[], at?: { x: number; y: number }): P
   if (!visuals.length) return;
   let rest = visuals;
   if (home) {
-    if (!confirmDiscard()) return;
+    makeRoomForDocument();
     if (!(await openVisual(visuals[0]))) return;
     rest = visuals.slice(1);
     at = undefined;

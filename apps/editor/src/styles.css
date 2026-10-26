@@ -689,6 +689,45 @@ svg.i {
   border-radius: 6px 6px 0 0;
   font-weight: 500;
 }
+.doc-tab {
+  cursor: default;
+  color: var(--muted);
+  background: transparent;
+}
+.doc-tab[aria-selected='true'] {
+  background: var(--bg);
+  color: var(--fg);
+}
+.doc-tab:not([aria-selected='true']):hover {
+  color: var(--fg);
+}
+.doc-tab-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-tab-close,
+.doc-tab-new {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--faint);
+}
+.doc-tab-close {
+  width: 16px;
+  height: 16px;
+}
+.doc-tab-new {
+  width: 24px;
+  height: 24px;
+  margin: 0 0 1px 4px;
+}
+.doc-tab-close:hover,
+.doc-tab-new:hover {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
 .doc-tab .dot {
   width: 6px;
   height: 6px;
