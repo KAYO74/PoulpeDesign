@@ -45,6 +45,12 @@ function Toggle({
 
 /** Onglets en haut, comme Affinity : Vectoriel, Pixel, Mise en page, Export. */
 const PERSONA_TABS: Persona[] = ['draw', 'photo', 'layout', 'export'];
+const TAB_ICONS: Record<Persona, IconName> = {
+  draw: 'tabDraw',
+  photo: 'tabPhoto',
+  layout: 'tabLayout',
+  export: 'tabExport',
+};
 
 export function Toolbar() {
   const t = useT();
@@ -66,7 +72,7 @@ export function Toolbar() {
             data-testid={`persona-${p}`}
             onClick={() => openPersona(p)}
           >
-            <Icon name={p} />
+            <Icon name={TAB_ICONS[p]} />
             <span className="persona-label">{t(`tab.${p}`)}</span>
           </button>
         ))}
