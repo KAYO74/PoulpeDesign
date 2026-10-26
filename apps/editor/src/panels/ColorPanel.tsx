@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import {
   colorToCmyk,
+  defaultHatch,
   findNode,
+  HATCH_STYLES,
   isGradient,
   isStyled,
   opaque,
@@ -97,6 +100,7 @@ export function applyPaint(target: 'fill' | 'stroke', paint: Paint, phase: Phase
 function firstColor(p: Paint): string {
   if (p.type === 'solid') return p.color;
   if (isGradient(p)) return p.stops[0]?.color ?? '#000000';
+  if (p.type === 'hatch') return p.color;
   return '#2ba59a';
 }
 
@@ -110,15 +114,17 @@ export function switchPaintType(target: 'fill' | 'stroke', paint: Paint, type: P
     return;
   }
   const next: Paint =
-    type === 'none'
-      ? { type: 'none' }
-      : type === 'solid'
-        ? { type: 'solid', color: base }
-        : type === 'linear'
-          ? { type: 'linear', angle: paint.type === 'linear' ? paint.angle : 90, stops }
-          : type === 'conic'
-            ? { type: 'conic', angle: 0, cx: 0.5, cy: 0.5, stops }
-            : { type: 'radial', cx: 0.5, cy: 0.5, r: 0.5, stops };
+    type === 'hatch'
+      ? defaultHatch(base)
+      : type === 'none'
+        ? { type: 'none' }
+        : type === 'solid'
+          ? { type: 'solid', color: base }
+          : type === 'linear'
+            ? { type: 'linear', angle: paint.type === 'linear' ? paint.angle : 90, stops }
+            : type === 'conic'
+              ? { type: 'conic', angle: 0, cx: 0.5, cy: 0.5, stops }
+              : { type: 'radial', cx: 0.5, cy: 0.5, r: 0.5, stops };
   applyPaint(target, next, 'set');
 }
 
@@ -139,12 +145,25 @@ export function ColorPanel() {
 
   const gradient = isGradient(paint) ? paint : null;
   const pattern = paint.type === 'pattern' ? paint : null;
+  const hatch = paint.type === 'hatch' ? paint : null;
+  // Hachures : le sélecteur règle la couleur des traits ou celle du fond.
+  const [hatchPart, setHatchPart] = useState<'ink' | 'bg'>('ink');
   const stops = gradient?.stops ?? [];
   const si = Math.min(stopIndex, Math.max(0, stops.length - 1));
-  const editColor = gradient ? (stops[si]?.color ?? '#000000') : paint.type === 'solid' ? paint.color : null;
+  const editColor = gradient
+    ? (stops[si]?.color ?? '#000000')
+    : paint.type === 'solid'
+      ? paint.color
+      : hatch
+        ? hatchPart === 'bg'
+          ? (hatch.background ?? '#ffffff00')
+          : hatch.color
+        : null;
 
   const onColor = (c: string, phase: Phase) => {
-    if (paint.type === 'solid' || paint.type === 'none')
+    if (hatch)
+      applyPaint(target, hatchPart === 'bg' ? { ...hatch, background: c } : { ...hatch, color: c }, phase);
+    else if (paint.type === 'solid' || paint.type === 'none')
       applyPaint(target, { type: 'solid', color: c }, phase);
     else if (gradient) {
       const next = stops.map((s, i) => (i === si ? { ...s, color: c } : s));
@@ -153,7 +172,7 @@ export function ColorPanel() {
   };
 
   const applySwatch = (c: string) => {
-    if (gradient) onColor(c, 'set');
+    if (gradient || hatch) onColor(c, 'set');
     else applyPaint(target, { type: 'solid', color: c }, 'set');
   };
 
@@ -175,10 +194,12 @@ export function ColorPanel() {
           label={t('color.type')}
           value={paint.type}
           testId="color-paint-type"
-          options={(['solid', 'linear', 'radial', 'conic', 'pattern', 'none'] as const).map((type) => ({
-            value: type,
-            label: t(`color.${type}`),
-          }))}
+          options={(['solid', 'linear', 'radial', 'conic', 'pattern', 'hatch', 'none'] as const).map(
+            (type) => ({
+              value: type,
+              label: t(`color.${type}`),
+            }),
+          )}
           onChange={switchType}
         />
         {editColor !== null && (
@@ -271,6 +292,66 @@ export function ColorPanel() {
             {t('color.patternImage')}
           </button>
         </div>
+      )}
+      {hatch && (
+        <>
+          <div className="picker-row">
+            <Select
+              label={t('color.hatchStyle')}
+              value={hatch.style}
+              testId="hatch-style"
+              options={HATCH_STYLES.map((style) => ({
+                value: style,
+                label: t(`color.hatch${style[0].toUpperCase()}${style.slice(1)}`),
+              }))}
+              onChange={(style) => applyPaint(target, { ...hatch, style }, 'set')}
+            />
+            <NumberField
+              label={t('color.angle')}
+              value={hatch.angle}
+              min={-360}
+              max={360}
+              unit="°"
+              width={84}
+              onChange={(v) => applyPaint(target, { ...hatch, angle: v }, 'set')}
+            />
+          </div>
+          <div className="picker-row">
+            <NumberField
+              label={t('color.hatchSpacing')}
+              value={hatch.spacing}
+              min={2}
+              max={500}
+              unit="px"
+              width={84}
+              testId="hatch-spacing"
+              onChange={(v) => applyPaint(target, { ...hatch, spacing: v }, 'set')}
+            />
+            <NumberField
+              label={t('color.hatchWidth')}
+              value={hatch.width}
+              min={0.1}
+              max={500}
+              step={0.5}
+              unit="px"
+              width={84}
+              testId="hatch-width"
+              onChange={(v) => applyPaint(target, { ...hatch, width: v }, 'set')}
+            />
+          </div>
+          <div className="seg" role="group" aria-label={t('color.hatch')}>
+            <button aria-pressed={hatchPart === 'ink'} onClick={() => setHatchPart('ink')}>
+              {t('color.hatchInk')}
+            </button>
+            <button
+              aria-pressed={hatchPart === 'bg'}
+              data-testid="hatch-bg"
+              onClick={() => setHatchPart('bg')}
+            >
+              {t('color.hatchBackground')}
+            </button>
+          </div>
+        </>
       )}
       {gradient?.type === 'radial' && (
         <div className="picker-row">
