@@ -26,11 +26,23 @@ export function RawDialog() {
   const t = useT();
   const photo = rawPhoto();
   const [s, setS] = useState<DevelopSettings>(DEFAULT_DEVELOP);
+  const [before, setBefore] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
+  // « \ » (comme Lightroom) bascule entre la photo réglée et la photo d'origine.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== '\\' || e.ctrlKey || e.metaKey || e.altKey) return;
+      if ((e.target as HTMLElement).closest('input:not([type="range"]), textarea')) return;
+      e.preventDefault();
+      setBefore((b) => !b);
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, []);
   useEffect(() => {
     if (!photo) return;
     const id = requestAnimationFrame(() => {
-      const img = photo.render(s, 900);
+      const img = photo.render(before ? DEFAULT_DEVELOP : s, 900);
       const c = canvas.current;
       if (!c) return;
       c.width = img.width;
@@ -38,12 +50,15 @@ export function RawDialog() {
       c.getContext('2d')!.putImageData(img, 0, 0);
     });
     return () => cancelAnimationFrame(id);
-  }, [photo, s]);
+  }, [photo, s, before]);
   if (!photo) return null;
   return (
     <Modal title={t('raw.title')} onClose={closeRaw} xl>
       <div className="raw-develop">
-        <canvas ref={canvas} className="raw-preview" data-testid="raw-preview" />
+        <div className="raw-stage">
+          <canvas ref={canvas} className="raw-preview" data-testid="raw-preview" />
+          {before && <span className="raw-badge">{t('raw.before')}</span>}
+        </div>
         <div className="raw-params">
           <p className="note">
             {photo.width} × {photo.height} px
@@ -58,6 +73,15 @@ export function RawDialog() {
           ))}
           <button className="btn small" onClick={() => setS(DEFAULT_DEVELOP)}>
             {t('param.reset')}
+          </button>
+          <button
+            className="btn small"
+            aria-pressed={before}
+            title={t('raw.beforeAfterHint')}
+            data-testid="raw-before-after"
+            onClick={() => setBefore((b) => !b)}
+          >
+            {t('raw.beforeAfter')}
           </button>
         </div>
       </div>

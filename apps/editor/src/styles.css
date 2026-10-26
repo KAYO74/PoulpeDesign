@@ -3264,6 +3264,23 @@ h4.sub .link {
   gap: 16px;
   align-items: flex-start;
 }
+.raw-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+.raw-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
 .raw-preview {
   flex: 1;
   min-width: 0;

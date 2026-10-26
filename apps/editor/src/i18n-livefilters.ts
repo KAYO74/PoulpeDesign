@@ -29,6 +29,9 @@ export const frLiveFilters = {
   'history.replaceImage': 'Remplacement de l’image',
   'raw.title': 'Développement RAW',
   'raw.develop': 'Développer',
+  'raw.beforeAfter': 'Avant / après',
+  'raw.beforeAfterHint': 'Compare avec la photo d’origine (touche \\)',
+  'raw.before': 'Avant',
   'raw.unreadable': 'Ce fichier RAW n’est pas reconnu (appareil ou format pas encore pris en charge).',
   'contentfill.hint':
     'La sélection est reconstruite d’après l’image autour. L’aperçu s’affiche dans le document.',
@@ -119,6 +122,9 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'history.replaceImage': 'Replace image',
   'raw.title': 'Develop RAW',
   'raw.develop': 'Develop',
+  'raw.beforeAfter': 'Before / after',
+  'raw.beforeAfterHint': 'Compare with the original photo (\\ key)',
+  'raw.before': 'Before',
   'raw.unreadable': 'This RAW file is not recognized (camera or format not supported yet).',
   'contentfill.hint':
     'The selection is rebuilt from the surrounding image. The preview shows in the document.',
