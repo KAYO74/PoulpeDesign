@@ -36,6 +36,7 @@ import { Modal } from './Dialogs';
 import { NumberField, Select } from './fields';
 import { Icon, type IconName } from './Icon';
 import { ShortcutsEditor } from './ShortcutsDialog';
+import { AiPane } from './AiPreferences';
 import { renderStats, type RenderStats } from '../perf';
 import { ACCENT_PRESETS } from '../accentColor';
 import { UI_SCALES, uiScaleAvailable } from '../uiScale';
@@ -55,6 +56,7 @@ const TABS: { id: PrefsTab; icon: IconName }[] = [
   { id: 'display', icon: 'eye' },
   { id: 'layers', icon: 'arrange' },
   { id: 'shortcuts', icon: 'keyboard' },
+  { id: 'ai', icon: 'magicWand' },
   { id: 'advanced', icon: 'adjust' },
   { id: 'diagnostic', icon: 'search' },
 ];
@@ -88,6 +90,7 @@ export function PreferencesDialog() {
           {tab === 'display' && <DisplayPane />}
           {tab === 'layers' && <LayersPane />}
           {tab === 'shortcuts' && <ShortcutsEditor />}
+          {tab === 'ai' && <AiPane />}
           {tab === 'advanced' && <AdvancedPane />}
           {tab === 'diagnostic' && <DiagnosticPane />}
         </div>

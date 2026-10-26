@@ -19,6 +19,7 @@ import { SelectionModifyDialog } from './dialogs/SelectionModifyDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { UpdateDialog } from './UpdateDialog';
 import { PreferencesDialog } from './PreferencesDialog';
+import { AiAssistantDialog, AiImageDialog } from './dialogs/AiDialogs';
 import { HelpDialog } from './HelpDialog';
 import { ExtensionParamsDialog, ExtensionsDialog } from '../extensions/ExtensionsDialog';
 import { VectorizeDialog } from '../smart/VectorizeDialog';
@@ -57,6 +58,8 @@ function MainDialog() {
   if (dialog === 'canvasSize') return <CanvasSizeDialog />;
   if (dialog === 'workspace') return <WorkspaceDialog />;
   if (dialog === 'preferences') return <PreferencesDialog />;
+  if (dialog === 'ai') return <AiAssistantDialog />;
+  if (dialog === 'aiImage') return <AiImageDialog />;
   if (dialog === 'help') return <HelpDialog />;
   if (dialog === 'saveTemplate') return <SaveTemplateDialog />;
   return null;

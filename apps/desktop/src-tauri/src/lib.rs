@@ -4,8 +4,9 @@
 //! carte graphique ou sur tous les cœurs), ouverture des fichiers `.poulpe` par double-clic,
 //! liste et données des polices installées, mesure des performances, réglages de la carte
 //! graphique et mémoire de l'ordinateur (Préférences), langue choisie dans l'installeur Windows,
-//! et accès aux fichiers via les extensions officielles de Tauri.
+//! connexion aux IA (clés dans le trousseau du système), et accès aux fichiers via les extensions officielles de Tauri.
 
+mod ai;
 mod engine;
 mod launch;
 
@@ -160,7 +161,11 @@ pub fn run() {
             installer_language,
             engine::engine_info,
             engine::engine_configure,
-            engine::engine_apply
+            engine::engine_apply,
+            ai::ai_key_set,
+            ai::ai_key_has,
+            ai::ai_key_delete,
+            ai::ai_fetch
         ])
         .build(context)
         .expect("impossible de démarrer Poulpe Design");
