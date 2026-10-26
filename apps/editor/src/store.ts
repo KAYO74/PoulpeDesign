@@ -161,6 +161,8 @@ export interface Settings {
   toolsLayout: ToolsLayout;
   /** Colonne d'outils verrouillée : elle ne se détache plus en palette flottante. */
   toolsLocked: boolean;
+  /** Touches des outils : celles d'Affinity (par défaut), de Photoshop ou d'Illustrator. */
+  keyPreset: import('./toolKeyPresets').KeyPreset;
   studioSide: Side;
   rulers: boolean;
   grid: boolean;
@@ -274,6 +276,7 @@ function loadSettings(): Settings {
     toolsColumns: 'auto',
     toolsLayout: 'all',
     toolsLocked: false,
+    keyPreset: 'affinity',
     studioSide: 'right',
     rulers: true,
     grid: false,
