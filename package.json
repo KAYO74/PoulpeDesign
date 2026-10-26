@@ -20,6 +20,11 @@
     "format:check": "prettier --check .",
     "lint": "eslint ."
   },
+  "pnpm": {
+    "overrides": {
+      "dompurify": ">=3.4.17"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.12.0",
