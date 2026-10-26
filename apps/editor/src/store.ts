@@ -125,6 +125,7 @@ export type Dialog =
   | 'resize'
   | 'offset'
   | 'filter'
+  | 'liveFilter'
   | 'selectionModify'
   | 'document'
   | 'batch'
@@ -224,6 +225,8 @@ export interface UiState {
   maskEditId: string | null;
   /** Filtre ouvert dans la boîte de dialogue Filtres. */
   filterKind: import('@poulpe/core').AdjustmentKind | null;
+  /** Filtre en direct ouvert pour réglage : calques qui le portent, son id, et s'il vient d'être ajouté. */
+  liveFilter: { nodeIds: string[]; filterId: string; isNew: boolean } | null;
   /** Modification de sélection demandée (adoucir, agrandir, réduire). */
   selectionModify: 'feather' | 'grow' | 'shrink' | null;
   /** Fluidité : pousser, tourbillon, gonfler ou pincer. */
@@ -331,6 +334,7 @@ export const ui = new Store<UiState>({
   hasPixelSelection: false,
   maskEditId: null,
   filterKind: null,
+  liveFilter: null,
   selectionModify: null,
   liquifyMode: 'push',
   straightenFill: true,

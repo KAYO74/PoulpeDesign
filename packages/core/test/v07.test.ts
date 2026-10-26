@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activeFilters,
+  filtersReach,
   CANVAS_FEATURES,
   FORMAT_VERSION,
   OPENTYPE_FEATURES,
@@ -256,7 +258,7 @@ describe('format de fichier', () => {
     doc.artboards[0].children.push(
       createSymbolInstance({ x: 0, y: 0, width: 10, height: 10, symbolId: 's1' }),
     );
-    expect(FORMAT_VERSION).toBe(7);
+    expect(FORMAT_VERSION).toBeGreaterThanOrEqual(7);
     const back = await decodePoulpe(await encodePoulpe(doc));
     expect(back.symbols?.s1.name).toBe('Puce');
     expect(back.styles?.[0].fill).toEqual({ type: 'solid', color: '#ff0000' });
@@ -269,5 +271,22 @@ describe('format de fichier', () => {
     const up = migrate(old) as PoulpeDocument;
     expect(up.version).toBe(FORMAT_VERSION);
     expect(up.artboards).toHaveLength(1);
+  });
+});
+
+describe('filtres en direct (format 8)', () => {
+  it('portée des filtres actifs et aller-retour du fichier', async () => {
+    const doc = createDocument({ name: 'f', width: 100, height: 100 });
+    const r = createRect({ x: 0, y: 0, width: 10, height: 10 });
+    r.filters = [
+      { id: 'a', enabled: true, adjustment: { kind: 'gaussianBlur', radius: 10 } },
+      { id: 'b', enabled: false, adjustment: { kind: 'pixelate', size: 40 } },
+    ];
+    doc.artboards[0].children.push(r);
+    expect(activeFilters(r).map((f) => f.id)).toEqual(['a']);
+    expect(filtersReach(r)).toBe(15);
+    expect(FORMAT_VERSION).toBe(8);
+    const back = await decodePoulpe(await encodePoulpe(doc));
+    expect(back.artboards[0].children[0].filters).toEqual(r.filters);
   });
 });

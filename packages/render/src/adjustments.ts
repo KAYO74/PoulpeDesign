@@ -1,4 +1,12 @@
-import { applyAdjustment, type AdjustmentNode, type Box, type PoulpeDocument } from '@poulpe/core';
+import {
+  activeFilters,
+  applyAdjustment,
+  nodeBounds,
+  type AdjustmentNode,
+  type Box,
+  type PoulpeDocument,
+  type SceneNode,
+} from '@poulpe/core';
 import { compositeOp, makeCanvas, type AnyCanvas, type AnyCtx } from './canvas';
 import type { RenderOptions } from './draw';
 import { applyNodeTransform } from './geometry';
@@ -7,7 +15,9 @@ import { applyNodeTransform } from './geometry';
  * Calques de réglage : application d'un réglage à la toile où ses calques frères sont composés
  * (voir `drawChildren`, dans draw.ts).
  *
- * `applyAdjustmentLayer` est interne au paquet : index.ts ne la réexporte pas.
+ * Filtres en direct d'un calque : les mêmes calculs, sur la toile où le calque seul est rendu.
+ *
+ * `applyAdjustmentLayer` et `applyLiveFilters` sont internes au paquet : index.ts ne les réexporte pas.
  */
 
 /** Applique un calque de réglage à la toile de composition, selon son opacité et son masque. */
@@ -53,4 +63,38 @@ export function applyAdjustmentLayer(
     out[i + 2] += (adjusted[i + 2] - out[i + 2]) * k;
   }
   buf.ctx.putImageData(src, 0, 0);
+}
+
+/**
+ * Applique les filtres en direct d'un calque à la toile où il vient d'être rendu. `m` : matrice
+ * du document vers l'écran ; (x0, y0) : coin de la toile dans l'écran.
+ */
+export function applyLiveFilters(
+  layer: { canvas: AnyCanvas; ctx: AnyCtx },
+  node: SceneNode,
+  scale: number,
+  m: DOMMatrix,
+  x0: number,
+  y0: number,
+): void {
+  const filters = activeFilters(node);
+  if (!filters.length) return;
+  const { width: w, height: h } = layer.canvas;
+  const img = layer.ctx.getImageData(0, 0, w, h);
+  const px = { data: img.data, width: w, height: h };
+  // Repère de la vignette : la boîte du calque, en pixels de la toile.
+  const b = nodeBounds(node);
+  const corners = [
+    [b.x, b.y],
+    [b.x + b.width, b.y + b.height],
+  ].map(([x, y]) => [m.a * x + m.c * y + m.e - x0, m.b * x + m.d * y + m.f - y0]);
+  const frame = {
+    x: Math.min(corners[0][0], corners[1][0]),
+    y: Math.min(corners[0][1], corners[1][1]),
+    width: Math.abs(corners[1][0] - corners[0][0]),
+    height: Math.abs(corners[1][1] - corners[0][1]),
+  };
+  const origin = { x: m.e - x0, y: m.f - y0 };
+  for (const f of filters) applyAdjustment(px, f.adjustment, { scale, origin, frame });
+  layer.ctx.putImageData(img, 0, 0);
 }

@@ -5,6 +5,7 @@ import { deleteArtboard, deleteSelection, updateSelected } from '../actions';
 import { AdjustmentMenu } from '../components/AdjustmentMenu';
 import { COMMANDS, runCommand } from '../commands';
 import { toggleMaskEdit } from '../photo/photoActions';
+import { editLiveFilter, removeLiveFilter, toggleLiveFilter } from '../photo/liveFilters';
 import { images } from '../photo/pixels';
 import { NumberField, Select } from '../components/fields';
 import { Icon, type IconName } from '../components/Icon';
@@ -493,6 +494,46 @@ export function LayersPanel() {
           maskActive={maskEditId === row.key}
           h={h}
         />
+      );
+    }
+    if (row.kind === 'filter') {
+      const { node, filter } = row;
+      return (
+        <li key={row.key} role="treeitem" aria-level={row.depth} data-filter-id={filter.id}>
+          <div
+            className={`layer filter${filter.enabled ? '' : ' hidden'}`}
+            style={{ paddingLeft: 6 + row.depth * 14 }}
+            title={t('livefilter.edit')}
+            data-testid={`livefilter-${filter.id}`}
+            onClick={() => editor.select([node.id])}
+            onDoubleClick={() => editLiveFilter(node.id, filter.id)}
+          >
+            <span className="twisty" />
+            <span className="layer-icon">
+              <Icon name="adjust" size={14} />
+            </span>
+            <span className="layer-name">{t(`adjust.${filter.adjustment.kind}`)}</span>
+            <button
+              className="layer-btn"
+              title={t('livefilter.remove')}
+              aria-label={t('livefilter.remove')}
+              data-testid={`livefilter-remove-${filter.id}`}
+              onClick={(e) => (e.stopPropagation(), removeLiveFilter(node.id, filter.id))}
+            >
+              <Icon name="close" size={14} />
+            </button>
+            <button
+              className={`layer-btn eye${filter.enabled ? '' : ' on'}`}
+              aria-pressed={!filter.enabled}
+              title={filter.enabled ? t('livefilter.hide') : t('livefilter.show')}
+              aria-label={filter.enabled ? t('livefilter.hide') : t('livefilter.show')}
+              data-testid={`livefilter-eye-${filter.id}`}
+              onClick={(e) => (e.stopPropagation(), toggleLiveFilter(node.id, filter.id))}
+            >
+              <Icon name={filter.enabled ? 'eye' : 'eyeOff'} size={14} />
+            </button>
+          </div>
+        </li>
       );
     }
     if (row.kind === 'empty')

@@ -205,7 +205,7 @@ test('enregistre et rouvre une retouche (pixels, masque, réglage), puis exporte
       (await nodes(page)).map((n) => ({ type: n.type, mask: !!n.mask, kind: n.adjustment?.kind })),
     )
     .toEqual(before);
-  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.version)).toBe(7);
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.version)).toBe(8);
   // Le coup de pinceau a survécu à l'enregistrement.
   expect((await pixel(page, 1, 90, 40))[3]).toBeGreaterThan(200);
 });

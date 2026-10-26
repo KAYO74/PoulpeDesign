@@ -997,6 +997,11 @@ h4.sub {
 .layer.hidden .layer-name {
   opacity: 0.5;
 }
+/* Filtre en direct, sous son calque. */
+.layer.filter .layer-name {
+  font-style: italic;
+  color: var(--muted);
+}
 .layer.artboard {
   font-weight: 600;
   padding-left: 6px;

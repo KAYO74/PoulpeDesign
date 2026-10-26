@@ -207,6 +207,18 @@ interface NodeBase {
   transparency?: Transparency;
   /** Habillage : l'objet repousse le texte des cadres de texte placés dessous. Absent : aucun. */
   wrap?: TextWrap;
+  /**
+   * Filtres en direct du calque (comme les filtres dynamiques de Photoshop ou d'Affinity) : ils
+   * agissent sur ce seul calque, dans l'ordre, et restent modifiables. Absent : aucun.
+   */
+  filters?: LiveFilter[];
+}
+
+/** Filtre en direct posé sur un calque : ses pixels d'origine ne changent pas. */
+export interface LiveFilter {
+  id: string;
+  adjustment: Adjustment;
+  enabled: boolean;
 }
 
 /**

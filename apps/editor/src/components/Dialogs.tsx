@@ -5,6 +5,7 @@ import { useUi } from '../store';
 import { LanguageDialog } from './dialogs/LanguageDialog';
 import { DraftDialog } from './dialogs/DraftDialog';
 import { FilterDialog } from './dialogs/FilterDialog';
+import { LiveFilterDialog } from './dialogs/LiveFilterDialog';
 import { NewDialog } from './dialogs/NewDialog';
 import { WorkspaceDialog } from './dialogs/WorkspaceDialog';
 import { AboutDialog } from './dialogs/AboutDialog';
@@ -50,6 +51,7 @@ function MainDialog() {
   if (dialog === 'document') return <DocumentDialog />;
   if (dialog === 'batch') return <BatchDialog />;
   if (dialog === 'filter') return <FilterDialog />;
+  if (dialog === 'liveFilter') return <LiveFilterDialog />;
   if (dialog === 'selectionModify') return <SelectionModifyDialog />;
   if (dialog === 'vectorize') return <VectorizeDialog />;
   if (dialog === 'extensions') return <ExtensionsDialog />;

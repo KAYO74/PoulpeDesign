@@ -1,4 +1,4 @@
-import type { Artboard, PoulpeDocument, SceneNode } from '@poulpe/core';
+import type { Artboard, LiveFilter, PoulpeDocument, SceneNode } from '@poulpe/core';
 import { editor } from './store';
 
 /*
@@ -18,7 +18,9 @@ export type LayerRow =
       /** Position dans `parent.children` (0 = tout en dessous). */
       index: number;
       depth: number;
-    };
+    }
+  /** Filtre en direct d'un calque, affiché sous lui. */
+  | { kind: 'filter'; key: string; node: SceneNode; filter: LiveFilter; depth: number };
 
 export function layerRows(doc: PoulpeDocument, collapsed: ReadonlySet<string>): LayerRow[] {
   const rows: LayerRow[] = [];
@@ -26,6 +28,11 @@ export function layerRows(doc: PoulpeDocument, collapsed: ReadonlySet<string>): 
     for (let i = nodes.length - 1; i >= 0; i--) {
       const node = nodes[i];
       rows.push({ kind: 'node', key: node.id, node, parentId, index: i, depth });
+      // Le dernier filtre appliqué en haut, comme dans Photoshop.
+      for (let f = (node.filters?.length ?? 0) - 1; f >= 0; f--) {
+        const filter = node.filters![f];
+        rows.push({ kind: 'filter', key: `${node.id}:filter:${filter.id}`, node, filter, depth: depth + 1 });
+      }
       if (node.type === 'group' && !collapsed.has(node.id)) visit(node.children, node.id, depth + 1);
     }
   };

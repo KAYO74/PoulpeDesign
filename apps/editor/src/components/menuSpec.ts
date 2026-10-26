@@ -275,6 +275,12 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
           COLOR_ADJUSTMENTS.map((k) => cmd(`filter.${k}`)),
         ),
         sep,
+        sub(t('menu.layerLiveFilters'), [
+          ...LIVE_FILTERS.map((k) => cmd(`livefilter.${k}`)),
+          sep,
+          ...COLOR_ADJUSTMENTS.map((k) => cmd(`livefilter.${k}`)),
+        ]),
+        sep,
         cmd('edit.contentAwareFill'),
       ],
     },

@@ -1,6 +1,6 @@
 import { parseColor, sampleStops } from './color';
 import { applyLut, decodeLut, encodeLut, lutFromFunction } from './lut';
-import type { Adjustment, AdjustmentKind } from './types';
+import type { Adjustment, AdjustmentKind, LiveFilter, SceneNode } from './types';
 
 /*
  * Réglages d'image et filtres dynamiques, calculés pixel par pixel sur des données RGBA.
@@ -718,3 +718,15 @@ export function autoLevels(px: Pixels): Extract<Adjustment, { kind: 'levels' }> 
 }
 
 export { clamp255 as clampByte };
+
+/** Filtres en direct actifs d'un calque. */
+export function activeFilters(node: SceneNode): LiveFilter[] {
+  return node.filters?.filter((f) => f.enabled) ?? [];
+}
+
+/** Distance (en pixels du document) jusqu'où les filtres en direct d'un calque peuvent peindre. */
+export function filtersReach(node: SceneNode): number {
+  let r = 0;
+  for (const f of activeFilters(node)) r += adjustmentReach(f.adjustment);
+  return Math.ceil(r);
+}

@@ -31,6 +31,7 @@ import { openPhoto } from './photo/persona';
 import { canCutout, removeBackground, selectSubject } from './smart/cutout';
 import { canVectorize } from './smart/vectorize';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
+import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
@@ -69,8 +70,16 @@ function adjustmentCommands() {
       run: () => ui.set({ dialog: 'filter', filterKind: kind }),
       enabled: P.canFilter,
     };
+    out[`livefilter.${kind}`] = {
+      label: `adjust.${kind}` as MessageKey,
+      run: () => addLiveFilter(kind),
+      enabled: canLiveFilter,
+    };
   }
-  return out as Record<`adjust.${AdjustmentKind}` | `filter.${AdjustmentKind}`, Command>;
+  return out as Record<
+    `adjust.${AdjustmentKind}` | `filter.${AdjustmentKind}` | `livefilter.${AdjustmentKind}`,
+    Command
+  >;
 }
 
 /** Une commande par look intégré (table LUT calculée). */

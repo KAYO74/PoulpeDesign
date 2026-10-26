@@ -8,10 +8,12 @@ import {
   preparePrintPdf,
   pxToPt,
   activeEffects,
+  activeFilters,
   artboardToSvg,
   contourReach,
   bytesToDataUrl,
   effectMargin,
+  filtersReach,
   nodeBounds,
   type SceneNode,
   createDocument,
@@ -441,6 +443,7 @@ function imageDensity(doc: PoulpeDocument, nodes: SceneNode[]): number {
 /**
  * Ce que le SVG ou le PDF ne savent pas décrire est mis en image :
  * - les calques de réglage, avec tout ce qu'ils modifient (les calques du dessous dans leur parent) ;
+ * - les objets qui ont des filtres en direct ;
  * - pour le PDF (`pdf`), les objets qui ont des effets ou un masque.
  */
 async function rasterizedParts(
@@ -478,12 +481,13 @@ async function rasterizedParts(
     if (!n.visible) return;
     const fx = activeEffects(n);
     // La transparence (outil Transparence) passe aussi en image : svg2pdf ne lit pas les masques.
-    if (!pdf || (!fx.length && !n.mask?.enabled && !n.transparency)) {
+    const live = activeFilters(n).length > 0;
+    if (!live && (!pdf || (!fx.length && !n.mask?.enabled && !n.transparency))) {
       if (n.type === 'group') await visitChildren(n.children, nodeBounds(n));
       return;
     }
     // Le décalage de l'outil Contour dépasse de la boîte (déjà compté avec une transparence).
-    const m = effectMargin(fx) + 2 + (n.transparency ? 0 : contourReach(n));
+    const m = effectMargin(fx) + 2 + (n.transparency ? 0 : contourReach(n)) + filtersReach(n);
     const b = n.transparency ? paintBounds(n) : nodeBounds(n);
     const x = b.x - m,
       y = b.y - m,
