@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.3.0-FF5F86" alt="Version 1.3.0"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.3.1-FF5F86" alt="Version 1.3.1"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -147,7 +147,7 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Les versions jusqu'à la 1.3.0. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
+Les versions jusqu'à la 1.3.1. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
 | Version | Contenu                                                                                                                                    | État          |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
@@ -158,6 +158,7 @@ Les versions jusqu'à la 1.3.0. Les versions plus anciennes sont sur la page [Ve
 | v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                          | ✅ Disponible |
 | v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                             | ✅ Disponible |
 | v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ✅ Disponible |
+| v1.3.1  | **Roue chromatique** : carré, roue ou triangle dans le panneau Couleur, couleur barrée, couleur du thème, glisser-déposer de fichiers      | ✅ Disponible |
 
 La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 
