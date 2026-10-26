@@ -9,9 +9,9 @@ import { Modal } from './Modal';
 import { close } from './close';
 
 const BASES: { id: Persona; icon: IconName }[] = [
-  { id: 'draw', icon: 'draw' },
-  { id: 'photo', icon: 'photo' },
-  { id: 'layout', icon: 'layout' },
+  { id: 'draw', icon: 'tabDraw' },
+  { id: 'photo', icon: 'tabPhoto' },
+  { id: 'layout', icon: 'tabLayout' },
 ];
 
 /**
