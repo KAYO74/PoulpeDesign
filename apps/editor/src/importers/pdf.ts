@@ -40,6 +40,11 @@ const apply = (m: Matrix, x: number, y: number): [number, number] => [
   m[0] * x + m[2] * y + m[4],
   m[1] * x + m[3] * y + m[5],
 ];
+/** Matrice reçue de pdf.js : tableau ou, depuis pdf.js 5, tableau typé (Float32Array). */
+const asMatrix = (v: unknown): Matrix | null =>
+  Array.isArray(v) || ArrayBuffer.isView(v)
+    ? (Array.from(v as ArrayLike<number>).slice(0, 6) as Matrix)
+    : null;
 const scaleOf = (m: Matrix) => Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2])) || 1;
 
 interface GState {
@@ -409,15 +414,17 @@ async function pageNodes(
       case OPS.save:
       case OPS.paintFormXObjectBegin:
         stack.push({ ...st });
-        if (fn === OPS.paintFormXObjectBegin && Array.isArray(args[0]))
-          st.ctm = mul(st.ctm, args[0] as Matrix);
+        if (fn === OPS.paintFormXObjectBegin) {
+          const m = asMatrix(args[0]);
+          if (m) st.ctm = mul(st.ctm, m);
+        }
         break;
       case OPS.restore:
       case OPS.paintFormXObjectEnd:
         st = stack.pop() ?? st;
         break;
       case OPS.transform:
-        st.ctm = mul(st.ctm, args as Matrix);
+        st.ctm = mul(st.ctm, asMatrix(args[0]) ?? asMatrix(args) ?? IDENTITY);
         break;
       case OPS.setFillRGBColor:
         st.fill = { type: 'solid', color: String(args[0]) };
@@ -476,16 +483,18 @@ async function pageNodes(
       case OPS.setFont: {
         const f = get(String(args[0])) as {
           name?: string;
+          loadedName?: string;
           bold?: boolean;
           black?: boolean;
           italic?: boolean;
           fontMatrix?: number[];
         } | null;
+        const fontName = f?.name ?? (f?.loadedName?.startsWith('g_') ? undefined : f?.loadedName);
         st.font = f
           ? {
-              name: f.name ?? 'Inter',
-              bold: !!(f.bold || f.black) || /bold|black|heavy/i.test(f.name ?? ''),
-              italic: !!f.italic || /italic|oblique/i.test(f.name ?? ''),
+              name: fontName ?? 'Inter',
+              bold: !!(f.bold || f.black) || /bold|black|heavy/i.test(fontName ?? ''),
+              italic: !!f.italic || /italic|oblique/i.test(fontName ?? ''),
               matrix: f.fontMatrix ?? [0.001],
             }
           : null;
@@ -511,7 +520,7 @@ async function pageNodes(
         st.renderMode = Number(args[0]);
         break;
       case OPS.setTextMatrix:
-        st.textMatrix = (Array.isArray(args[0]) ? args[0] : args) as Matrix;
+        st.textMatrix = asMatrix(args[0]) ?? asMatrix(args) ?? IDENTITY;
         st.x = st.y = st.lineX = st.lineY = 0;
         break;
       case OPS.moveText:
@@ -579,7 +588,8 @@ export interface PdfImport {
 /** Document Poulpe à partir des octets d'un fichier PDF ou AI. */
 export async function pdfToDocument(bytes: Uint8Array, name: string, maxPages = 100): Promise<PdfImport> {
   const pdfjs = await loadPdfjs();
-  const task = pdfjs.getDocument({ data: bytes.slice() });
+  // fontExtraProperties : sans lui, pdf.js 5+ ne donne plus le nom des polices.
+  const task = pdfjs.getDocument({ data: bytes.slice(), fontExtraProperties: true });
   const pdf = await task.promise;
   const OPS = pdfjs.OPS as unknown as Record<string, number>;
   const doc = createDocument({ name, width: 10, height: 10 });
