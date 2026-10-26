@@ -13,6 +13,7 @@
 <p align="center">
   <b>Poulpe Design</b> est une application libre et gratuite de création graphique.<br>
   La puissance d'Affinity, Illustrator et Photoshop, la simplicité de Canva.
+  <b>Gratuit, sans compte</b>, export PSD avec calques, SVG, PDF, PNG et JPEG.
 </p>
 
 # Poulpe Design — création graphique libre (alternative Canva, Photoshop, Illustrator, Affinity)
