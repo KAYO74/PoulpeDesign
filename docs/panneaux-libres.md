@@ -6,18 +6,21 @@ As in Photoshop, Poulpe Design's tool windows can be undocked, moved and resized
 
 - **Undock a Studio group** (Color, Stroke… or Layers, History): drag its tab bar out of the Studio, or double-click the bar (next to the tabs).
 - **Undock a single panel** (Layers, Brush, History…): drag its tab out of the group, or double-click the tab. It becomes its own window; dropped back on the Studio or on its group, it returns to its place.
+- **Move a panel to another group, or reorder it**: drag its tab onto another group (docked or floating); the group lights up and a line shows where it will go. A group emptied of its panels leaves a "Drop a panel here" spot.
+- **Window menu**, as in Photoshop and Affinity: tick or untick each panel (Color, Layers, History, Brush, Macros…) to show or close it, in any Persona. A panel you show opens in its own window; the cross on a single panel's window closes it.
 - **Undock the tools column**: drag the small handle at the top of the column, or double-click it.
 - **Move** a floating window: drag it by its title bar.
 - **Resize**: drag an edge or a corner. The floating tools palette rearranges itself into several columns when you widen it.
 - **Re-dock**: drop the window back on the Studio (or against its edge); the area lights up on hover. The dock button or a double-click on the title bar does the same.
 - **Docked panels**: drag the inner edge of the Studio and the Library to change their width; the divider between the Studio's two groups sets their height. Double-click a divider: default size.
-- **View › Reset panels** restores the original layout (tools on the right, Studio docked).
+- **View › Reset panels** (also in **Window**) restores the original layout (tools on the right, Studio docked).
 
 The layout is remembered from one session to the next.
 
 ## For the code
 
 - `apps/editor/src/panels/panelLayout.ts`: the `panels` store (key `poulpe.panels` in local storage), kept separate from the settings so that a drag does not redraw the whole editor; drag, resize and dock functions.
+- `apps/editor/src/panels/studioTabs.ts`: which panels each group holds and in what order (`tabs` in the `panels` store, per Persona type draw/photo; absent = the Persona's default groups), `moveTab`, `hideTab`, `showTab`.
 - `apps/editor/src/panels/FloatingFrame.tsx`: floating window with its eight handles.
 - The detachable panels are `tools`, `studio-top`, `studio-bottom` and `tab:<onglet>` (a single panel, for example `tab:layers`); the same identifier is used in all three Personas.
 

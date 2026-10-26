@@ -13,6 +13,7 @@ import { subscribeShortcuts } from './shortcuts';
 import { editor, ui } from './store';
 import { pixelStore } from './tools/pixel/store';
 import { workspaces } from './workspaces';
+import { panels } from './panels/panelLayout';
 
 /*
  * Appli de bureau sur Mac : les menus de l'éditeur (Fichier, Édition, Calque…) passent dans la
@@ -244,6 +245,7 @@ export async function installMacMenu(): Promise<void> {
     ui.subscribe,
     pixelStore.subscribe,
     workspaces.subscribe,
+    panels.subscribe,
     subscribeCommands,
     subscribeShortcuts,
     subscribeLang,

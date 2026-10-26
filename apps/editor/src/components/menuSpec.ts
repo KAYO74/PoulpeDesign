@@ -4,6 +4,7 @@ import { allCommands } from '../commands';
 import { exportDocument } from '../io';
 import { t } from '../i18n';
 import { editor, setSettings, ui } from '../store';
+import { STUDIO_TABS, isTabShown, tabsKind, toggleTab } from '../panels/studioTabs';
 import { pixelStore } from '../tools/pixel/store';
 import { activeWorkspace, applyWorkspace, workspaces } from '../workspaces';
 
@@ -433,6 +434,28 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         ),
         cmd('view.colorPicker'),
         cmd('view.brushEditor'),
+        cmd('view.resetPanels'),
+      ],
+    },
+    {
+      // Comme le menu Fenêtre de Photoshop et d'Affinity : afficher ou fermer chaque panneau.
+      id: 'window',
+      label: t('menu.window'),
+      items: [
+        ...STUDIO_TABS.map((tab) =>
+          choice(
+            `panel-${tab.id}`,
+            t(tab.label),
+            isTabShown(tabsKind(persona), tab.id),
+            () => toggleTab(tabsKind(ui.get().persona), tab.id),
+            `menu-panel-${tab.id}`,
+          ),
+        ),
+        sep,
+        cmd('view.library', settings.library),
+        cmd('view.colorPicker'),
+        cmd('view.brushEditor'),
+        sep,
         cmd('view.resetPanels'),
       ],
     },

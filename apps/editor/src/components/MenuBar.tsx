@@ -17,6 +17,7 @@ import { pixelStore } from '../tools/pixel/store';
 import { Icon } from './Icon';
 import { menuSpec, type MenuNode } from './menuSpec';
 import { useActiveWorkspace, useWorkspaces } from '../workspaces';
+import { usePanels } from '../panels/panelLayout';
 
 export function Item({ id, checked }: { id: CommandId | (string & {}); checked?: boolean }) {
   useT();
@@ -106,6 +107,7 @@ export function MenuBar() {
   useStore(pixelStore, (s) => s.quickMask);
   useWorkspaces((s) => s.list);
   useActiveWorkspace();
+  usePanels((s) => s.tabs);
   useSyncExternalStore(subscribeCommands, commandsVersion);
   return (
     <nav className="menubar" aria-label="Menu">

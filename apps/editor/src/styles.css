@@ -3075,6 +3075,27 @@ h4.sub .link {
   margin-top: 6px;
 }
 
+/* Panneau déposé dans un autre groupe : le groupe visé s'allume, un trait marque la place. */
+.studio-group.drop-into,
+.studio-empty.drop-into {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+.studio-tab.drop-before {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.studio-empty {
+  flex: none;
+  margin: 6px;
+  padding: 14px 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
 /* ——— IA connectées (Préférences › IA, assistant) ——— */
 .ai-card {
   align-self: stretch;

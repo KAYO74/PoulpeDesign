@@ -3,7 +3,8 @@
  */
 
 export const frV125 = {
-  'panel.tabHint': 'Glissez l’onglet hors du groupe pour en faire une fenêtre seule (double-clic : détacher)',
+  'panel.tabHint':
+    'Glissez l’onglet hors du groupe pour en faire une fenêtre seule, ou sur un autre groupe pour l’y ranger (double-clic : détacher)',
   'prefs.uiScale': 'Taille de l’interface',
   'prefs.uiScaleWeb':
     'Taille de l’interface : dans le navigateur, utilisez son zoom (Ctrl + et Ctrl −, ou Cmd sur Mac).',
@@ -12,7 +13,8 @@ export const frV125 = {
 export type MessageKeyV125 = keyof typeof frV125;
 
 export const enV125: Record<MessageKeyV125, string> = {
-  'panel.tabHint': 'Drag the tab out of the group to make it a window of its own (double-click: undock)',
+  'panel.tabHint':
+    'Drag the tab out of the group to make it a window of its own, or onto another group to move it there (double-click: undock)',
   'prefs.uiScale': 'Interface size',
   'prefs.uiScaleWeb': 'Interface size: in the browser, use its zoom (Ctrl + and Ctrl −, or Cmd on Mac).',
 };
