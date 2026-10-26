@@ -86,7 +86,7 @@ export function baseName(path: string): string {
     .replace(/\.[^.]+$/, '');
 }
 
-function safeName(name: string): string {
+export function safeName(name: string): string {
   return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'poulpe';
 }
 
@@ -694,7 +694,7 @@ export async function exportDocument(opts: ExportOptions): Promise<void> {
 }
 
 /** Fichier d'un plan de travail dans un format d'export (PDF d'une seule page). */
-async function artboardBytes(
+export async function artboardBytes(
   doc: PoulpeDocument,
   ab: Artboard,
   kind: ExportKind,

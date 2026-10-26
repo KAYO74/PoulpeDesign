@@ -1,7 +1,7 @@
 /*
  * Textes des filtres en direct des calques, des objets dynamiques (images liées), du
  * développement RAW, du remplissage d'après le contenu, des plages de fusion et de la
- * déformation en maillage.
+ * déformation en maillage, et de la Persona Export.
  */
 
 export const frLiveFilters = {
@@ -53,6 +53,21 @@ export const frLiveFilters = {
     'Tirez les points de la grille : l’image suit. Choisissez une grille plus fine pour des retouches plus locales.',
   'warp.grid': 'Grille',
   'history.meshWarp': 'Déformation en maillage',
+  'persona.export': 'Export',
+  'slices.title': 'Tranches',
+  'slices.fromSelection': 'Tranches des calques sélectionnés',
+  'slices.fromArtboards': 'Tranches des plans de travail',
+  'slices.empty':
+    'Une tranche est un calque ou un plan de travail exporté en un clic, dans plusieurs formats et tailles. Sélectionnez des calques puis créez leurs tranches.',
+  'slices.name': 'Nom du fichier',
+  'slices.remove': 'Supprimer la tranche',
+  'slices.formats': 'Formats',
+  'slices.export': 'Exporter les tranches ({n} fichiers)',
+  'slices.exportCmd': 'Exporter les tranches…',
+  'slices.nothing': 'Aucune tranche à exporter.',
+  'history.addSlices': 'Nouvelles tranches',
+  'history.slice': 'Tranche',
+  'history.removeSlice': 'Suppression de la tranche',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -105,4 +120,19 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'warp.hint': 'Drag the grid points: the image follows. Pick a finer grid for more local changes.',
   'warp.grid': 'Grid',
   'history.meshWarp': 'Mesh warp',
+  'persona.export': 'Export',
+  'slices.title': 'Slices',
+  'slices.fromSelection': 'Slices from selected layers',
+  'slices.fromArtboards': 'Slices from artboards',
+  'slices.empty':
+    'A slice is a layer or an artboard exported in one click, in several formats and sizes. Select layers, then create their slices.',
+  'slices.name': 'File name',
+  'slices.remove': 'Delete slice',
+  'slices.formats': 'Formats',
+  'slices.export': 'Export slices ({n} files)',
+  'slices.exportCmd': 'Export slices…',
+  'slices.nothing': 'No slice to export.',
+  'history.addSlices': 'New slices',
+  'history.slice': 'Slice',
+  'history.removeSlice': 'Delete slice',
 };

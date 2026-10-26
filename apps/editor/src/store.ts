@@ -85,7 +85,7 @@ export type ToolId =
   | 'redEye';
 
 /** Espaces de travail, comme les Personas d'Affinity. */
-export type Persona = 'draw' | 'photo' | 'layout';
+export type Persona = 'draw' | 'photo' | 'layout' | 'export';
 
 /** Combinaison d'une nouvelle sélection de pixels avec l'ancienne. */
 export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect';

@@ -714,6 +714,31 @@ export interface PoulpeDocument {
   symbols?: Record<string, Symbol>;
   /** Styles de calque et de texte enregistrés. */
   styles?: SavedStyle[];
+  /** Tranches de la Persona Export : zones exportées chacune dans un ou plusieurs fichiers. */
+  slices?: Slice[];
+}
+
+/** Format et taille d'un fichier exporté par une tranche. */
+export interface SliceExport {
+  format: 'png' | 'jpeg' | 'svg' | 'pdf';
+  /** Échelle (1, 2, 3…) pour PNG et JPEG. */
+  scale: number;
+}
+
+/**
+ * Tranche (Affinity : Persona Export) : un calque (sa zone suit le calque), un plan de travail,
+ * ou une zone libre, exportés en un clic dans tous leurs formats.
+ */
+export interface Slice {
+  id: string;
+  name: string;
+  /** Plan de travail de la tranche. */
+  artboardId: string;
+  /** Calque suivi ; absent : `rect`, ou tout le plan de travail. */
+  layerId?: string;
+  /** Zone libre, en coordonnées du document. */
+  rect?: { x: number; y: number; width: number; height: number };
+  exports: SliceExport[];
 }
 
 export type Parent = Artboard | GroupNode;

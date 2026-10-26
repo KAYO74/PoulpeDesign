@@ -34,6 +34,7 @@ import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
 import { openContentFill } from './photo/contentFill';
+import { exportSlices, sliceFileCount, slicesFromArtboards, slicesFromSelection } from './slices';
 import { canMeshWarp, openMeshWarp } from './photo/meshWarp';
 import { blendTargets, openBlendRanges } from './components/dialogs/BlendRangesDialog';
 import { toggleQuickMask } from './tools/pixel/quickMask';
@@ -244,6 +245,17 @@ export const COMMANDS = {
   'layer.invertMask': { label: 'layer.invertMask', run: P.invertMask, enabled: P.hasMask },
   'layer.removeMask': { label: 'layer.removeMask', run: P.removeMask, enabled: P.hasMask },
   'layer.rasterize': { label: 'layer.rasterize', run: P.rasterizeSelection, enabled: P.canRasterize },
+  'slices.fromSelection': {
+    label: 'slices.fromSelection',
+    run: slicesFromSelection,
+    enabled: () => editor.selection.length > 0,
+  },
+  'slices.fromArtboards': { label: 'slices.fromArtboards', run: slicesFromArtboards },
+  'slices.export': {
+    label: 'slices.exportCmd',
+    run: () => exportSlices(),
+    enabled: () => sliceFileCount(editor.doc) > 0,
+  },
   'layer.meshWarp': { label: 'warp.menu', run: openMeshWarp, enabled: canMeshWarp },
   'layer.blendRanges': {
     label: 'blend.menu',
@@ -512,6 +524,7 @@ export const COMMANDS = {
   'pages.addMaster': { label: 'pages.addMaster', run: L.addMaster },
   'pages.arrange': { label: 'pages.arrange', run: L.arrange },
   'persona.layout': { label: 'persona.layout', run: () => openPersona('layout') },
+  'persona.export': { label: 'persona.export', run: () => openPersona('export') },
 
   'view.zoomIn': { label: 'view.zoomIn', shortcut: 'Mod+=', run: () => zoomBy(1.25) },
   'view.zoomOut': { label: 'view.zoomOut', shortcut: 'Mod+-', run: () => zoomBy(0.8) },

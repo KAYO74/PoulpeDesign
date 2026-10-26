@@ -139,6 +139,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         sep,
         cmd('file.export'),
         cmd('file.batchExport'),
+        cmd('slices.export'),
         sub(
           t('file.export'),
           (['png', 'jpeg', 'svg', 'pdf'] as const).map((k) => ({
@@ -383,6 +384,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('persona.draw', !custom && persona === 'draw'),
         cmd('persona.photo', !custom && persona === 'photo'),
         cmd('persona.layout', !custom && persona === 'layout'),
+        cmd('persona.export', !custom && persona === 'export'),
         sub(t('workspace.menu'), workspaceNodes()),
         sep,
         cmd('view.zoomIn'),

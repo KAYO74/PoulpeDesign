@@ -3246,3 +3246,44 @@ h4.sub .link {
   touch-action: none;
   cursor: crosshair;
 }
+
+/* Persona Export : panneau Tranches. */
+.slices-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+.slices-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.slices-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.slice {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+}
+.slice-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.slice-name {
+  flex: 1;
+  min-width: 0;
+}
+.slice-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
