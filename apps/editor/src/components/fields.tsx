@@ -102,6 +102,17 @@ export function paintPreview(p: Paint): string {
     case 'pattern':
       // L'image du motif n'est pas disponible ici : des hachures signalent un remplissage par motif.
       return 'repeating-linear-gradient(45deg, #8b8b92 0 3px, #d9d9de 3px 6px)';
+    case 'hatch': {
+      const ink = rgbaToCss(p.color);
+      const bg = p.background ? rgbaToCss(p.background) : 'transparent';
+      const fond = `linear-gradient(${bg}, ${bg})`;
+      const lines = `repeating-linear-gradient(${p.angle + 90}deg, ${ink} 0 2px, transparent 2px 5px)`;
+      if (p.style === 'dots')
+        return `radial-gradient(${ink} 1.5px, transparent 2px) 0 0 / 6px 6px, ${fond}, var(--checker)`;
+      if (p.style === 'cross')
+        return `${lines}, repeating-linear-gradient(${p.angle}deg, ${ink} 0 2px, transparent 2px 5px), ${fond}, var(--checker)`;
+      return `${lines}, ${fond}, var(--checker)`;
+    }
   }
 }
 
