@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { choose } from './choose';
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -16,8 +17,8 @@ test('remplit une forme de hachures et les règle', async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(box.x + 600, box.y + 450, { steps: 8 });
   await page.mouse.up();
-  await page.getByTestId('color-paint-type').selectOption('hatch');
-  await page.getByTestId('hatch-style').selectOption('cross');
+  await choose(page.getByTestId('color-paint-type'), 'hatch');
+  await choose(page.getByTestId('hatch-style'), 'cross');
   const spacing = page.getByTestId('hatch-spacing');
   await spacing.fill('20');
   await spacing.press('Enter');

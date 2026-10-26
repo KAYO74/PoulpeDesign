@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import * as Menu from '@radix-ui/react-dropdown-menu';
 import { rgbaToCss, type Paint } from '@poulpe/core';
+import { Icon } from './Icon';
 
 /** Champ numérique : Entrée ou sortie du champ pour valider, flèches pour ajuster (Maj : ×10). */
 export function NumberField({
@@ -114,6 +116,10 @@ export function paintPreview(p: Paint): string {
   }
 }
 
+/**
+ * Liste déroulante moderne : un bouton montre le choix, un menu sobre (à notre thème) s'ouvre
+ * dessous, avec une coche sur le choix courant. La valeur est aussi dans `data-value`.
+ */
 export function Select<T extends string | number>({
   value,
   options,
@@ -131,25 +137,53 @@ export function Select<T extends string | number>({
   testId?: string;
   disabled?: boolean;
 }) {
+  const current = options.find((o) => String(o.value) === String(value));
   return (
-    <label className="field" style={width ? { width } : undefined}>
-      {label && <span className="field-label">{label}</span>}
-      <select
+    <Menu.Root modal={false}>
+      <Menu.Trigger
+        className="field select-field"
+        style={width ? { width } : undefined}
         data-testid={testId}
+        data-value={String(value)}
         disabled={disabled}
-        value={String(value)}
         aria-label={label}
-        onChange={(e) => {
-          const opt = options.find((o) => String(o.value) === e.target.value);
-          if (opt) onChange(opt.value);
-        }}
       >
-        {options.map((o) => (
-          <option key={String(o.value)} value={String(o.value)}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+        {label && <span className="field-label">{label}</span>}
+        <span className="select-value">{current?.label ?? ''}</span>
+        <Icon name="chevronDown" size={12} />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Content
+          className="menu select-menu"
+          align="start"
+          sideOffset={4}
+          collisionPadding={8}
+          // Échap ferme la liste, pas la fenêtre qui la contient.
+          onKeyDown={(e) => e.key === 'Escape' && e.stopPropagation()}
+        >
+          <Menu.RadioGroup
+            value={String(value)}
+            onValueChange={(v) => {
+              const opt = options.find((o) => String(o.value) === v);
+              if (opt) onChange(opt.value);
+            }}
+          >
+            {options.map((o) => (
+              <Menu.RadioItem
+                key={String(o.value)}
+                value={String(o.value)}
+                className="menu-item"
+                data-value={String(o.value)}
+              >
+                <span className="menu-label">{o.label}</span>
+                <Menu.ItemIndicator className="menu-tick">
+                  <Icon name="check" size={12} />
+                </Menu.ItemIndicator>
+              </Menu.RadioItem>
+            ))}
+          </Menu.RadioGroup>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

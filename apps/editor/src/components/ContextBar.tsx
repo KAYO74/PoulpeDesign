@@ -10,6 +10,7 @@ import { convertToCurves, removeTextFromPath, setTextPathOffset } from '../vecto
 import { canLinkSelection, linkSelection } from '../layoutActions';
 import { NumberField, Select, paintPreview } from './fields';
 import { PhotoContext } from './PhotoContext';
+import { PaintChip } from '../panels/ColorPopover';
 import { CONTEXT_EXTRAS, contextFor } from '../tools/registry';
 import { isPhotoTool } from '../photo/photoTools';
 import { SHAPE_FAMILY } from '../toolCatalog';
@@ -17,7 +18,7 @@ import { SHAPE_FAMILY } from '../toolCatalog';
 /** Outils de forme : leurs réglages viennent de tools/shapes (barre ajoutée en fin de barre). */
 const SHAPES: ToolId[] = SHAPE_FAMILY;
 
-/** Épaisseur du trait (de l'objet, ou des prochains objets) ; les couleurs se choisissent dans la colonne d'outils et le panneau Couleur. */
+/** Couleurs de remplissage et de contour (de l'objet, ou des prochains objets) et épaisseur du trait. */
 export function PaintSwatches({ node }: { node: SceneNode | null }) {
   const t = useT();
   const defaults = useUi((s) => s.defaults);
@@ -31,6 +32,8 @@ export function PaintSwatches({ node }: { node: SceneNode | null }) {
   };
   return (
     <>
+      <PaintChip target="fill" />
+      <PaintChip target="stroke" />
       <NumberField
         value={stroke.width}
         min={0}

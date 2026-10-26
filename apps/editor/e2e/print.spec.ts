@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { choose } from './choose';
 import { inflateSync } from 'node:zlib';
 import { expect, test, type FileChooser, type Page } from '@playwright/test';
 import { readPsd, writePsd, type Psd } from 'ag-psd';
@@ -195,7 +196,7 @@ test('exporte un PDF/X-4 en CMJN avec les valeurs saisies en CMJN', async ({ pag
   await drag([350, 150], [600, 330]);
   // Document d'impression : couleurs CMJN.
   await page.evaluate(() => (window as any).poulpe.ui.set({ dialog: 'document' }));
-  await page.getByTestId('doc-color').selectOption('cmyk');
+  await choose(page.getByTestId('doc-color'), 'cmyk');
   await page.getByTestId('doc-apply').click();
   expect((await doc(page)).layout.colorMode).toBe('cmyk');
   // Le sélecteur de couleur s'ouvre en CMJN : 100 % cyan.
@@ -217,7 +218,7 @@ test('exporte un PDF/X-4 en CMJN avec les valeurs saisies en CMJN', async ({ pag
 
   await page.getByRole('button', { name: 'Exporter', exact: true }).first().click();
   await page.getByTestId('export-pdf').click();
-  await expect(page.getByTestId('export-color')).toHaveValue('cmyk');
+  await expect(page.getByTestId('export-color')).toHaveAttribute('data-value', 'cmyk');
   await page.getByTestId('export-pdfx').check();
   const [download] = await Promise.all([
     page.waitForEvent('download'),

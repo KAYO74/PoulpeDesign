@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * Version 1.2 : pinceaux et sélections de la Persona Photo au niveau d'Affinity Photo (trait droit,
@@ -198,9 +199,9 @@ test('éclaircir : la plage de tons choisit les tons touchés', async ({ page })
   await page.keyboard.press('o');
   expect(await uiValue(page, 'tool')).toBe('dodge');
   await setBrush(page, 'dodge', { size: 30, hardness: 100, opacity: 100, flow: 100 });
-  await page.getByTestId('tone-range').selectOption('shadows');
+  await choose(page.getByTestId('tone-range'), 'shadows');
   await drag(page, [20, 40], [150, 40]);
-  await page.getByTestId('tone-range').selectOption('highlights');
+  await choose(page.getByTestId('tone-range'), 'highlights');
   await drag(page, [20, 250], [150, 250]);
   expect((await history(page)).filter((h) => h === 'history.dodge')).toHaveLength(2);
   const shadows = await pixel(page, 0, 80, 40);
@@ -216,7 +217,7 @@ test('pinceau : mode de fusion Produit, et protéger l’alpha', async ({ page }
   await page.keyboard.press('b');
   await setBrush(page, 'brush', { size: 20, hardness: 100 });
   await setUi(page, { brushColor: '#808080' });
-  await page.getByTestId('brush-blend').selectOption('multiply');
+  await choose(page.getByTestId('brush-blend'), 'multiply');
   await drag(page, [20, 40], [150, 40]);
   const multiplied = await pixel(page, 0, 80, 40);
   expect(multiplied[0]).toBeLessThan(35);
@@ -224,7 +225,7 @@ test('pinceau : mode de fusion Produit, et protéger l’alpha', async ({ page }
   expect(multiplied[2]).toBeLessThan(115);
 
   // Nouveau calque : un trait rouge, puis un trait vert qui le croise avec « Protéger l'alpha ».
-  await page.getByTestId('brush-blend').selectOption('normal');
+  await choose(page.getByTestId('brush-blend'), 'normal');
   await page.evaluate(() => (window as any).poulpe.editor.select([]));
   await setUi(page, { brushColor: '#ff0000' });
   await drag(page, [20, 150], [380, 150]);
@@ -242,7 +243,7 @@ test('pot de peinture : source « tous les calques » et mode de fusion', async 
   await page.evaluate(() => (window as any).poulpe.editor.select([]));
   await page.keyboard.press('g');
   expect(await uiValue(page, 'tool')).toBe('fill');
-  await page.getByTestId('fill-source').selectOption('all');
+  await choose(page.getByTestId('fill-source'), 'all');
   await setUi(page, { brushColor: '#00ff00' });
   // Sur un nouveau calque vide : seule la zone du carré rouge visible est remplie.
   await click(page, 200, 150);
@@ -252,8 +253,8 @@ test('pot de peinture : source « tous les calques » et mode de fusion', async 
   expect((await pixel(page, 1, 100, 100))[3]).toBe(0);
 
   await selectBackground(page);
-  await page.getByTestId('fill-source').selectOption('layer');
-  await page.getByTestId('fill-blend').selectOption('multiply');
+  await choose(page.getByTestId('fill-source'), 'layer');
+  await choose(page.getByTestId('fill-blend'), 'multiply');
   await setUi(page, { brushColor: '#808080' });
   await click(page, 50, 50);
   const blue = await pixel(page, 0, 50, 50);
@@ -284,7 +285,7 @@ test('tampon : non aligné, chaque coup repart de la source ; source « calques 
   await setBrush(page, 'brush', { size: 2 });
   await click(page, 395, 5);
   await page.keyboard.press('k');
-  await page.getByTestId('clone-source').selectOption('below');
+  await choose(page.getByTestId('clone-source'), 'below');
   await click(page, 200, 150, 'Alt');
   await click(page, 60, 200);
   const copied = await pixel(page, 1, 60, 200);

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 import { readFileSync } from 'node:fs';
 
 type Snapshot = {
@@ -252,10 +253,10 @@ test('applique un dégradé et groupe des objets', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.keyboard.press('e');
   await drag([300, 300], [450, 450]);
-  await page.getByTestId('color-paint-type').selectOption('linear');
+  await choose(page.getByTestId('color-paint-type'), 'linear');
   await page.keyboard.press('u');
   await drag([500, 300], [650, 450]);
-  await page.getByTestId('color-paint-type').selectOption('radial');
+  await choose(page.getByTestId('color-paint-type'), 'radial');
   let s = await snapshot(page);
   expect(s.nodes.map((n) => n.fill)).toEqual(['linear', 'radial']);
   await page.keyboard.press('Control+a');
@@ -305,7 +306,7 @@ test('exporte en PNG, JPEG, SVG et PDF, puis enregistre et rouvre un .poulpe', a
 
 test('passe en anglais et déplace la colonne d’outils à gauche', async ({ page }) => {
   await page.keyboard.press('Control+,');
-  await page.getByTestId('prefs-language').selectOption('en');
+  await choose(page.getByTestId('prefs-language'), 'en');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'File' })).toBeVisible();
   await page.getByRole('button', { name: 'Tools column' }).click();

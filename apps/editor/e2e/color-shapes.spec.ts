@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
-/* Panneau Couleur : carré, roue ou triangle ; plus de couleurs dans la barre du haut. */
+/* Panneau Couleur : carré, roue ou triangle ; couleurs de la barre du haut dans une petite fenêtre. */
 
 async function rect(page: Page) {
   const box = (await page.getByTestId('canvas').boundingBox())!;
@@ -24,22 +25,46 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByTestId('canvas')).toBeVisible();
 });
 
-test('la barre du haut n’a plus de couleurs', async ({ page }) => {
+test('la barre du haut ouvre Échantillons, Couleur et Dégradé, comme dans Affinity', async ({ page }) => {
   await rect(page);
-  await expect(page.getByTestId('ctx-fill')).toHaveCount(0);
-  await expect(page.getByTestId('ctx-stroke')).toHaveCount(0);
-  await expect(page.getByTestId('ctx-none')).toHaveCount(0);
+  await page.getByTestId('ctx-fill').click();
+  const pop = page.getByTestId('color-pop');
+  await expect(pop).toBeVisible();
+
+  // Échantillons : une couleur de la gamme devient le remplissage.
+  await pop.getByTestId('cpop-swatches').click();
+  await pop.getByTestId('cpop-palette').locator('.swatch').last().click();
+  expect(await fill(page)).toBe('#000000');
+
+  // Dégradé : linéaire, puis inversé.
+  await pop.getByTestId('cpop-gradient').click();
+  await pop.getByTestId('cpop-kind-linear').click();
+  const paint = () => page.evaluate(() => (window as any).poulpe.editor.doc.artboards[0].children[0].fill);
+  expect((await paint()).type).toBe('linear');
+  const before = (await paint()).stops.map((s: { offset: number }) => s.offset);
+  await pop.getByTestId('cpop-reverse').click();
+  expect((await paint()).stops.map((s: { offset: number }) => s.offset)).toEqual(
+    before.map((o: number) => 1 - o),
+  );
+
+  // Aucune couleur sur le contour.
+  await page.keyboard.press('Escape');
+  await page.getByTestId('ctx-stroke').click();
+  await page.getByTestId('color-pop').getByTestId('ctx-none').click();
+  expect(
+    await page.evaluate(() => (window as any).poulpe.editor.doc.artboards[0].children[0].stroke.paint.type),
+  ).toBe('none');
 });
 
 test('le panneau Couleur passe en roue puis en triangle, et le choix reste', async ({ page }) => {
   await rect(page);
   const panel = page.getByTestId('studio');
   await panel.getByTestId('tab-color').click();
-  await panel.getByTestId('color-shape').selectOption('wheel');
+  await choose(panel.getByTestId('color-shape'), 'wheel');
   const wheel = panel.getByTestId('color-wheel');
   await expect(wheel).toBeVisible();
 
-  await panel.getByTestId('color-shape').selectOption('triangle');
+  await choose(panel.getByTestId('color-shape'), 'triangle');
   await expect(panel.getByTestId('color-triangle')).toBeVisible();
   const ring = (await wheel.boundingBox())!;
   // Bas de la roue : teinte cyan (180°) ; le triangle tourne, son sommet coloré passe en bas.

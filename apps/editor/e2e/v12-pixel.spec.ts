@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * Outils de pixels de la version 1.2 (Persona Photo) : recadrage (et redressement), dégradé,
@@ -141,7 +142,7 @@ test('recadrage : poignées, déplacement, proportions, une étape d’historiqu
   expect((await artboard(page)).width).toBe(400);
 
   // Proportions 1:1 : le plus grand carré.
-  await page.getByTestId('crop-ratio').selectOption('1:1');
+  await choose(page.getByTestId('crop-ratio'), '1:1');
   await expect(page.getByTestId('crop-size')).toHaveText('300 × 300 px');
   // Échap annule le cadre en cours.
   await drag(page, [350, 300], [300, 200]);
@@ -218,7 +219,7 @@ test('dégradé : de la couleur principale à la secondaire, limité à la séle
       'replace',
     ),
   );
-  await page.getByTestId('gradient-kind').selectOption('radial');
+  await choose(page.getByTestId('gradient-kind'), 'radial');
   await page.getByTestId('gradient-reverse').check();
   await drag(page, [100, 150], [100, 50]);
   const center = await pixel(page, 0, 100, 150);

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /* Côté Canva (v0.2) : écran d'accueil, modèles, éléments, styles et redimensionnement. */
 
@@ -164,7 +165,7 @@ test('masque la bibliothèque et l’affiche en anglais', async ({ page }) => {
   await page.getByRole('button', { name: 'Bibliothèque' }).first().click();
   await expect(page.getByTestId('library')).toHaveCount(0);
   await page.keyboard.press('Control+,');
-  await page.getByTestId('prefs-language').selectOption('en');
+  await choose(page.getByTestId('prefs-language'), 'en');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Library' }).first().click();
   await expect(page.getByTestId('library')).toBeVisible();
