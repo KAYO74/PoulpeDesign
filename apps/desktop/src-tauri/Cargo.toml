@@ -25,6 +25,11 @@ fontdb = "0.23"
 poulpe-engine = { path = "../../../crates/poulpe-engine", features = ["gpu"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Connexion aux IA : requêtes HTTPS et clés API dans le trousseau du système.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+base64 = "0.22"
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 
 # Mises à jour automatiques (pas sur les plateformes mobiles).
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

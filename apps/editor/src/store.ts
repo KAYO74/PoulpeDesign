@@ -137,11 +137,13 @@ export type Dialog =
   | 'preferences'
   | 'help'
   | 'saveTemplate'
-  | 'language';
+  | 'language'
+  | 'ai'
+  | 'aiImage';
 
 /** Catégories de la fenêtre Préférences. */
 export type PrefsTab =
-  'general' | 'performance' | 'display' | 'layers' | 'shortcuts' | 'advanced' | 'diagnostic';
+  'general' | 'performance' | 'display' | 'layers' | 'shortcuts' | 'ai' | 'advanced' | 'diagnostic';
 /** Rubriques de l'aide intégrée. */
 export type HelpTab = 'start' | 'faq' | 'performance';
 
