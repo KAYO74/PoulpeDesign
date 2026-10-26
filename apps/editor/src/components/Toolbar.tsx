@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { COMMANDS, commandShortcut, formatShortcut, runCommand, type CommandId } from '../commands';
 import { useT } from '../i18n';
 import { setSettings, ui, useEditor, useUi, type Persona } from '../store';
@@ -12,15 +14,45 @@ function CmdButton({ id, icon }: { id: CommandId; icon: IconName }) {
   const cmd = COMMANDS[id] as (typeof COMMANDS)[CommandId] & { enabled?: () => boolean; shortcut?: string };
   const shortcut = commandShortcut(id);
   const label = t(cmd.label) + (shortcut ? ` (${formatShortcut(shortcut)})` : '');
+  const [tip, setTip] = useState<DOMRect | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const tipKey = `cmdtip.${id}`;
+  const desc = t(tipKey as never);
+  const leave = () => {
+    window.clearTimeout(timer.current);
+    setTip(null);
+  };
   return (
     <button
       className="ib"
-      title={label}
       aria-label={label}
       disabled={cmd.enabled ? !cmd.enabled() : false}
-      onClick={() => void runCommand(id)}
+      onClick={() => {
+        leave();
+        void runCommand(id);
+      }}
+      onPointerEnter={(e) => {
+        const el = e.currentTarget;
+        timer.current = window.setTimeout(() => setTip(el.getBoundingClientRect()), 500);
+      }}
+      onPointerLeave={leave}
     >
       <Icon name={icon} />
+      {tip &&
+        createPortal(
+          <div
+            className="tool-tip cmd-tip"
+            role="tooltip"
+            style={{ top: tip.bottom + 8, left: Math.max(8, Math.min(tip.left, window.innerWidth - 268)) }}
+          >
+            <div className="tool-tip-title">
+              {t(cmd.label)}
+              {shortcut ? ` [${formatShortcut(shortcut)}]` : ''}
+            </div>
+            {desc !== tipKey && <p className="tool-tip-desc">{desc}</p>}
+          </div>,
+          document.body,
+        )}
     </button>
   );
 }

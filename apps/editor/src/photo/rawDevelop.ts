@@ -2,6 +2,7 @@ import { DEFAULT_DEVELOP, RAW_EXTENSIONS, RawPhoto, type DevelopSettings } from 
 import rawUrl from '@poulpe/engine/wasm/poulpe_raw.wasm?url';
 import { t } from '../i18n';
 import { ui } from '../store';
+import { applyLocals, type LocalAdjust } from './localAdjust';
 import { openPhotoDocument } from './photoActions';
 
 /*
@@ -35,9 +36,9 @@ export async function openRaw(bytes: Uint8Array, name: string): Promise<boolean>
 }
 
 /** Développe en taille réelle et ouvre le résultat en Persona Photo. */
-export function developRaw(settings: DevelopSettings): void {
+export function developRaw(settings: DevelopSettings, locals: LocalAdjust[] = []): void {
   if (!photo) return;
-  const img = photo.render(settings, 0);
+  const img = applyLocals(photo.render(settings, 0), locals);
   const canvas = document.createElement('canvas');
   canvas.width = img.width;
   canvas.height = img.height;

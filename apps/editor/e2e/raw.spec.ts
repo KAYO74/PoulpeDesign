@@ -89,6 +89,50 @@ test('copie les réglages d’une photo RAW et les colle sur une autre', async (
   await expect(slider).toHaveValue('2');
 });
 
+test('une retouche locale en dégradé ne change que sa zone', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('poulpe.settings', JSON.stringify({ showWelcome: true })),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.evaluate((b64) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'photo.dng'));
+    const el = document.querySelector('[role="dialog"]')!;
+    for (const type of ['dragover', 'drop'])
+      el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, DNG);
+  const dialog = page.getByRole('dialog', { name: 'Développement RAW' });
+  const preview = page.getByTestId('raw-preview');
+  const sample = (fx: number) =>
+    preview.evaluate(
+      (c: HTMLCanvasElement, fx) => [
+        ...c
+          .getContext('2d')!
+          .getImageData(Math.floor(c.width * fx), Math.floor(c.height / 2), 1, 1)
+          .data.slice(0, 3),
+      ],
+      fx,
+    );
+  await expect(dialog).toBeVisible();
+  const [left0, right0] = [await sample(0.15), await sample(0.85)];
+
+  // Dégradé radial sur la moitié gauche : exposition +2 à l'intérieur seulement.
+  await dialog.getByTestId('raw-add-radial').click();
+  const frame = await page.getByTestId('raw-frame').boundingBox();
+  await page.mouse.move(frame!.x + frame!.width * 0.15, frame!.y + frame!.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(frame!.x + frame!.width * 0.35, frame!.y + frame!.height * 0.5);
+  await page.mouse.up();
+  await dialog.getByRole('slider', { name: 'Exposition' }).last().fill('2');
+  await expect.poll(async () => (await sample(0.15)).join()).not.toBe(left0.join());
+  expect(await sample(0.85)).toEqual(right0);
+
+  // Supprimée, la photo revient à l'état d'origine.
+  await dialog.getByTestId('raw-local-delete').click();
+  await expect.poll(async () => (await sample(0.15)).join()).toBe(left0.join());
+});
+
 test('un fichier RAW illisible est signalé', async ({ page }) => {
   await page.addInitScript(() =>
     localStorage.setItem('poulpe.settings', JSON.stringify({ showWelcome: false })),
