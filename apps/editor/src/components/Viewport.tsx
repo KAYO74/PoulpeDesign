@@ -12,8 +12,7 @@ import {
   setEditedText,
   setTextSelection,
 } from '../canvas/textEdit';
-import { placeImageBytes } from '../io';
-import { placeSvg } from '../vectorActions';
+import { dropFiles, hasFiles } from '../dropFiles';
 import { addElement, type ElementKind } from '../libraryActions';
 import { ELEMENT_MIME } from '../panels/Library';
 import { editor, ui, useEditor, useUi } from '../store';
@@ -90,13 +89,14 @@ export function Viewport() {
       addElement(kind, id, controller.toWorld(e.clientX - rect.left, e.clientY - rect.top));
       return;
     }
-    const file = [...e.dataTransfer.files].find((f) => f.type.startsWith('image/'));
-    if (!file || !controller) return;
+    if (!hasFiles(e) || !controller) return;
+    // Fichiers : traités ici, avec le point visé ; le reste de la fenêtre a son propre dépôt (App).
+    e.stopPropagation();
     const rect = canvasRef.current!.getBoundingClientRect();
-    const at = controller.toWorld(e.clientX - rect.left, e.clientY - rect.top);
-    if (file.type === 'image/svg+xml' && placeSvg(await file.text(), file.name.replace(/\.svg$/i, ''), at))
-      return;
-    await placeImageBytes(new Uint8Array(await file.arrayBuffer()), file.type, at);
+    await dropFiles(
+      [...e.dataTransfer.files],
+      controller.toWorld(e.clientX - rect.left, e.clientY - rect.top),
+    );
   };
 
   return (
