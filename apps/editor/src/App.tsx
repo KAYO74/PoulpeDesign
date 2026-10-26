@@ -14,12 +14,14 @@ import { Viewport } from './components/Viewport';
 import { WindowControls } from './components/WindowControls';
 import { useT } from './i18n';
 import { Library } from './panels/Library';
+import { DocTabs } from './components/DocTabs';
+import { anyDirty } from './docTabs';
 import { PhotoLibrary } from './photoLibrary/PhotoLibrary';
 import { PagesPanel } from './panels/PagesPanel';
 import { SlicesPanel } from './panels/SlicesPanel';
 import { Studio } from './panels/Studio';
 import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from './panels/panelLayout';
-import { editor, ui, useEditor, useUi } from './store';
+import { ui, useEditor, useUi } from './store';
 import { applyAccent } from './accentColor';
 import { applyUiScale } from './uiScale';
 
@@ -62,7 +64,7 @@ export function App() {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     const beforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isDesktop() && editor.getState().dirty) e.preventDefault();
+      if (!isDesktop() && anyDirty()) e.preventDefault();
     };
     window.addEventListener('beforeunload', beforeUnload);
     // Fichiers lâchés hors de la zone de travail (écran d'accueil, panneaux) : sans cela,
@@ -140,12 +142,7 @@ export function App() {
           </div>
         )}
         <div className="doc-area">
-          <div className="doc-tabs" role="tablist">
-            <span className="doc-tab" role="tab" aria-selected="true">
-              {dirty && <span className="dot" aria-hidden="true" />}
-              {name}.poulpe
-            </span>
-          </div>
+          <DocTabs />
           <Viewport />
         </div>
         <Studio />

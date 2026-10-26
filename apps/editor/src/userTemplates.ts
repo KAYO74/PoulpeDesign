@@ -3,7 +3,8 @@ import { materialize } from '@poulpe/render';
 import { useEffect, useState } from 'react';
 import { decodeFile, encodeFile } from './fileWorker';
 import { t } from './i18n';
-import { baseName, confirmDiscard, pickFile, saveBytes, thumbnail } from './io';
+import { makeRoomForDocument } from './docTabs';
+import { baseName, pickFile, saveBytes, thumbnail } from './io';
 import { editor, toast, ui } from './store';
 
 /*
@@ -156,7 +157,7 @@ export async function importUserTemplate(): Promise<void> {
 
 /** Nouveau document (non enregistré) à partir d'un modèle personnel. */
 export async function newFromUserTemplate(tpl: UserTemplate): Promise<void> {
-  if (!confirmDiscard()) return;
+  makeRoomForDocument();
   try {
     const doc = await decodeFile(tpl.bytes);
     editor.load({ ...doc, name: tpl.name });

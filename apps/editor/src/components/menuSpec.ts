@@ -506,6 +506,8 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
       id: 'help',
       label: t('menu.help'),
       items: [
+        cmd('help.search'),
+        sep,
         cmd('help.docs'),
         cmd('help.faq'),
         cmd('help.shortcuts'),

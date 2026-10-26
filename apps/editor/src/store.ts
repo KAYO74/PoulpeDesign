@@ -118,6 +118,7 @@ export type Theme = 'dark' | 'light';
 export type Dialog =
   | null
   | 'new'
+  | 'palette'
   | 'export'
   | 'shortcuts'
   | 'about'

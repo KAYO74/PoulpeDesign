@@ -1,6 +1,7 @@
 import type { Update } from '@tauri-apps/plugin-updater';
 import { t } from './i18n';
-import { confirmDiscard, isDesktop } from './io';
+import { confirmQuit } from './docTabs';
+import { isDesktop } from './io';
 import { toast, ui } from './store';
 
 /*
@@ -61,7 +62,7 @@ export function offerUpdate(found: PendingUpdate): void {
 
 /** Télécharge et installe la mise à jour trouvée, puis redémarre Poulpe. */
 export async function installUpdate(onProgress: (f: number | null) => void): Promise<void> {
-  if (!update || !confirmDiscard()) return;
+  if (!update || !confirmQuit()) return;
   let total = 0,
     done = 0;
   await update.downloadAndInstall((e) => {
