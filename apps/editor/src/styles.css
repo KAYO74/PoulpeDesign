@@ -329,6 +329,30 @@ svg.i {
 .persona:disabled {
   opacity: 0.4;
 }
+/* Onglets des Personas : icône et nom, comme les onglets d'Affinity. */
+.persona.persona-tab {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px 0 7px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.persona.persona-tab:not([aria-pressed='true']):hover {
+  color: var(--fg);
+}
+@media (max-width: 1100px) {
+  .persona-label {
+    display: none;
+  }
+  .persona.persona-tab {
+    padding: 0;
+    width: 30px;
+    justify-content: center;
+  }
+}
 .persona[aria-pressed='true'] {
   background: var(--accent);
   color: var(--accent-fg);
