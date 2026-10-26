@@ -1,6 +1,6 @@
 /*
  * Textes des filtres en direct des calques, des objets dynamiques (images liées), du
- * développement RAW et du remplissage d'après le contenu.
+ * développement RAW, du remplissage d'après le contenu et des plages de fusion.
  */
 
 export const frLiveFilters = {
@@ -35,6 +35,17 @@ export const frLiveFilters = {
   'contentfill.newLayer': 'Résultat sur un nouveau calque',
   'contentfill.layer': 'Remplissage',
   'history.contentFill': 'Remplissage d’après le contenu',
+  'blend.menu': 'Plages de fusion…',
+  'blend.title': 'Plages de fusion',
+  'blend.hint':
+    'Le calque s’efface là où sa luminosité, ou celle de ce qui est dessous, sort des plages. Écartez les deux moitiés d’une poignée pour un passage en douceur.',
+  'blend.layer': 'Ce calque',
+  'blend.under': 'Calque du dessous',
+  'blend.blackStart': 'début des noirs',
+  'blend.blackEnd': 'fin des noirs',
+  'blend.whiteStart': 'début des blancs',
+  'blend.whiteEnd': 'fin des blancs',
+  'history.blendRanges': 'Plages de fusion',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -71,4 +82,15 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'contentfill.newLayer': 'Output to a new layer',
   'contentfill.layer': 'Fill',
   'history.contentFill': 'Content-aware fill',
+  'blend.menu': 'Blend ranges…',
+  'blend.title': 'Blend ranges',
+  'blend.hint':
+    'The layer fades out where its brightness, or the brightness below it, is outside the ranges. Split a handle for a smooth transition.',
+  'blend.layer': 'This layer',
+  'blend.under': 'Underlying layer',
+  'blend.blackStart': 'shadows start',
+  'blend.blackEnd': 'shadows end',
+  'blend.whiteStart': 'highlights start',
+  'blend.whiteEnd': 'highlights end',
+  'history.blendRanges': 'Blend ranges',
 };

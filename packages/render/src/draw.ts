@@ -7,6 +7,7 @@ import {
   contourReach,
   effectMargin,
   filtersReach,
+  hasBlendRanges,
   hasWidthProfile,
   masterOf,
   nodeBounds,
@@ -23,7 +24,7 @@ import {
   type PoulpeDocument,
   type SceneNode,
 } from '@poulpe/core';
-import { applyAdjustmentLayer, applyLiveFilters } from './adjustments';
+import { applyAdjustmentLayer, applyBlendRanges, applyLiveFilters } from './adjustments';
 import { compositeOp, makeCanvas, type AnyCanvas, type Ctx } from './canvas';
 import { applyTransparency, blurred, castShadow } from './effects';
 import {
@@ -67,10 +68,10 @@ export function drawNode(ctx: Ctx, doc: PoulpeDocument, node: SceneNode, opts: R
   // Un réglage agit sur les calques du dessous : c'est son parent qui l'applique (drawChildren).
   if (node.type === 'adjustment') return;
   const mask = node.mask?.enabled ? opts.images.get(doc, node.mask.assetId) : null;
-  if (node.effects?.length || mask || node.transparency || node.filters?.length) {
+  if (node.effects?.length || mask || node.transparency || node.filters?.length || node.blendRanges) {
     const effects = activeEffects(node);
     if (
-      (effects.length || mask || node.transparency || activeFilters(node).length) &&
+      (effects.length || mask || node.transparency || activeFilters(node).length || hasBlendRanges(node)) &&
       drawWithEffects(ctx, doc, node, opts, effects, mask)
     )
       return;
@@ -210,6 +211,7 @@ function drawWithEffects(
   }
   if (!effects.length) {
     applyTransparency(layer.ctx, node, m, x0, y0);
+    applyBlendRanges(layer, ctx, node, x0, y0);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha *= node.opacity;
@@ -267,6 +269,7 @@ function drawWithEffects(
   }
   // La transparence s'applique à tout l'objet, effets compris.
   applyTransparency(o, node, m, x0, y0);
+  applyBlendRanges(out, ctx, node, x0, y0);
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha *= node.opacity;

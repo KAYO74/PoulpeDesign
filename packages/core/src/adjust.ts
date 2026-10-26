@@ -1,6 +1,6 @@
 import { parseColor, sampleStops } from './color';
 import { applyLut, decodeLut, encodeLut, lutFromFunction } from './lut';
-import type { Adjustment, AdjustmentKind, LiveFilter, SceneNode } from './types';
+import type { Adjustment, AdjustmentKind, BlendRanges, LiveFilter, SceneNode } from './types';
 
 /*
  * Réglages d'image et filtres dynamiques, calculés pixel par pixel sur des données RGBA.
@@ -729,4 +729,24 @@ export function filtersReach(node: SceneNode): number {
   let r = 0;
   for (const f of activeFilters(node)) r += adjustmentReach(f.adjustment);
   return Math.ceil(r);
+}
+
+/** Plages de fusion neutres : tout le calque passe. */
+export const FULL_RANGE: BlendRanges['layer'] = [0, 0, 255, 255];
+
+/** Part (0 à 1) du calque gardée pour une luminosité `v` (0 à 255) selon une plage. */
+export function blendRangeAlpha(r: BlendRanges['layer'], v: number): number {
+  const [b0, b1, w0, w1] = r;
+  let a = 1;
+  if (v < b1) a = v <= b0 ? 0 : (v - b0) / (b1 - b0);
+  if (v > w0) a = Math.min(a, v >= w1 ? 0 : (w1 - v) / (w1 - w0));
+  return a;
+}
+
+/** Le calque a-t-il des plages de fusion qui changent quelque chose ? */
+export function hasBlendRanges(node: SceneNode): boolean {
+  const r = node.blendRanges;
+  if (!r) return false;
+  const full = (x: BlendRanges['layer']) => x[0] <= 0 && x[1] <= 0 && x[2] >= 255 && x[3] >= 255;
+  return !full(r.layer) || !full(r.under);
 }

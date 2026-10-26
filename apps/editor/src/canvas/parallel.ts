@@ -81,6 +81,8 @@ export class WorkerPainter implements ParallelPainter {
       nodes.every((n) => {
         // Réglages et symboles dépendent de tout le reste : dessinés dans la page.
         if (n.type === 'adjustment' || n.type === 'symbol') return false;
+        // Plages de fusion : elles lisent ce qui est dessous, dessiné dans la page.
+        if (n.blendRanges) return false;
         if (n.type === 'image') ids.push(n.assetId);
         if (n.mask) ids.push(n.mask.assetId);
         for (const p of paintsOf(n)) if (p?.type === 'pattern' && p.assetId) ids.push(p.assetId);

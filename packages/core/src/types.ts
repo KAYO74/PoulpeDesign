@@ -212,6 +212,22 @@ interface NodeBase {
    * agissent sur ce seul calque, dans l'ordre, et restent modifiables. Absent : aucun.
    */
   filters?: LiveFilter[];
+  /**
+   * Plages de fusion (Photoshop : « Fusion si » ; Affinity : plages de fusion) : le calque
+   * s'efface selon sa propre luminosité et celle de ce qui est dessous. Absent : aucun effet.
+   */
+  blendRanges?: BlendRanges;
+}
+
+/**
+ * Pour chaque source, quatre seuils de luminosité (0 à 255) : le calque apparaît de 0 à 1 entre
+ * les deux premiers, puis disparaît de 1 à 0 entre les deux derniers. [0, 0, 255, 255] : tout passe.
+ */
+export interface BlendRanges {
+  /** Luminosité du calque lui-même. */
+  layer: [number, number, number, number];
+  /** Luminosité de ce qui est sous le calque. */
+  under: [number, number, number, number];
 }
 
 /** Filtre en direct posé sur un calque : ses pixels d'origine ne changent pas. */

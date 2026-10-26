@@ -114,6 +114,8 @@ function isPrefix(a: readonly unknown[], b: readonly unknown[]): boolean {
 function blendsWithBackdrop(n: SceneNode): boolean {
   if (n.type === 'adjustment') return n.visible;
   if (n.visible && n.blendMode && n.blendMode !== 'normal') return true;
+  // Plages de fusion : le calque lit ce qui est dessous.
+  if (n.visible && n.blendRanges) return true;
   return n.type === 'group' && n.children.some(blendsWithBackdrop);
 }
 

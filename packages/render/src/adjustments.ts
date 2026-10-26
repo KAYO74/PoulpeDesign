@@ -1,6 +1,8 @@
 import {
   activeFilters,
   applyAdjustment,
+  blendRangeAlpha,
+  hasBlendRanges,
   nodeBounds,
   type AdjustmentNode,
   type Box,
@@ -17,7 +19,9 @@ import { applyNodeTransform } from './geometry';
  *
  * Filtres en direct d'un calque : les mêmes calculs, sur la toile où le calque seul est rendu.
  *
- * `applyAdjustmentLayer` et `applyLiveFilters` sont internes au paquet : index.ts ne les réexporte pas.
+ * Plages de fusion : le calque rendu s'efface selon sa luminosité et celle de ce qui est dessous.
+ *
+ * Ces fonctions sont internes au paquet : index.ts ne les réexporte pas.
  */
 
 /** Applique un calque de réglage à la toile de composition, selon son opacité et son masque. */
@@ -96,5 +100,44 @@ export function applyLiveFilters(
   };
   const origin = { x: m.e - x0, y: m.f - y0 };
   for (const f of filters) applyAdjustment(px, f.adjustment, { scale, origin, frame });
+  layer.ctx.putImageData(img, 0, 0);
+}
+
+/**
+ * Plages de fusion : efface la toile du calque (posée en (x0, y0) sur `ctx`) selon sa luminosité
+ * et celle de ce qui est déjà dessiné dessous sur `ctx`.
+ */
+export function applyBlendRanges(
+  layer: { canvas: AnyCanvas; ctx: AnyCtx },
+  ctx: AnyCtx,
+  node: SceneNode,
+  x0: number,
+  y0: number,
+): void {
+  const r = node.blendRanges;
+  if (!r || !hasBlendRanges(node)) return;
+  const { width: w, height: h } = layer.canvas;
+  const img = layer.ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  let under: Uint8ClampedArray | null = null;
+  try {
+    under = ctx.getImageData(x0, y0, w, h).data;
+  } catch {
+    // Toile illisible (image d'une autre origine) : seule la plage du calque compte.
+  }
+  // Tables : part gardée pour chaque luminosité, du calque et du dessous.
+  const top = new Float32Array(256),
+    below = new Float32Array(256);
+  for (let v = 0; v < 256; v++) {
+    top[v] = blendRangeAlpha(r.layer, v);
+    below[v] = blendRangeAlpha(r.under, v);
+  }
+  const luma = (a: Uint8ClampedArray, i: number) =>
+    Math.round(0.299 * a[i] + 0.587 * a[i + 1] + 0.114 * a[i + 2]);
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    const k = top[luma(d, i)] * (under ? below[luma(under, i)] : 1);
+    if (k < 1) d[i + 3] = d[i + 3] * k;
+  }
   layer.ctx.putImageData(img, 0, 0);
 }

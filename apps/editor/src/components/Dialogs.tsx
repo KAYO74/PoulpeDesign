@@ -8,6 +8,7 @@ import { FilterDialog } from './dialogs/FilterDialog';
 import { LiveFilterDialog } from './dialogs/LiveFilterDialog';
 import { RawDialog } from './dialogs/RawDialog';
 import { ContentFillDialog } from './dialogs/ContentFillDialog';
+import { BlendRangesDialog } from './dialogs/BlendRangesDialog';
 import { NewDialog } from './dialogs/NewDialog';
 import { WorkspaceDialog } from './dialogs/WorkspaceDialog';
 import { AboutDialog } from './dialogs/AboutDialog';
@@ -56,6 +57,7 @@ function MainDialog() {
   if (dialog === 'liveFilter') return <LiveFilterDialog />;
   if (dialog === 'raw') return <RawDialog />;
   if (dialog === 'contentFill') return <ContentFillDialog />;
+  if (dialog === 'blendRanges') return <BlendRangesDialog />;
   if (dialog === 'selectionModify') return <SelectionModifyDialog />;
   if (dialog === 'vectorize') return <VectorizeDialog />;
   if (dialog === 'extensions') return <ExtensionsDialog />;

@@ -3183,3 +3183,51 @@ h4.sub .link {
     width: 100%;
   }
 }
+
+/* Plages de fusion : quatre poignées sur un dégradé noir → blanc. */
+.blend-range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  margin: 8px 0;
+}
+.blend-range-bar {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #000, #fff);
+  border: 1px solid var(--line);
+}
+.blend-range-bar input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.blend-range-bar input[type='range']::-webkit-slider-runnable-track {
+  background: none;
+}
+.blend-range-bar input[type='range']::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  width: 10px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--accent);
+  border: 1px solid var(--fg);
+}
+.blend-range-bar input[type='range']::-moz-range-thumb {
+  pointer-events: auto;
+  width: 10px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.blend-range-values {
+  color: var(--muted);
+}
