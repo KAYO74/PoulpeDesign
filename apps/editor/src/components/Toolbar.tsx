@@ -1,6 +1,6 @@
 import { COMMANDS, commandShortcut, formatShortcut, runCommand, type CommandId } from '../commands';
 import { useT } from '../i18n';
-import { setSettings, ui, useEditor, useUi } from '../store';
+import { setSettings, ui, useEditor, useUi, type Persona } from '../store';
 import { openPersona, useActiveWorkspace } from '../workspaces';
 import { WorkspaceMenu } from './WorkspaceMenu';
 import { AdjustmentMenu } from './AdjustmentMenu';
@@ -43,6 +43,15 @@ function Toggle({
   );
 }
 
+/** Onglets en haut, comme Affinity : Vectoriel, Pixel, Mise en page, Export. */
+const PERSONA_TABS: Persona[] = ['draw', 'photo', 'layout', 'export'];
+const TAB_ICONS: Record<Persona, IconName> = {
+  draw: 'tabDraw',
+  photo: 'tabPhoto',
+  layout: 'tabLayout',
+  export: 'tabExport',
+};
+
 export function Toolbar() {
   const t = useT();
   const settings = useUi((s) => s.settings);
@@ -53,46 +62,20 @@ export function Toolbar() {
   return (
     <div className="toolbar" role="toolbar" aria-label="Barre d'outils">
       <div className="personas" role="group" aria-label="Personas">
-        <button
-          className="persona"
-          aria-pressed={!custom && persona === 'draw'}
-          title={t('persona.draw')}
-          aria-label={t('persona.draw')}
-          data-testid="persona-draw"
-          onClick={() => openPersona('draw')}
-        >
-          <Icon name="draw" />
-        </button>
-        <button
-          className="persona"
-          aria-pressed={!custom && photo}
-          title={t('persona.photo')}
-          aria-label={t('persona.photo')}
-          data-testid="persona-photo"
-          onClick={() => openPersona('photo')}
-        >
-          <Icon name="photo" />
-        </button>
-        <button
-          className="persona"
-          aria-pressed={!custom && persona === 'layout'}
-          title={t('persona.layout')}
-          aria-label={t('persona.layout')}
-          data-testid="persona-layout"
-          onClick={() => openPersona('layout')}
-        >
-          <Icon name="layout" />
-        </button>
-        <button
-          className="persona"
-          aria-pressed={!custom && persona === 'export'}
-          title={t('persona.export')}
-          aria-label={t('persona.export')}
-          data-testid="persona-export"
-          onClick={() => openPersona('export')}
-        >
-          <Icon name="export" />
-        </button>
+        {PERSONA_TABS.map((p) => (
+          <button
+            key={p}
+            className="persona persona-tab"
+            aria-pressed={!custom && persona === p}
+            title={t(`persona.${p}`)}
+            aria-label={t(`persona.${p}`)}
+            data-testid={`persona-${p}`}
+            onClick={() => openPersona(p)}
+          >
+            <Icon name={TAB_ICONS[p]} />
+            <span className="persona-label">{t(`tab.${p}`)}</span>
+          </button>
+        ))}
         <WorkspaceMenu />
       </div>
       {persona === 'export' ? (

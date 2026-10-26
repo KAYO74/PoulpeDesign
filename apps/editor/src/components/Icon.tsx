@@ -70,6 +70,12 @@ export const ICON_PATHS = {
   draw: 'M3 13l2-.5 7.5-7.5-1.5-1.5L3.5 11z M10 4.5l1.5 1.5',
   photo: 'M2.5 4.5h3l1-1.5h3l1 1.5h3v8h-11z M8 6.5a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4z',
   layout: 'M2.5 2.5h11v11h-11z M2.5 6h11 M7 6v7.5',
+  // Onglets du haut : Vectoriel (courbe de Bézier), Pixel (pinceau sur pixels), Mise en page, Export.
+  tabDraw:
+    'M3 13C3 7.5 7.5 3 13 3 M2 12h2v2H2z M12 2h2v2h-2z M3 12V8 M12 3H8 M3 7.3a.7.7 0 1 1 0 .1 M7.3 3a.7.7 0 1 1 .1 0',
+  tabPhoto: 'M2 9.5h3v3H2z M5 6.5h3v3H5z M5 9.5h3v3H5z M8 9.5h3v3H8z M11.2 2.2l2.6 2.6-4.3 4.3H6.9V6.5z',
+  tabLayout: 'M2.5 2.5h11v11h-11z M2.5 5.5h11 M7 5.5v8 M9 8h3 M9 10.5h3',
+  tabExport: 'M8 9.5V2 M5 5l3-3 3 3 M3 8.5v5h10v-5',
   bold: 'M4.5 3h4a2.5 2.5 0 0 1 0 5h-4z M4.5 8h4.5a2.5 2.5 0 0 1 0 5H4.5z',
   italic: 'M7 3h5 M4 13h5 M9.5 3l-3 10',
   underline: 'M4.5 3v4.5a3.5 3.5 0 0 0 7 0V3 M3.5 14h9',
