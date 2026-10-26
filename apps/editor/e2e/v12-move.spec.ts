@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * Version 1.2 : outil Déplacer (Ctrl depuis le centre, Alt + clic, double-clic, options de la
@@ -143,11 +144,11 @@ test('outil Déplacer : sélection auto, alignement, groupes, point d’origine,
 
   // Sélection auto Objet : le clic choisit le rectangle dans le groupe.
   await page.keyboard.press('Escape');
-  await page.getByTestId('move-autoselect').selectOption('object');
+  await choose(page.getByTestId('move-autoselect'), 'object');
   await click(page, 150, 150);
   expect(await selection(page)).toEqual(['r_a']);
   // Calque : le groupe.
-  await page.getByTestId('move-autoselect').selectOption('layer');
+  await choose(page.getByTestId('move-autoselect'), 'layer');
   await page.keyboard.press('Escape');
   await click(page, 150, 150);
   expect(await selection(page)).toEqual([groupId]);
@@ -289,7 +290,7 @@ test('outil Plan de travail : poignées du plan de travail actif', async ({ page
   expect(now.width).toBeCloseTo(prev.width + 200, -1);
   expect(now.height / now.width).toBeCloseTo(prev.height / prev.width, 2);
   // La barre garde les formats.
-  await expect(page.getByRole('combobox', { name: 'Format' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Format', exact: true })).toBeVisible();
   // Glisser dans le plan de travail le déplace toujours.
   await drag(page, [200, 200], [300, 200]);
   expect((await doc(page)).artboards[0].x).toBeCloseTo(ab.x + 100, 0);

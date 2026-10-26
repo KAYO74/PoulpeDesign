@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * Version 1.2, outils de forme : rectangle arrondi, nouvelles formes, poignées rouges, coins des
@@ -161,7 +162,7 @@ test('coins distincts et formes de coins d’un rectangle', async ({ page }) => 
   expect(r.radii).toEqual([12, 12, 12, 12]);
   await page.getByTestId('rect-radius-2').fill('40');
   await page.getByTestId('rect-radius-2').press('Enter');
-  await page.getByTestId('rect-corner-type').selectOption('cutout');
+  await choose(page.getByTestId('rect-corner-type'), 'cutout');
   [r] = await nodes(page);
   expect(r.radii).toEqual([12, 12, 40, 12]);
   expect(r.cornerType).toBe('cutout');
@@ -190,7 +191,7 @@ test("l'outil Coin pose des coins modifiables sans figer la forme", async ({ pag
   [tri] = await nodes(page);
   expect(tri.corners['0:1'].radius).toBeGreaterThan(r1);
   // Forme et application à tous les coins depuis la barre contextuelle.
-  await page.getByTestId('corner-kind').selectOption('straight');
+  await choose(page.getByTestId('corner-kind'), 'straight');
   [tri] = await nodes(page);
   expect(tri.corners['0:1'].type).toBe('straight');
   await page.getByTestId('corner-radius').fill('8');

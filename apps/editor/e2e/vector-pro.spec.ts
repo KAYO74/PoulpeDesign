@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * Outils vectoriels de la version 0.6 : ciseaux, cutter, outil Coin, constructeur de formes,
@@ -128,7 +129,7 @@ test('enregistre un style et l’applique à un autre objet', async ({ page }) =
   const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [450, 450]);
-  await page.getByTestId('color-paint-type').selectOption('linear');
+  await choose(page.getByTestId('color-paint-type'), 'linear');
   await page.getByTestId('lib-tab-styles').click();
   await page.getByTestId('save-style').click();
   const d = await doc(page);
@@ -148,8 +149,8 @@ test('ajoute un contour en plus et un profil de largeur', async ({ page }) => {
   await page.keyboard.press('l');
   await drag([300, 400], [600, 400]);
   await page.getByTestId('tab-stroke').click();
-  await page.getByTestId('stroke-profile').selectOption('tapered');
-  await page.getByTestId('stroke-align').selectOption('outside');
+  await choose(page.getByTestId('stroke-profile'), 'tapered');
+  await choose(page.getByTestId('stroke-align'), 'outside');
   await page.getByTestId('stroke-add').click();
   const [line] = await nodes(page);
   expect(line.stroke.profile).toEqual([0.05, 1, 0.05]);
@@ -163,7 +164,7 @@ test('applique un biseau et un dégradé conique', async ({ page }) => {
   const { drag } = await canvas(page);
   await page.keyboard.press('u');
   await drag([300, 300], [550, 550]);
-  await page.getByTestId('color-paint-type').selectOption('conic');
+  await choose(page.getByTestId('color-paint-type'), 'conic');
   await page.getByTestId('tab-effects').click();
   await page.getByRole('checkbox', { name: 'Biseau' }).check();
   await page.getByTestId('effect-bevel-depth').fill('10');

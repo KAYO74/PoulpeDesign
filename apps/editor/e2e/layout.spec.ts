@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { choose } from './choose';
 import { expect, test, type Page } from '@playwright/test';
 
 /* Mise en page (v0.5) : pages, pages maîtres, numéros de page, cadres de texte liés, PDF d'impression. */
@@ -94,7 +95,7 @@ test('affiche la page maître et son numéro de page sur chaque page', async ({ 
   expect(d.artboards[0].masterId).toBe(master.id);
   await page.evaluate(() => (window as any).poulpe.layout.insertPageNumber());
   await page.getByTestId('page-1').click();
-  await page.getByLabel('Page maître', { exact: true }).selectOption({ label: 'A-Maître' });
+  await choose(page.getByLabel('Page maître', { exact: true }), { label: 'A-Maître' });
   d = await doc(page);
   expect(d.artboards[1].masterId).toBe(master.id);
   const num = d.artboards.find((a: AnyDoc) => a.master).children[0];

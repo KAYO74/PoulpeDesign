@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /*
  * Version 1.2, outils Texte comme dans Affinity : Texte artistique (glisser pour la taille, clic
@@ -182,7 +183,7 @@ test('barre contextuelle et raccourcis de mise en forme', async ({ page }) => {
   // Boutons de la barre : justification, liste, style de police.
   await page.getByTestId('text-justify-center').click();
   await page.getByTestId('text-list-number').click();
-  await page.getByTestId('text-face').selectOption('700i');
+  await choose(page.getByTestId('text-face'), '700i');
   [n] = await nodes(page);
   expect(n.style.align).toBe('justify');
   expect(n.style.lastLine).toBe('center');
@@ -193,14 +194,14 @@ test('barre contextuelle et raccourcis de mise en forme', async ({ page }) => {
   await expect(page.getByTestId('text-valign-top')).toHaveCount(0);
 
   // Styles de texte : enregistrer celui-ci, puis l'appliquer à un autre texte.
-  await page.getByTestId('text-styles').selectOption('__save');
+  await choose(page.getByTestId('text-styles'), '__save');
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press('t');
   await page.mouse.click(...at(400, 650));
   await page.keyboard.type('Autre');
   await page.keyboard.press('Escape');
   const styleId = await page.evaluate(() => (window as any).poulpe.editor.doc.styles[0].id);
-  await page.getByTestId('text-styles').selectOption(styleId);
+  await choose(page.getByTestId('text-styles'), styleId);
   const other = (await nodes(page))[1];
   expect(other.style.list).toBe('number');
   expect(other.style.fontWeight).toBe(700);

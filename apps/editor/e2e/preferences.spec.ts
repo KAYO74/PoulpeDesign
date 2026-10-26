@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /* Préférences (Édition > Préférences), diagnostic et aide intégrée. */
 
@@ -80,10 +81,10 @@ test('les profils changent les réglages de performance', async ({ page }) => {
   await page.keyboard.press('Control+,');
   await page.getByTestId('prefs-tab-performance').click();
   await page.getByTestId('prefs-profile-saver').click();
-  await expect(page.getByTestId('prefs-preview')).toHaveValue('fast');
+  await expect(page.getByTestId('prefs-preview')).toHaveAttribute('data-value', 'fast');
   await expect(page.getByTestId('prefs-history')).toHaveValue('50');
   await page.getByTestId('prefs-reset-perf').click();
-  await expect(page.getByTestId('prefs-preview')).toHaveValue('balanced');
+  await expect(page.getByTestId('prefs-preview')).toHaveAttribute('data-value', 'balanced');
   await expect(page.getByTestId('prefs-memory')).toBeVisible();
 });
 
@@ -154,8 +155,8 @@ test('la page est isolée : le détourage peut utiliser plusieurs cœurs', async
 test('les préférences pilotent le moteur de rendu', async ({ page }) => {
   await page.keyboard.press('Control+,');
   await page.getByTestId('prefs-tab-performance').click();
-  await page.getByTestId('prefs-cache').selectOption('1024');
-  await page.getByTestId('prefs-preview').selectOption('fast');
+  await choose(page.getByTestId('prefs-cache'), '1024');
+  await choose(page.getByTestId('prefs-preview'), 'fast');
   const s = await page.evaluate(() => (window as any).poulpe.perf.getPerformanceSettings());
   expect(s.cacheMb).toBe(1024);
   expect(s.previewQuality).toBe('fast');
@@ -174,10 +175,10 @@ test('la langue et le thème se règlent seulement dans les Préférences', asyn
 
   await page.keyboard.press('Control+,');
   await page.getByTestId('prefs-tab-display').click();
-  await page.getByTestId('prefs-theme').selectOption('light');
+  await choose(page.getByTestId('prefs-theme'), 'light');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.getByTestId('prefs-tab-general').click();
-  await page.getByTestId('prefs-language').selectOption('en');
+  await choose(page.getByTestId('prefs-language'), 'en');
   await expect(page.getByRole('dialog', { name: 'Preferences' })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'File' })).toBeVisible();
@@ -190,13 +191,15 @@ test('le moteur Rust est chargé et la carte graphique se choisit', async ({ pag
   await page.getByTestId('prefs-tab-performance').click();
   await expect(page.getByTestId('prefs-engine')).toContainText('Actif');
   const gpu = page.getByTestId('prefs-gpu');
-  await expect(gpu.locator('option')).toHaveCount(4);
-  await gpu.selectOption('cpu');
+  await gpu.click();
+  await expect(page.getByRole('menuitemradio')).toHaveCount(4);
+  await page.keyboard.press('Escape');
+  await choose(gpu, 'cpu');
   expect(await page.evaluate(() => (window as any).poulpe.prefs.getPerf().hardwareAcceleration)).toBe(false);
   // Dans le navigateur, l'interface graphique et la mémoire vidéo sont réglées par l'appli de bureau.
   await expect(page.getByTestId('prefs-gpu-backend')).toBeDisabled();
   await page.getByTestId('prefs-profile-power').click();
-  await expect(gpu).toHaveValue('high-performance');
+  await expect(gpu).toHaveAttribute('data-value', 'high-performance');
   expect(await page.evaluate(() => (window as any).poulpe.prefs.getPerf().vramMb)).toBe(4096);
 });
 
@@ -205,8 +208,7 @@ test('taille de l’interface : réglage de l’appli de bureau, zoom du navigat
   await page.getByTestId('prefs-tab-display').click();
   const size = page.getByTestId('prefs-ui-scale');
   await expect(size).toBeVisible();
-  await expect(size.locator('option')).toHaveCount(8);
-  await expect(size).toHaveValue('1');
+  await expect(size).toHaveAttribute('data-value', '1');
   await expect(size).toBeDisabled();
   await expect(page.getByText('dans le navigateur, utilisez son zoom')).toBeVisible();
 });

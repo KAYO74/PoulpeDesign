@@ -61,6 +61,7 @@ export const ICON_PATHS = {
   unlock: 'M4 7.5h8v6H4z M5.5 7.5V5a2.5 2.5 0 0 1 4.9-.7',
   chevron: 'M6 4l4 4-4 4',
   chevronDown: 'M4 6l4 4 4-4',
+  check: 'M3.5 8.5l3 3 6-6.5',
   plus: 'M8 3v10 M3 8h10',
   minus: 'M3 8h10',
   close: 'M4 4l8 8 M12 4l-8 8',

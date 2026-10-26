@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose as pick } from './choose';
 
 /* Version 1.2 : cadres d'image, outil Image, Tableau et panneau Pages (Persona Mise en page). */
 
@@ -89,12 +90,12 @@ test('dessine un cadre d’image, y place une image qui suit le cadre, la rempla
   // La sélection et ses poignées restent celles du cadre.
   expect(frame.height).toBe(800);
 
-  await page.getByTestId('frame-fit').selectOption('fit');
+  await pick(page.getByTestId('frame-fit'), 'fit');
   frame = (await doc(page)).artboards[0].children[0];
   expect(frame.children[1]).toMatchObject({ width: 800, height: 800, x: 300, y: 200 });
 
   // Retour à l'échelle max., puis le cadre s'élargit : l'image le couvre toujours, sans déformation.
-  await page.getByTestId('frame-fit').selectOption('fill');
+  await pick(page.getByTestId('frame-fit'), 'fill');
   await drag(page, [1200, 600], [1600, 600]);
   frame = (await doc(page)).artboards[0].children[0];
   expect(frame.children[0].width).toBeCloseTo(1400, 0);
@@ -259,7 +260,7 @@ test('choisit plusieurs pages, en ajoute, applique une page maître et en détac
   // Ajouter des pages : trois pages au début.
   await page.getByTestId('add-pages').click();
   await page.getByTestId('add-pages-count').fill('3');
-  await page.getByTestId('add-pages-position').selectOption('start');
+  await pick(page.getByTestId('add-pages-position'), 'start');
   await page.getByTestId('add-pages-go').click();
   d = await doc(page);
   expect(d.artboards).toHaveLength(7);
@@ -291,7 +292,7 @@ test('choisit plusieurs pages, en ajoute, applique une page maître et en détac
     });
   });
   await page.getByTestId('apply-master').click();
-  await page.getByTestId('apply-master-scope').selectOption('odd');
+  await pick(page.getByTestId('apply-master-scope'), 'odd');
   await page.getByTestId('apply-master-go').click();
   d = await doc(page);
   const master = d.artboards.find((a: AnyDoc) => a.master);

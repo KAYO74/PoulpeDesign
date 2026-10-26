@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { choose } from './choose';
 
 /* v1.0 : vectorisation d'image et détourage automatique (modèle d'IA local). */
 
@@ -49,7 +50,7 @@ test.beforeEach(async ({ page }) => {
 test('vectorise une image en tracés de couleur', async ({ page }) => {
   await openTestPhoto(page);
   await menu(page, 'Calque', 'Vectoriser l’image…');
-  await page.getByTestId('trace-preset').selectOption('logo');
+  await choose(page.getByTestId('trace-preset'), 'logo');
   await expect(page.getByTestId('trace-preview')).toBeVisible();
   await expect(page.getByTestId('trace-apply')).toBeEnabled();
   await page.getByTestId('trace-apply').click();
@@ -74,7 +75,7 @@ test('vectorise une image en tracés de couleur', async ({ page }) => {
 test('vectorise en noir et blanc : un seul tracé qui suit le disque', async ({ page }) => {
   await openTestPhoto(page);
   await menu(page, 'Calque', 'Vectoriser l’image…');
-  await page.getByTestId('trace-preset').selectOption('blackWhite');
+  await choose(page.getByTestId('trace-preset'), 'blackWhite');
   await expect(page.getByTestId('trace-apply')).toBeEnabled();
   await page.waitForTimeout(400);
   await expect(page.getByTestId('trace-apply')).toBeEnabled();
