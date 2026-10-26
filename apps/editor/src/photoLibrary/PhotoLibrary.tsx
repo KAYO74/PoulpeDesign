@@ -3,7 +3,8 @@ import { Icon } from '../components/Icon';
 import { Select } from '../components/fields';
 import { hasFiles } from '../dropFiles';
 import { t as tr, useT } from '../i18n';
-import { confirmDiscard, openBytes, openPhotoBytes } from '../io';
+import { makeRoomForDocument } from '../docTabs';
+import { openBytes, openPhotoBytes } from '../io';
 import { toast, ui } from '../store';
 import { formatExposure } from './exif';
 import {
@@ -55,7 +56,7 @@ export async function openLibraryPhoto(p: LibraryPhoto): Promise<void> {
     toast(tr('plib.missing'));
     return;
   }
-  if (!confirmDiscard()) return;
+  makeRoomForDocument();
   const bytes = new Uint8Array(await blob.arrayBuffer());
   closePhotoLibrary();
   if (isRaw(p.name)) await openBytes(p.name, bytes);

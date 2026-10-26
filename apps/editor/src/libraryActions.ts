@@ -1,3 +1,4 @@
+import { makeRoomForDocument } from './docTabs';
 import {
   applyPalette,
   boxCenter,
@@ -42,7 +43,6 @@ import {
   type TextPreset,
 } from '@poulpe/library';
 import { getLang, t } from './i18n';
-import { confirmDiscard } from './io';
 import { normalizeTexts } from './normalize';
 import { editor, toast, ui } from './store';
 
@@ -196,7 +196,7 @@ export function applyTemplate(def: TemplateDef): void {
 
 /** Nouveau document à partir d'un modèle. */
 export function newFromTemplate(def: TemplateDef): void {
-  if (!confirmDiscard()) return;
+  makeRoomForDocument();
   editor.load(templateDocument(def, getLang()));
   ui.set({ filePath: null, dialog: null });
   fit();
