@@ -18,6 +18,12 @@ async function drag(page: Page, from: [number, number], to: [number, number]) {
   await page.mouse.up();
 }
 
+/** Juste à gauche du milieu d'un onglet : le panneau déposé s'y range devant lui. */
+const leftOf = async (page: Page, testId: string): Promise<[number, number]> => {
+  const b = (await page.getByTestId(testId).boundingBox())!;
+  return [b.x + 4, b.y + b.height / 2];
+};
+
 const center = async (page: Page, testId: string): Promise<[number, number]> => {
   const b = (await page.getByTestId(testId).boundingBox())!;
   return [b.x + b.width / 2, b.y + b.height / 2];
@@ -275,4 +281,57 @@ test('un clic sur un onglet change toujours de panneau', async ({ page }) => {
   await page.getByTestId('tab-history').click();
   await expect(page.getByTestId('tab-history')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('[data-testid^="float-"]')).toHaveCount(0);
+});
+
+test('range un panneau dans un autre groupe ou à une autre place, comme Photoshop', async ({ page }) => {
+  const top = page.getByTestId('studio-studio-top');
+  const bottom = page.getByTestId('studio-studio-bottom');
+  // Historique, glissé sur l'onglet Couleur du groupe du haut, s'y range devant lui.
+  await drag(page, await center(page, 'tab-history'), await leftOf(page, 'tab-color'));
+  await expect(top.getByTestId('tab-history')).toBeVisible();
+  await expect(bottom.getByTestId('tab-history')).toHaveCount(0);
+  const tabs = top.locator('[role="tab"]');
+  await expect(tabs.first()).toHaveAttribute('data-tab', 'history');
+
+  // Changer l'ordre dans le même groupe : Effets avant Historique.
+  await drag(page, await center(page, 'tab-effects'), await leftOf(page, 'tab-history'));
+  await expect(tabs.first()).toHaveAttribute('data-tab', 'effects');
+
+  // Mémorisé ; Réinitialiser les panneaux rend les groupes d'origine.
+  await page.reload();
+  await expect(top.getByTestId('tab-history')).toBeVisible();
+  await page.getByRole('button', { name: 'Fenêtre' }).click();
+  await page.getByRole('menuitem', { name: 'Réinitialiser les panneaux' }).click();
+  await expect(bottom.getByTestId('tab-history')).toBeVisible();
+  await expect(tabs.first()).toHaveAttribute('data-tab', 'color');
+});
+
+test('ferme et rouvre les panneaux depuis le menu Fenêtre', async ({ page }) => {
+  const menu = async (name: string) => {
+    await page.getByRole('button', { name: 'Fenêtre' }).click();
+    await page
+      .getByRole('menu', { name: 'Fenêtre' })
+      .getByRole('menuitem', { name: new RegExp(`^(✓ )?${name}$`) })
+      .click();
+  };
+  await menu('Calques');
+  await expect(page.getByTestId('tab-layers')).toHaveCount(0);
+  // Rouvert, il arrive dans sa propre fenêtre.
+  await menu('Calques');
+  const win = page.getByTestId('float-tab:layers');
+  await expect(win).toBeVisible();
+  // Le pinceau, absent de la Persona Dessin, s'ajoute aussi.
+  await menu('Pinceau');
+  await expect(page.getByTestId('float-tab:brush')).toBeVisible();
+  // La croix de la fenêtre ferme le panneau.
+  await page.getByTestId('close-tab:brush').click();
+  await expect(page.getByTestId('float-tab:brush')).toHaveCount(0);
+
+  // Un groupe vidé garde une place où redéposer un panneau.
+  await page.getByTestId('close-tab:layers').click();
+  await menu('Historique');
+  await menu('Macros');
+  await expect(page.getByTestId('empty-studio-bottom')).toBeVisible();
+  await drag(page, await center(page, 'tab-color'), await center(page, 'empty-studio-bottom'));
+  await expect(page.getByTestId('studio-studio-bottom').getByTestId('tab-color')).toBeVisible();
 });

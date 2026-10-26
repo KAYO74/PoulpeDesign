@@ -133,7 +133,8 @@ export function applyWorkspace(id: string): void {
     toolsLocked: ws.toolsLocked ?? false,
     studioSide: ws.studioSide,
   });
-  panels.set(clonePanels(ws.panels));
+  // Espace enregistré avant le rangement libre des panneaux : groupes d'origine.
+  panels.set({ ...clonePanels(ws.panels), tabs: ws.panels.tabs ?? {} });
   set({ active: id });
 }
 
