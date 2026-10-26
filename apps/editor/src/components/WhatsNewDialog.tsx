@@ -14,7 +14,7 @@ export function WhatsNewDialog() {
   return (
     <Modal title={t('whatsNew.title')} onClose={close} top>
       <div className="whats-new" data-testid="whats-new">
-        {RELEASES.map((r, i) => (
+        {RELEASES.map((r) => (
           <section key={r.version}>
             <h3>{t('whatsNew.version', { version: r.version })}</h3>
             <ul>
