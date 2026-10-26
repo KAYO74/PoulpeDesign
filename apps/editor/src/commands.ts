@@ -531,6 +531,9 @@ export const COMMANDS = {
   'view.brushEditor': { label: 'view.brushEditor', run: () => toggleBrushEditor() },
   'view.resetPanels': { label: 'view.resetPanels', run: () => resetPanels() },
 
+  'ai.assistant': { label: 'ai.assistant', run: () => ui.set({ dialog: 'ai' }) },
+  'ai.image': { label: 'ai.image', run: () => ui.set({ dialog: 'aiImage' }) },
+  'ai.settings': { label: 'ai.settings', run: () => ui.set({ dialog: 'preferences', prefsTab: 'ai' }) },
   'app.preferences': {
     label: 'prefs.menu',
     shortcut: 'Mod+,',

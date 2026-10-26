@@ -3074,3 +3074,51 @@ h4.sub .link {
   gap: 6px;
   margin-top: 6px;
 }
+
+/* ——— IA connectées (Préférences › IA, assistant) ——— */
+.ai-card {
+  align-self: stretch;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.ai-card .row-buttons .text-input {
+  flex: 1;
+  min-width: 160px;
+}
+.ai-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 160px;
+  max-height: 50vh;
+  margin: 8px 0;
+  overflow-y: auto;
+}
+.ai-msg {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  max-width: 85%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--input);
+}
+.ai-msg.user {
+  align-self: flex-end;
+  background: var(--accent-soft);
+}
+.ai-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.ai-input {
+  width: 100%;
+  height: auto;
+  min-height: 64px;
+  padding: 6px 8px;
+  resize: vertical;
+}

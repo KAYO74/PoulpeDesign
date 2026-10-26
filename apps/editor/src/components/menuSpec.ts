@@ -437,6 +437,11 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
       ],
     },
     {
+      id: 'ai',
+      label: t('menu.ai'),
+      items: [cmd('ai.assistant'), cmd('ai.image'), sep, cmd('ai.settings')],
+    },
+    {
       id: 'extensions',
       label: t('menu.extensions'),
       items: [

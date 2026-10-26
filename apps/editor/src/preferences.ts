@@ -320,6 +320,7 @@ const EXPORTED = [
   'poulpe.shortcuts',
   'poulpe.panels',
   'poulpe.workspaces',
+  'poulpe.ai',
 ];
 
 export function exportPreferences(): string {
