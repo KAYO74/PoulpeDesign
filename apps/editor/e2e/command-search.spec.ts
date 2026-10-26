@@ -18,12 +18,13 @@ test('Ctrl+K retrouve un outil par son nom, sans accent, et le choisit', async (
   await expect(page.getByTestId('palette-tool:pen')).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('palette-input')).toBeHidden();
-  expect(await page.evaluate(() => (window as any).poulpe.ui.get().tool)).toBe('pen');
+  await expect.poll(() => page.evaluate(() => (window as any).poulpe.ui.get().tool)).toBe('pen');
 });
 
 test('retrouve une action et lance un outil photo en changeant de Persona', async ({ page }) => {
   await page.keyboard.press('Control+k');
   await page.getByTestId('palette-input').fill('exporter');
+  await expect(page.getByRole('option').first()).toContainText(/Exporter/);
   await page.getByTestId('palette-input').press('Enter');
   await expect(page.getByRole('dialog', { name: /Exporter/ })).toBeVisible();
   await page.keyboard.press('Escape');
@@ -31,9 +32,8 @@ test('retrouve une action et lance un outil photo en changeant de Persona', asyn
   await page.keyboard.press('Control+k');
   await page.getByTestId('palette-input').fill('gomme magique');
   await page.getByTestId('palette-tool:magicEraser').click();
-  const s = await page.evaluate(() => (window as any).poulpe.ui.get());
-  expect(s.tool).toBe('magicEraser');
-  expect(s.persona).toBe('photo');
+  await expect.poll(() => page.evaluate(() => (window as any).poulpe.ui.get().tool)).toBe('magicEraser');
+  expect(await page.evaluate(() => (window as any).poulpe.ui.get().persona)).toBe('photo');
 });
 
 test('indique quand rien ne correspond et se ferme avec Échap', async ({ page }) => {
