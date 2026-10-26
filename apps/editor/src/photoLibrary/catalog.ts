@@ -304,7 +304,7 @@ export async function linkFolder(): Promise<{ added: LibraryPhoto[]; failed: num
   if (isTauri()) {
     const { open } = await import('@tauri-apps/plugin-dialog');
     const { readDir, readFile, stat } = await import('@tauri-apps/plugin-fs');
-    const root = await open({ directory: true, multiple: false });
+    const root = await open({ directory: true, multiple: false, recursive: true });
     if (!root || Array.isArray(root)) return null;
     const rootName = root.split(/[\\/]/).filter(Boolean).pop() ?? root;
     const sources: Source[] = [];
