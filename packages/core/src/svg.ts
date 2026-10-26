@@ -9,6 +9,7 @@ import {
   transparencyPaint,
 } from './paintGeometry';
 import { contourReach } from './contour';
+import { hatchTile } from './hatch';
 import { chainHead, flowText, hasFields, needsFlow, type PageFields, type TextFlow } from './flow';
 import { masterOf, pageFields } from './pages';
 import {
@@ -149,6 +150,25 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
         `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(tw)}" height="${n(th)}"` +
           (tr ? ` patternTransform="${tr}"` : '') +
           `><image width="${n(tw)}" height="${n(th)}" preserveAspectRatio="none" href="${asset.data}"/></pattern>`,
+      );
+      return `${attr}="url(#${id})"`;
+    }
+    case 'hatch': {
+      const id = defs.id('hat');
+      const { size, shapes } = hatchTile(paint);
+      const ink = colorAttrs('fill', paint.color);
+      let body = paint.background
+        ? `<rect width="${n(size)}" height="${n(size)}" ${colorAttrs('fill', paint.background)}/>`
+        : '';
+      for (const s of shapes)
+        body +=
+          s.kind === 'dot'
+            ? `<circle cx="${n(s.cx)}" cy="${n(s.cy)}" r="${n(s.r)}" ${ink}/>`
+            : `<rect x="${n(s.x)}" y="${n(s.y)}" width="${n(s.w)}" height="${n(s.h)}" ${ink}/>`;
+      defs.add(
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(size)}" height="${n(size)}"` +
+          (paint.angle ? ` patternTransform="rotate(${n(paint.angle)})"` : '') +
+          `>${body}</pattern>`,
       );
       return `${attr}="url(#${id})"`;
     }

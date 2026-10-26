@@ -42,6 +42,7 @@ export * from './pixelTools';
 export * from './shapes';
 export * from './shapeNodes';
 export * from './paintGeometry';
+export * from './hatch';
 export * from './contour';
 export * from './textRegion';
 export * from './textWrap';

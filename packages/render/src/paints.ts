@@ -1,4 +1,5 @@
 import {
+  hatchTile,
   isElliptical,
   linearPoints,
   radialFrame,
@@ -75,7 +76,40 @@ export function canvasPaint(
       );
       return pat;
     }
+    case 'hatch':
+      return hatchPattern(ctx, paint);
   }
+}
+
+/**
+ * Hachures : la tuile est dessinée à la résolution de l'écran (nombre entier de pixels, sans
+ * jointure visible), puis répétée et tournée.
+ */
+function hatchPattern(ctx: Ctx, paint: Extract<Paint, { type: 'hatch' }>): CanvasPattern | null {
+  const { size, shapes } = hatchTile(paint);
+  const t = ctx.getTransform();
+  const scale = Math.sqrt(Math.abs(t.a * t.d - t.b * t.c)) || 1;
+  const n = Math.max(2, Math.min(512, Math.round(size * scale)));
+  const k = n / size;
+  const tile = makeCanvas(n, n);
+  const c = tile.ctx;
+  if (paint.background) {
+    c.fillStyle = rgbaToCss(paint.background);
+    c.fillRect(0, 0, n, n);
+  }
+  c.fillStyle = rgbaToCss(paint.color);
+  for (const s of shapes) {
+    if (s.kind === 'rect') c.fillRect(s.x * k, s.y * k, s.w * k, s.h * k);
+    else {
+      c.beginPath();
+      c.arc(s.cx * k, s.cy * k, s.r * k, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+  const pat = ctx.createPattern(tile.canvas as CanvasImageSource, 'repeat');
+  if (!pat) return null;
+  pat.setTransform(new DOMMatrix().rotate(paint.angle).scale(1 / k, 1 / k));
+  return pat;
 }
 
 type RadialPaint = Extract<Paint, { type: 'radial' }>;
