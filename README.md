@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.3.1-FF5F86" alt="Version 1.3.1"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.3.2-FF5F86" alt="Version 1.3.2"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -100,7 +100,7 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
   </tr>
 </table>
 
-Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à gauche. On peut aussi créer les siens (vectoriel, pixel, présentation), détacher les panneaux en fenêtres flottantes, les déplacer et les redimensionner.
+Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à gauche. On peut aussi créer les siens (vectoriel, pixel, présentation), détacher les panneaux en fenêtres flottantes, les déplacer et les redimensionner, ranger chaque panneau dans le groupe de son choix, et afficher ou fermer chacun depuis le menu Fenêtre.
 
 **Dessin**
 
@@ -147,7 +147,7 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Les versions jusqu'à la 1.3.1. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
+Les versions jusqu'à la 1.3.2. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
 | Version | Contenu                                                                                                                                    | État          |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
@@ -159,6 +159,7 @@ Les versions jusqu'à la 1.3.1. Les versions plus anciennes sont sur la page [Ve
 | v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                             | ✅ Disponible |
 | v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                   | ✅ Disponible |
 | v1.3.1  | **Roue chromatique** : carré, roue ou triangle dans le panneau Couleur, couleur barrée, couleur du thème, glisser-déposer de fichiers      | ✅ Disponible |
+| v1.3.2  | **Panneaux et IA** : menu Fenêtre, panneaux rangés librement comme Photoshop et Affinity ; connexion d'IA en ligne ou locales              | ✅ Disponible |
 
 La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 
