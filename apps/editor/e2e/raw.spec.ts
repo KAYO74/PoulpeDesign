@@ -54,6 +54,41 @@ test('ouvre un DNG et le développe en Persona Photo', async ({ page }) => {
   expect(b2).toBeGreaterThan(r2 + 100);
 });
 
+test('copie les réglages d’une photo RAW et les colle sur une autre', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('poulpe.settings', JSON.stringify({ showWelcome: true })),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.evaluate((b64) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'photo.dng'));
+    const el = document.querySelector('[role="dialog"]')!;
+    for (const type of ['dragover', 'drop'])
+      el.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, DNG);
+  const dialog = page.getByRole('dialog', { name: 'Développement RAW' });
+  await expect(dialog.getByTestId('raw-paste')).toBeDisabled();
+  await dialog.getByRole('slider', { name: 'Exposition' }).fill('2');
+  await dialog.getByTestId('raw-copy').click();
+  await expect(dialog.getByTestId('raw-paste')).toBeEnabled();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+
+  // Autre photo (lâchée sur la fenêtre) : les réglages copiés s'appliquent d'un clic.
+  await page.evaluate((b64) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))], 'autre.dng'));
+    for (const type of ['dragover', 'drop'])
+      document.body.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, DNG);
+  await expect(dialog).toBeVisible();
+  const slider = dialog.getByRole('slider', { name: 'Exposition' });
+  await expect(slider).toHaveValue('0');
+  await dialog.getByTestId('raw-paste').click();
+  await expect(slider).toHaveValue('2');
+});
+
 test('un fichier RAW illisible est signalé', async ({ page }) => {
   await page.addInitScript(() =>
     localStorage.setItem('poulpe.settings', JSON.stringify({ showWelcome: false })),

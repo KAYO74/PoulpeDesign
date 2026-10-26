@@ -3,8 +3,10 @@ import { useT } from '../../i18n';
 import { P, ParamField } from '../../panels/AdjustmentPanel';
 import {
   closeRaw,
+  copyDevelopSettings,
   DEFAULT_DEVELOP,
   developRaw,
+  pastedDevelopSettings,
   rawPhoto,
   type DevelopSettings,
 } from '../../photo/rawDevelop';
@@ -26,6 +28,7 @@ export function RawDialog() {
   const t = useT();
   const photo = rawPhoto();
   const [s, setS] = useState<DevelopSettings>(DEFAULT_DEVELOP);
+  const [canPaste, setCanPaste] = useState(() => pastedDevelopSettings() !== null);
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!photo) return;
@@ -59,6 +62,31 @@ export function RawDialog() {
           <button className="btn small" onClick={() => setS(DEFAULT_DEVELOP)}>
             {t('param.reset')}
           </button>
+          <div className="raw-copy">
+            <button
+              className="btn small"
+              title={t('raw.copyHint')}
+              data-testid="raw-copy"
+              onClick={() => {
+                copyDevelopSettings(s);
+                setCanPaste(true);
+              }}
+            >
+              {t('raw.copy')}
+            </button>
+            <button
+              className="btn small"
+              disabled={!canPaste}
+              title={t('raw.pasteHint')}
+              data-testid="raw-paste"
+              onClick={() => {
+                const p = pastedDevelopSettings();
+                if (p) setS(p);
+              }}
+            >
+              {t('raw.paste')}
+            </button>
+          </div>
         </div>
       </div>
       <footer>

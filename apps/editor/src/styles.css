@@ -3882,3 +3882,8 @@ h4.sub .link {
   text-align: right;
   overflow-wrap: anywhere;
 }
+
+.raw-copy {
+  display: flex;
+  gap: 6px;
+}
