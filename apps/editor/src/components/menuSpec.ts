@@ -128,6 +128,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('file.new'),
         cmd('file.open'),
         cmd('file.openPhoto'),
+        cmd('file.photoLibrary', ui.get().photoLibrary),
         sep,
         cmd('file.save'),
         cmd('file.saveAs'),

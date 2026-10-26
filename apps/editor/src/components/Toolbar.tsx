@@ -50,12 +50,23 @@ export function Toolbar() {
   const softProof = useUi((s) => s.softProof);
   const photo = persona === 'photo';
   const custom = useActiveWorkspace();
+  const photoLibrary = useUi((s) => s.photoLibrary);
   return (
     <div className="toolbar" role="toolbar" aria-label="Barre d'outils">
       <div className="personas" role="group" aria-label="Personas">
         <button
           className="persona"
-          aria-pressed={!custom && persona === 'draw'}
+          aria-pressed={photoLibrary}
+          title={`${t('plib.open')} (${formatShortcut(commandShortcut('file.photoLibrary') ?? '')})`}
+          aria-label={t('plib.open')}
+          data-testid="persona-library"
+          onClick={() => void runCommand('file.photoLibrary')}
+        >
+          <Icon name="photoLibrary" />
+        </button>
+        <button
+          className="persona"
+          aria-pressed={!photoLibrary && !custom && persona === 'draw'}
           title={t('persona.draw')}
           aria-label={t('persona.draw')}
           data-testid="persona-draw"
@@ -65,7 +76,7 @@ export function Toolbar() {
         </button>
         <button
           className="persona"
-          aria-pressed={!custom && photo}
+          aria-pressed={!photoLibrary && !custom && photo}
           title={t('persona.photo')}
           aria-label={t('persona.photo')}
           data-testid="persona-photo"
@@ -75,7 +86,7 @@ export function Toolbar() {
         </button>
         <button
           className="persona"
-          aria-pressed={!custom && persona === 'layout'}
+          aria-pressed={!photoLibrary && !custom && persona === 'layout'}
           title={t('persona.layout')}
           aria-label={t('persona.layout')}
           data-testid="persona-layout"
@@ -85,7 +96,7 @@ export function Toolbar() {
         </button>
         <button
           className="persona"
-          aria-pressed={!custom && persona === 'export'}
+          aria-pressed={!photoLibrary && !custom && persona === 'export'}
           title={t('persona.export')}
           aria-label={t('persona.export')}
           data-testid="persona-export"
