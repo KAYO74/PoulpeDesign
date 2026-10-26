@@ -15,7 +15,7 @@ import { pickLut } from '../photo/retouchActions';
 import { useEditor } from '../store';
 
 /** Réglage numérique d'un calque : clé, libellé, bornes. */
-interface Param {
+export interface Param {
   key: string;
   label: string;
   min: number;
@@ -24,7 +24,7 @@ interface Param {
   unit?: string;
 }
 
-const P = (
+export const P = (
   key: string,
   min: number,
   max: number,
@@ -70,7 +70,7 @@ const PARAMS: Partial<Record<AdjustmentKind, Param[]>> = {
 };
 
 /** Champ réglable : un curseur, ou un champ seul pour les petites valeurs à virgule. */
-function ParamField({
+export function ParamField({
   p,
   value,
   onChange,

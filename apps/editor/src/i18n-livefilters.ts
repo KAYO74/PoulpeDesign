@@ -1,5 +1,6 @@
 /*
- * Textes des filtres en direct des calques et des objets dynamiques (images liées).
+ * Textes des filtres en direct des calques, des objets dynamiques (images liées) et du
+ * développement RAW.
  */
 
 export const frLiveFilters = {
@@ -24,6 +25,9 @@ export const frLiveFilters = {
   'history.updateLinks': 'Mise à jour des images liées',
   'history.embedImage': 'Incorporation de l’image',
   'history.replaceImage': 'Remplacement de l’image',
+  'raw.title': 'Développement RAW',
+  'raw.develop': 'Développer',
+  'raw.unreadable': 'Ce fichier RAW n’est pas reconnu (appareil ou format pas encore pris en charge).',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -50,4 +54,7 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'history.updateLinks': 'Update linked images',
   'history.embedImage': 'Embed image',
   'history.replaceImage': 'Replace image',
+  'raw.title': 'Develop RAW',
+  'raw.develop': 'Develop',
+  'raw.unreadable': 'This RAW file is not recognized (camera or format not supported yet).',
 };

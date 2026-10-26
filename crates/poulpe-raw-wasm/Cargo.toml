@@ -1,0 +1,23 @@
+[package]
+name = "poulpe-raw-wasm"
+version = "1.4.0"
+edition = "2021"
+rust-version = "1.77"
+license = "MPL-2.0"
+description = "Développement des photos RAW de Poulpe Design (lecture par rawloader, LGPL-2.1), compilé en WebAssembly"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rawloader = "0.37.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

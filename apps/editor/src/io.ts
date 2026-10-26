@@ -36,6 +36,7 @@ import { decodeFile, encodeFile } from './fileWorker';
 import { t } from './i18n';
 import { editor, toast, ui } from './store';
 import { placeSvg } from './vectorActions';
+import { RAW_EXTENSIONS } from '@poulpe/engine';
 
 /*
  * Entrées / sorties de fichiers. Dans l'appli de bureau (Tauri), on passe par les boîtes de
@@ -76,7 +77,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */
-export const OPEN_EXTENSIONS = [POULPE_EXTENSION, 'psd', 'pdf', 'ai'];
+export const OPEN_EXTENSIONS = [POULPE_EXTENSION, 'psd', 'pdf', 'ai', ...RAW_EXTENSIONS];
 
 export function baseName(path: string): string {
   return path
@@ -202,6 +203,12 @@ export async function openDocument(): Promise<void> {
 /** Ouvre un document Poulpe Design, Photoshop, PDF ou Illustrator d'après son extension. */
 export async function openBytes(name: string, bytes: Uint8Array): Promise<void> {
   const ext = name.split('.').pop()!.toLowerCase();
+  if (RAW_EXTENSIONS.includes(ext)) {
+    // Photo RAW : fenêtre de développement, puis Persona Photo.
+    const { openRaw } = await import('./photo/rawDevelop');
+    await openRaw(bytes, baseName(name));
+    return;
+  }
   if (ext !== 'psd' && ext !== 'pdf' && ext !== 'ai') return loadBytes(name, bytes);
   toast(t('file.opening'));
   try {
@@ -328,11 +335,12 @@ export async function importImage(): Promise<void> {
 export async function openPhoto(): Promise<void> {
   if (!confirmDiscard()) return;
   const file = await pickFile(
-    ['png', 'jpg', 'jpeg', 'webp', 'gif'],
-    'image/png,image/jpeg,image/webp,image/gif',
+    ['png', 'jpg', 'jpeg', 'webp', 'gif', ...RAW_EXTENSIONS],
+    ['image/png,image/jpeg,image/webp,image/gif', ...RAW_EXTENSIONS.map((e) => `.${e}`)].join(','),
   );
   if (!file) return;
   const ext = file.name.split('.').pop()!.toLowerCase();
+  if (RAW_EXTENSIONS.includes(ext)) return openBytes(file.name, file.bytes);
   const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
   await openPhotoBytes(file.bytes, mime, baseName(file.name));
 }

@@ -3154,3 +3154,32 @@ h4.sub .link {
   padding: 6px 8px;
   resize: vertical;
 }
+
+/* Développement RAW : aperçu à gauche, réglages à droite. */
+.raw-develop {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.raw-preview {
+  flex: 1;
+  min-width: 0;
+  max-height: 60vh;
+  object-fit: contain;
+  background: var(--canvas, #000);
+  border-radius: 6px;
+}
+.raw-params {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+@media (max-width: 700px) {
+  .raw-develop {
+    flex-direction: column;
+  }
+  .raw-params {
+    width: 100%;
+  }
+}

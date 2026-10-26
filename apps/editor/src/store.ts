@@ -126,6 +126,7 @@ export type Dialog =
   | 'offset'
   | 'filter'
   | 'liveFilter'
+  | 'raw'
   | 'selectionModify'
   | 'document'
   | 'batch'
