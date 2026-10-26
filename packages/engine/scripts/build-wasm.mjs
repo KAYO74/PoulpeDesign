@@ -7,13 +7,19 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const crate = join(here, '../../../crates/poulpe-engine-wasm');
-execFileSync('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown'], {
-  cwd: crate,
-  stdio: 'inherit',
-});
-copyFileSync(
-  join(crate, 'target/wasm32-unknown-unknown/release/poulpe_engine_wasm.wasm'),
-  join(here, '../wasm/poulpe_engine.wasm'),
-);
-console.log('wasm/poulpe_engine.wasm à jour');
+// Le moteur des réglages, et le développement des photos RAW (chargé seulement pour un RAW).
+for (const [name, out] of [
+  ['poulpe-engine-wasm', 'poulpe_engine.wasm'],
+  ['poulpe-raw-wasm', 'poulpe_raw.wasm'],
+]) {
+  const crate = join(here, '../../../crates', name);
+  execFileSync('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown'], {
+    cwd: crate,
+    stdio: 'inherit',
+  });
+  copyFileSync(
+    join(crate, `target/wasm32-unknown-unknown/release/${name.replaceAll('-', '_')}.wasm`),
+    join(here, '../wasm', out),
+  );
+  console.log(`wasm/${out} à jour`);
+}

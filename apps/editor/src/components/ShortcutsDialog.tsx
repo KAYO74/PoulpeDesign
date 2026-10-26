@@ -47,9 +47,11 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
         // Réglages et filtres portent les mêmes noms : on précise le menu.
         const menu = id.startsWith('filter.')
           ? 'menu.filters'
-          : id.startsWith('adjust.')
-            ? 'menu.adjust'
-            : null;
+          : id.startsWith('livefilter.')
+            ? 'menu.layerLiveFilters'
+            : id.startsWith('adjust.')
+              ? 'menu.adjust'
+              : null;
         const title = commandTitle(cmd);
         return { id, cmd, title: menu ? `${title} (${t(menu)})` : title };
       }),

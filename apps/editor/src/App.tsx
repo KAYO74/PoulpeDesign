@@ -15,6 +15,7 @@ import { WindowControls } from './components/WindowControls';
 import { useT } from './i18n';
 import { Library } from './panels/Library';
 import { PagesPanel } from './panels/PagesPanel';
+import { SlicesPanel } from './panels/SlicesPanel';
 import { Studio } from './panels/Studio';
 import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from './panels/panelLayout';
 import { editor, ui, useEditor, useUi } from './store';
@@ -114,9 +115,9 @@ export function App() {
       <ContextBar />
       <main className="workspace">
         <ToolColumn />
-        {(persona === 'layout' || settings.library) && (
+        {(persona === 'layout' || persona === 'export' || settings.library) && (
           <div className="library-dock" style={{ width: libraryW }}>
-            {persona === 'layout' ? <PagesPanel /> : <Library />}
+            {persona === 'layout' ? <PagesPanel /> : persona === 'export' ? <SlicesPanel /> : <Library />}
             <div
               className={`split-h ${settings.studioSide === 'right' ? 'at-right' : 'at-left'}`}
               role="separator"

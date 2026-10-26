@@ -26,6 +26,7 @@ import { CharacterPanel } from './CharacterPanel';
 import { ColorPanel } from './ColorPanel';
 import { EffectsPanel } from './EffectsPanel';
 import { HistoryPanel } from './HistoryPanel';
+import { ChannelsPanel } from './ChannelsPanel';
 import { LayersPanel } from './LayersPanel';
 import { StrokePanel } from './StrokePanel';
 import { TransformPanel } from './TransformPanel';
@@ -225,6 +226,7 @@ const RENDER: Record<string, () => React.ReactNode> = {
   adjustment: () => <AdjustmentPanel />,
   histogram: () => <HistogramPanel />,
   layers: () => <LayersPanel />,
+  channels: () => <ChannelsPanel />,
   history: () => <HistoryPanel />,
   macros: () => <MacrosPanel />,
 };

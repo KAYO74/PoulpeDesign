@@ -42,6 +42,12 @@ export const PHOTO_GROUPS: ToolId[][] = [
 ];
 
 /** Outils de la Persona Mise en page, ceux d'Affinity Publisher. */
+/** Persona Export : choisir les calques et les plans de travail à trancher. */
+export const EXPORT_GROUPS: ToolId[][] = [
+  ['select', 'artboard'],
+  ['hand', 'zoom'],
+];
+
 export const LAYOUT_GROUPS: ToolId[][] = [
   ['select', 'direct'],
   ['frameText', 'text', 'table'],
@@ -85,7 +91,13 @@ export function withFamilies(tools: ToolId[]): ToolId[][] {
 
 /** Outils d'une Persona, par groupe (pour la colonne et la boîte « Espace de travail »). */
 export function toolGroupsFor(persona: Persona): ToolId[][] {
-  return persona === 'photo' ? PHOTO_GROUPS : persona === 'layout' ? LAYOUT_GROUPS : DRAW_GROUPS;
+  return persona === 'photo'
+    ? PHOTO_GROUPS
+    : persona === 'layout'
+      ? LAYOUT_GROUPS
+      : persona === 'export'
+        ? EXPORT_GROUPS
+        : DRAW_GROUPS;
 }
 
 const DRAW_TOOLS = new Set([...DRAW_GROUPS.flat(), ...LAYOUT_GROUPS.flat()]);

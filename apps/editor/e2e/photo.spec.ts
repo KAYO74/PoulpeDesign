@@ -144,6 +144,57 @@ test('la gomme magique fait disparaître le carré rouge', async ({ page }) => {
   expect(c[2]).toBeGreaterThan(c[0]);
 });
 
+test("remplit la sélection d'après le contenu, avec aperçu, sur un nouveau calque", async ({ page }) => {
+  await openTestPhoto(page);
+  await page.evaluate(() => {
+    const { editor } = (window as any).poulpe;
+    editor.select([editor.doc.artboards[0].children[0].id]);
+  });
+  await page.keyboard.press('m');
+  await drag(page, [160, 110], [240, 190]);
+  await page.getByRole('button', { name: 'Édition' }).click();
+  await page.getByRole('menuitem', { name: "Remplir d'après le contenu" }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(page.getByTestId('contentfill-apply')).toBeEnabled({ timeout: 20_000 });
+  await page.getByTestId('contentfill-variant').click();
+  await expect(page.getByTestId('contentfill-apply')).toBeEnabled({ timeout: 20_000 });
+  await page.getByTestId('contentfill-apply').click();
+  await expect(dialog).toBeHidden();
+  const names = await page.evaluate(() =>
+    (window as any).poulpe.editor.doc.artboards[0].children.map((n: { name: string }) => n.name),
+  );
+  expect(names).toHaveLength(2);
+  expect(names[1]).toBe('Remplissage');
+  // Le nouveau calque couvre le carré rouge avec le bleu d'autour.
+  const c = await pixel(page, 1, 200, 150);
+  expect(c[3]).toBe(255);
+  expect(c[2]).toBeGreaterThan(c[0]);
+  expect((await pixel(page, 1, 20, 20))[3]).toBe(0);
+});
+
+test('déforme le calque en tirant un point de la grille', async ({ page }) => {
+  await openTestPhoto(page);
+  await page.evaluate(() => {
+    const { editor } = (window as any).poulpe;
+    editor.select([editor.doc.artboards[0].children[0].id]);
+  });
+  expect((await pixel(page, 0, 240, 150))[2]).toBeGreaterThan(150);
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Déformation en maillage…' }).click();
+  const c = (await page.getByTestId('warp-canvas').boundingBox())!;
+  // Le point du milieu de la grille 4 × 4 part de 50 px vers la droite.
+  await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(c.x + c.width / 2 + (50 * c.width) / 400, c.y + c.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await page.getByTestId('warp-apply').click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect.poll(() => history(page)).toContain('history.meshWarp');
+  const p = await pixel(page, 0, 240, 150);
+  expect(p[0]).toBeGreaterThan(p[2]);
+});
+
 test('ajoute un calque de réglage et un masque', async ({ page }) => {
   await openTestPhoto(page);
   await page.getByRole('toolbar').getByTestId('add-adjustment').click();
@@ -205,7 +256,7 @@ test('enregistre et rouvre une retouche (pixels, masque, réglage), puis exporte
       (await nodes(page)).map((n) => ({ type: n.type, mask: !!n.mask, kind: n.adjustment?.kind })),
     )
     .toEqual(before);
-  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.version)).toBe(7);
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.version)).toBe(8);
   // Le coup de pinceau a survécu à l'enregistrement.
   expect((await pixel(page, 1, 90, 40))[3]).toBeGreaterThan(200);
 });
@@ -222,4 +273,32 @@ test('applique un filtre flou gaussien', async ({ page }) => {
   // Le bord du carré est mélangé (ni bleu pur ni rouge pur).
   expect(edge[0]).toBeGreaterThan(0x33 + 10);
   expect(edge[0]).toBeLessThan(0xdd - 10);
+});
+
+test('panneau Couches : enregistre la sélection comme couche alpha et la recharge', async ({ page }) => {
+  await openTestPhoto(page);
+  const hasSel = () => page.evaluate(() => (window as any).poulpe.ui.get().hasPixelSelection);
+  await page.keyboard.press('m');
+  await drag(page, [10, 10], [60, 60]);
+  await page.getByTestId('tab-channels').click();
+  await page.getByTestId('channel-save').click();
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.channels.length)).toBe(1);
+  await page.keyboard.press('Control+d');
+  expect(await hasSel()).toBe(false);
+
+  await page.getByRole('button', { name: 'Alpha 1' }).click();
+  expect(await hasSel()).toBe(true);
+  const box = await page.evaluate(() => {
+    const s = (window as any).poulpe.photo.getSelection();
+    return s && { x: s.x, w: s.canvas.width / s.scale };
+  });
+  expect(box).not.toBeNull();
+
+  // Une couche de couleur se charge aussi comme sélection (d'après sa clarté).
+  await page.keyboard.press('Control+d');
+  await page.getByTestId('channel-r').click();
+  expect(await hasSel()).toBe(true);
+
+  await page.getByRole('button', { name: 'Supprimer la couche' }).click();
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.channels)).toBeUndefined();
 });

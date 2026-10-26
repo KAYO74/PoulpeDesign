@@ -9,6 +9,7 @@ Last checked: October 5, 2026, on version 1.0.
 All the code in the `packages/` and `apps/` folders was written for Poulpe Design and is distributed under the [MPL-2.0](../LICENSE). The check found no third-party license or copyright header, no comment flagging copied code, and no proprietary binary file (`.psd`, `.abr`, `.icc`, `.ttf` or `.otf` fonts).
 
 - **File formats.** Opening and exporting Photoshop files (`.psd`) goes through the open-source library [ag-psd](https://github.com/Agamnentzar/ag-psd) (MIT), and opening PDF and Illustrator files goes through [pdf.js](https://github.com/mozilla/pdf.js) (Apache-2.0). Print PDFs follow the public PDF/X-4 and XMP standards.
+- **RAW photos.** Camera RAW files are read by [rawloader](https://github.com/pedrocr/rawloader) (LGPL-2.1), compiled to WebAssembly in `crates/poulpe-raw-wasm`; demosaicing and development are written for Poulpe Design. The LGPL is met because the whole app is open source: anyone can rebuild it with a modified rawloader.
 - **Print colors.** The CMYK profile is computed by Poulpe Design itself (`packages/core/src/cmyk.ts` and `icc.ts`); the official FOGRA39 profile, which cannot be redistributed, is not included, only named.
 - **Magic eraser.** It rebuilds the image from the photo itself, with an algorithm written for Poulpe Design and without any AI model.
 - **Image tracing.** The algorithm is written for Poulpe Design from published methods (k-means, edge following, Schneider curves). Potrace, whose GPL license is incompatible, is not used.

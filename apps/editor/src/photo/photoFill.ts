@@ -15,17 +15,24 @@ import { selectionIn } from './selection';
  * magique, remplissage d'après le contenu) et pot de peinture.
  */
 
+/** Réglages du remplissage d'après le contenu (fenêtre Édition › Remplir d'après le contenu). */
+export interface InpaintSettings {
+  /** Largeur de la zone où chercher de quoi remplir, en part de la taille du trou (0,9 par défaut). */
+  sampling?: number;
+  /** Graine du tirage : une autre graine donne une autre variante. */
+  seed?: number;
+}
+
 /**
  * Reconstruit la zone couverte par `cover` (opacité > `threshold`) dans les pixels `base` du
- * calque, puis enregistre le résultat. Sert à la gomme magique et au remplissage d'après le
- * contenu.
+ * calque. Renvoie les pixels du calque reconstruits, ou null s'il n'y a rien à remplir.
  */
-export async function runInpaint(
-  nodeId: string,
+export async function computeInpaint(
   base: HTMLCanvasElement,
   cover: HTMLCanvasElement,
   threshold: number,
-): Promise<void> {
+  settings: InpaintSettings = {},
+): Promise<HTMLCanvasElement | null> {
   const W = base.width,
     H = base.height;
   const cd = cover.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, W, H).data;
@@ -41,9 +48,9 @@ export async function runInpaint(
         if (y < y0) y0 = y;
         if (y > y1) y1 = y;
       }
-  if (x1 < 0) return;
+  if (x1 < 0) return null;
   // Zone de travail : le trou et ce qui l'entoure, où l'on va chercher de quoi le remplir.
-  const m = Math.max(32, Math.round(Math.max(x1 - x0, y1 - y0) * 0.9));
+  const m = Math.max(32, Math.round(Math.max(x1 - x0, y1 - y0) * (settings.sampling ?? 0.9)));
   const rx = Math.max(0, x0 - m),
     ry = Math.max(0, y0 - m);
   const rw = Math.min(W, x1 + m + 1) - rx,
@@ -64,16 +71,37 @@ export async function runInpaint(
     }
   ui.set({ busy: { label: t('photo.inpainting'), progress: 0 } });
   try {
-    const data = await inpaintAsync(img.data, rw, rh, hole, (f) =>
-      ui.set({ busy: { label: t('photo.inpainting'), progress: f } }),
+    const data = await inpaintAsync(
+      img.data,
+      rw,
+      rh,
+      hole,
+      (f) => ui.set({ busy: { label: t('photo.inpainting'), progress: f } }),
+      settings.seed,
     );
     const out = copyDrawable(base);
     out.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(data), rw, rh), rx, ry);
-    if (findNode(editor.doc, nodeId)) commitBitmap(nodeId, 'pixels', out, 'history.magicEraser');
-  } catch {
-    toast(t('photo.inpaintFailed'));
+    return out;
   } finally {
     ui.set({ busy: null });
+  }
+}
+
+/**
+ * Reconstruit la zone couverte par `cover` puis enregistre le résultat dans le calque. Sert à
+ * la gomme magique.
+ */
+export async function runInpaint(
+  nodeId: string,
+  base: HTMLCanvasElement,
+  cover: HTMLCanvasElement,
+  threshold: number,
+): Promise<void> {
+  try {
+    const out = await computeInpaint(base, cover, threshold);
+    if (out && findNode(editor.doc, nodeId)) commitBitmap(nodeId, 'pixels', out, 'history.magicEraser');
+  } catch {
+    toast(t('photo.inpaintFailed'));
   }
 }
 

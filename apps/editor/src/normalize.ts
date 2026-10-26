@@ -24,6 +24,7 @@ const IGNORED = new Set([
   'strokes',
   'effects',
   'mask',
+  'filters',
 ]);
 
 function textSize(n: TextNode): { width: number; height: number } {

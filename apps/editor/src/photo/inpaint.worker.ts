@@ -7,10 +7,18 @@ import { inpaint } from '@poulpe/core/src/inpaint';
  * trou, renvoie les pixels reconstruits.
  */
 self.onmessage = (
-  e: MessageEvent<{ id: number; data: Uint8ClampedArray; width: number; height: number; hole: Uint8Array }>,
+  e: MessageEvent<{
+    id: number;
+    data: Uint8ClampedArray;
+    width: number;
+    height: number;
+    hole: Uint8Array;
+    seed?: number;
+  }>,
 ) => {
-  const { id, data, width, height, hole } = e.data;
+  const { id, data, width, height, hole, seed } = e.data;
   inpaint({ data, width, height }, hole, {
+    seed,
     onProgress: (progress) => self.postMessage({ id, progress }),
   });
   self.postMessage({ id, data }, { transfer: [data.buffer] });

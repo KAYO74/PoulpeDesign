@@ -1,10 +1,13 @@
 import {
   activeEffects,
+  activeFilters,
   adjustmentReach,
   alphaOf,
   bevelOffset,
   contourReach,
   effectMargin,
+  filtersReach,
+  hasBlendRanges,
   hasWidthProfile,
   masterOf,
   nodeBounds,
@@ -21,7 +24,7 @@ import {
   type PoulpeDocument,
   type SceneNode,
 } from '@poulpe/core';
-import { applyAdjustmentLayer } from './adjustments';
+import { applyAdjustmentLayer, applyBlendRanges, applyLiveFilters } from './adjustments';
 import { compositeOp, makeCanvas, type AnyCanvas, type Ctx } from './canvas';
 import { applyTransparency, blurred, castShadow } from './effects';
 import {
@@ -65,9 +68,12 @@ export function drawNode(ctx: Ctx, doc: PoulpeDocument, node: SceneNode, opts: R
   // Un réglage agit sur les calques du dessous : c'est son parent qui l'applique (drawChildren).
   if (node.type === 'adjustment') return;
   const mask = node.mask?.enabled ? opts.images.get(doc, node.mask.assetId) : null;
-  if (node.effects?.length || mask || node.transparency) {
+  if (node.effects?.length || mask || node.transparency || node.filters?.length || node.blendRanges) {
     const effects = activeEffects(node);
-    if ((effects.length || mask || node.transparency) && drawWithEffects(ctx, doc, node, opts, effects, mask))
+    if (
+      (effects.length || mask || node.transparency || activeFilters(node).length || hasBlendRanges(node)) &&
+      drawWithEffects(ctx, doc, node, opts, effects, mask)
+    )
       return;
   }
   ctx.save();
@@ -168,7 +174,8 @@ function drawWithEffects(
   // Avec une transparence, le calque couvre aussi les contours qui débordent de la boîte ; le
   // décalage de l'outil Contour aussi.
   const b = node.transparency ? paintBounds(node) : nodeBounds(node);
-  const margin = effectMargin(effects) + 2 + (node.transparency ? 0 : contourReach(node));
+  const margin =
+    effectMargin(effects) + 2 + (node.transparency ? 0 : contourReach(node)) + filtersReach(node);
   const pts = [
     [b.x - margin, b.y - margin],
     [b.x + b.width + margin, b.y - margin],
@@ -192,6 +199,8 @@ function drawWithEffects(
   const layer = makeCanvas(w, h);
   layer.ctx.setTransform(m.a, m.b, m.c, m.d, m.e - x0, m.f - y0);
   drawContent(layer.ctx, doc, node, opts);
+  // Filtres en direct : sur les pixels du calque seul, avant son masque et ses effets.
+  applyLiveFilters(layer, node, scale, m, x0, y0);
   if (mask) {
     // Masque de calque : appliqué au contenu, avant les effets (l'ombre suit la partie visible).
     layer.ctx.save();
@@ -202,6 +211,7 @@ function drawWithEffects(
   }
   if (!effects.length) {
     applyTransparency(layer.ctx, node, m, x0, y0);
+    applyBlendRanges(layer, ctx, node, x0, y0);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha *= node.opacity;
@@ -259,6 +269,7 @@ function drawWithEffects(
   }
   // La transparence s'applique à tout l'objet, effets compris.
   applyTransparency(o, node, m, x0, y0);
+  applyBlendRanges(out, ctx, node, x0, y0);
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha *= node.opacity;

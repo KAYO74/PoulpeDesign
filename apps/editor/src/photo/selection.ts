@@ -753,3 +753,34 @@ export function selectionForEdit(): SelectionMask | null {
 export function setSelectionMask(next: SelectionMask, label = 'history.selection'): void {
   commit(isEmpty(next) ? null : next, label);
 }
+
+/** Copie de la sélection et la zone qu'elle couvre (pour l'enregistrer comme couche alpha). */
+export function selectionSnapshot(): { canvas: HTMLCanvasElement; box: Box } | null {
+  const m = current;
+  if (!m) return null;
+  return {
+    canvas: cloneMask(m).canvas,
+    box: { x: m.x, y: m.y, width: m.canvas.width / m.scale, height: m.canvas.height / m.scale },
+  };
+}
+
+/**
+ * Sélection d'après l'opacité d'une image posée sur une zone du document (couche alpha, ou
+ * couche de couleur convertie en opacité), combinée selon `mode`.
+ */
+export function selectFromAlpha(img: CanvasImageSource, box: Box, mode: SelectionMode): void {
+  // Nouvelle sélection : cadre du plan de travail ; sinon celui de la sélection, pour combiner.
+  const keep = current;
+  if (mode === 'replace') current = null;
+  const shape = blank();
+  current = keep;
+  if (!shape) return;
+  const ctx = docCtx(shape);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, box.x, box.y, box.width, box.height);
+  if (mode === 'replace' && isEmpty(shape)) {
+    clearSelection();
+    return;
+  }
+  combine(shape, mode);
+}

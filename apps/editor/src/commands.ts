@@ -31,6 +31,14 @@ import { openPhoto } from './photo/persona';
 import { canCutout, removeBackground, selectSubject } from './smart/cutout';
 import { canVectorize } from './smart/vectorize';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
+import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
+import * as LK from './photo/linkedImages';
+import { openContentFill } from './photo/contentFill';
+import { exportSlices, sliceFileCount, slicesFromArtboards, slicesFromSelection } from './slices';
+import { takeSnapshot } from './snapshots';
+import { saveSelectionAsChannel } from './photo/channels';
+import { canMeshWarp, openMeshWarp } from './photo/meshWarp';
+import { blendTargets, openBlendRanges } from './components/dialogs/BlendRangesDialog';
 import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
@@ -69,8 +77,16 @@ function adjustmentCommands() {
       run: () => ui.set({ dialog: 'filter', filterKind: kind }),
       enabled: P.canFilter,
     };
+    out[`livefilter.${kind}`] = {
+      label: `adjust.${kind}` as MessageKey,
+      run: () => addLiveFilter(kind),
+      enabled: canLiveFilter,
+    };
   }
-  return out as Record<`adjust.${AdjustmentKind}` | `filter.${AdjustmentKind}`, Command>;
+  return out as Record<
+    `adjust.${AdjustmentKind}` | `filter.${AdjustmentKind}` | `livefilter.${AdjustmentKind}`,
+    Command
+  >;
 }
 
 /** Une commande par look intégré (table LUT calculée). */
@@ -97,6 +113,11 @@ export const COMMANDS = {
   'file.saveAs': { label: 'file.saveAs', shortcut: 'Mod+Shift+S', run: () => void saveDocument(true) },
   'file.saveAsPsd': { label: 'file.saveAsPsd', run: () => void savePsdDocument() },
   'file.importImage': { label: 'file.importImage', shortcut: 'Mod+Shift+I', run: () => void importImage() },
+  'file.placeLinked': {
+    label: 'link.place',
+    run: () => LK.placeLinkedImage(),
+    enabled: LK.canPlaceLinked,
+  },
   'file.openPhoto': { label: 'file.openPhoto', shortcut: 'Mod+Alt+O', run: () => void openPhoto() },
   'file.export': { label: 'file.export', shortcut: 'Mod+Shift+E', run: () => ui.set({ dialog: 'export' }) },
   'file.saveTemplate': { label: 'mytpl.save', run: () => ui.set({ dialog: 'saveTemplate' }) },
@@ -125,6 +146,7 @@ export const COMMANDS = {
     run: () => editor.redo(),
     enabled: () => editor.getState().canRedo,
   },
+  'history.snapshot': { label: 'snapshot.new', run: () => takeSnapshot() },
   'edit.cut': { label: 'edit.cut', shortcut: 'Mod+X', run: A.cutSelection, enabled: hasSel },
   'edit.copy': { label: 'edit.copy', shortcut: 'Mod+C', run: A.copySelection, enabled: hasSel },
   'edit.paste': { label: 'edit.paste', shortcut: 'Mod+V', run: A.paste, enabled: A.hasClipboard },
@@ -181,6 +203,7 @@ export const COMMANDS = {
     run: toggleQuickMask,
     enabled: () => ui.get().persona === 'photo',
   },
+  'select.saveChannel': { label: 'channels.save', run: saveSelectionAsChannel, enabled: photoSel },
   'select.fromLayer': {
     label: 'select.fromLayer',
     run: () => {
@@ -198,7 +221,7 @@ export const COMMANDS = {
   },
   'edit.contentAwareFill': {
     label: 'edit.contentAwareFill',
-    run: () => void getController()?.photo.contentAwareFill(),
+    run: () => openContentFill(),
     enabled: pixelSel,
   },
   'layer.copyToLayer': {
@@ -226,6 +249,30 @@ export const COMMANDS = {
   'layer.invertMask': { label: 'layer.invertMask', run: P.invertMask, enabled: P.hasMask },
   'layer.removeMask': { label: 'layer.removeMask', run: P.removeMask, enabled: P.hasMask },
   'layer.rasterize': { label: 'layer.rasterize', run: P.rasterizeSelection, enabled: P.canRasterize },
+  'slices.fromSelection': {
+    label: 'slices.fromSelection',
+    run: slicesFromSelection,
+    enabled: () => editor.selection.length > 0,
+  },
+  'slices.fromArtboards': { label: 'slices.fromArtboards', run: slicesFromArtboards },
+  'slices.export': {
+    label: 'slices.exportCmd',
+    run: () => exportSlices(),
+    enabled: () => sliceFileCount(editor.doc) > 0,
+  },
+  'layer.meshWarp': { label: 'warp.menu', run: openMeshWarp, enabled: canMeshWarp },
+  'layer.blendRanges': {
+    label: 'blend.menu',
+    run: openBlendRanges,
+    enabled: () => blendTargets().length > 0,
+  },
+  'layer.replaceImage': { label: 'link.replace', run: () => LK.replaceImage(), enabled: LK.canReplaceImage },
+  'layer.embedImage': { label: 'link.embed', run: LK.embedImages, enabled: LK.canEmbedImage },
+  'layer.updateLinks': {
+    label: 'link.update',
+    run: () => LK.updateLinkedImages(true),
+    enabled: LK.hasLinkedImages,
+  },
   'image.vectorize': {
     label: 'image.vectorize',
     run: () => ui.set({ dialog: 'vectorize' }),
@@ -481,6 +528,7 @@ export const COMMANDS = {
   'pages.addMaster': { label: 'pages.addMaster', run: L.addMaster },
   'pages.arrange': { label: 'pages.arrange', run: L.arrange },
   'persona.layout': { label: 'persona.layout', run: () => openPersona('layout') },
+  'persona.export': { label: 'persona.export', run: () => openPersona('export') },
 
   'view.zoomIn': { label: 'view.zoomIn', shortcut: 'Mod+=', run: () => zoomBy(1.25) },
   'view.zoomOut': { label: 'view.zoomOut', shortcut: 'Mod+-', run: () => zoomBy(0.8) },
@@ -601,7 +649,9 @@ export function commandShortcut(id: string): string | undefined {
 
 /** Commandes qu'une macro ne rejoue pas : fichiers, affichage, aide, historique. */
 function recordable(id: string): boolean {
-  return !/^(file|view|help|persona)\.|^macro[:.]/.test(id) && id !== 'edit.undo' && id !== 'edit.redo';
+  return (
+    !/^(file|view|help|persona|history)\.|^macro[:.]/.test(id) && id !== 'edit.undo' && id !== 'edit.redo'
+  );
 }
 
 /**

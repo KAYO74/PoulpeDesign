@@ -997,6 +997,17 @@ h4.sub {
 .layer.hidden .layer-name {
   opacity: 0.5;
 }
+/* Image liée : petit maillon devant le nom. */
+.layer-link {
+  display: inline-flex;
+  color: var(--muted);
+  margin-right: 4px;
+}
+/* Filtre en direct, sous son calque. */
+.layer.filter .layer-name {
+  font-style: italic;
+  color: var(--muted);
+}
 .layer.artboard {
   font-weight: 600;
   padding-left: 6px;
@@ -1082,6 +1093,33 @@ h4.sub {
 }
 .history-item.future {
   opacity: 0.45;
+}
+.snapshot-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.channel-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.channel-thumb {
+  flex: none;
+  width: 32px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #000;
+}
+.channels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.snapshot-name {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ——— Barre d'état ——— */
@@ -3142,4 +3180,137 @@ h4.sub .link {
   min-height: 64px;
   padding: 6px 8px;
   resize: vertical;
+}
+
+/* Développement RAW : aperçu à gauche, réglages à droite. */
+.raw-develop {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.raw-preview {
+  flex: 1;
+  min-width: 0;
+  max-height: 60vh;
+  object-fit: contain;
+  background: var(--canvas, #000);
+  border-radius: 6px;
+}
+.raw-params {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+@media (max-width: 700px) {
+  .raw-develop {
+    flex-direction: column;
+  }
+  .raw-params {
+    width: 100%;
+  }
+}
+
+/* Plages de fusion : quatre poignées sur un dégradé noir → blanc. */
+.blend-range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  margin: 8px 0;
+}
+.blend-range-bar {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 22px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #000, #fff);
+  border: 1px solid var(--line);
+}
+.blend-range-bar input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.blend-range-bar input[type='range']::-webkit-slider-runnable-track {
+  background: none;
+}
+.blend-range-bar input[type='range']::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  width: 10px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--accent);
+  border: 1px solid var(--fg);
+}
+.blend-range-bar input[type='range']::-moz-range-thumb {
+  pointer-events: auto;
+  width: 10px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+.blend-range-values {
+  color: var(--muted);
+}
+
+/* Déformation en maillage : l'aperçu sur un damier, la grille par-dessus. */
+.warp-stage {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 6px;
+  background: repeating-conic-gradient(var(--line) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+  overflow: auto;
+}
+.warp-canvas {
+  max-width: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* Persona Export : panneau Tranches. */
+.slices-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+.slices-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.slices-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.slice {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+}
+.slice-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.slice-name {
+  flex: 1;
+  min-width: 0;
+}
+.slice-formats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
 }

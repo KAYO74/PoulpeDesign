@@ -8,10 +8,12 @@ import {
   preparePrintPdf,
   pxToPt,
   activeEffects,
+  activeFilters,
   artboardToSvg,
   contourReach,
   bytesToDataUrl,
   effectMargin,
+  filtersReach,
   nodeBounds,
   type SceneNode,
   createDocument,
@@ -34,6 +36,7 @@ import { decodeFile, encodeFile } from './fileWorker';
 import { t } from './i18n';
 import { editor, toast, ui } from './store';
 import { placeSvg } from './vectorActions';
+import { RAW_EXTENSIONS } from '@poulpe/engine';
 
 /*
  * Entrées / sorties de fichiers. Dans l'appli de bureau (Tauri), on passe par les boîtes de
@@ -74,7 +77,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */
-export const OPEN_EXTENSIONS = [POULPE_EXTENSION, 'psd', 'pdf', 'ai'];
+export const OPEN_EXTENSIONS = [POULPE_EXTENSION, 'psd', 'pdf', 'ai', ...RAW_EXTENSIONS];
 
 export function baseName(path: string): string {
   return path
@@ -83,7 +86,7 @@ export function baseName(path: string): string {
     .replace(/\.[^.]+$/, '');
 }
 
-function safeName(name: string): string {
+export function safeName(name: string): string {
   return name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'poulpe';
 }
 
@@ -200,6 +203,12 @@ export async function openDocument(): Promise<void> {
 /** Ouvre un document Poulpe Design, Photoshop, PDF ou Illustrator d'après son extension. */
 export async function openBytes(name: string, bytes: Uint8Array): Promise<void> {
   const ext = name.split('.').pop()!.toLowerCase();
+  if (RAW_EXTENSIONS.includes(ext)) {
+    // Photo RAW : fenêtre de développement, puis Persona Photo.
+    const { openRaw } = await import('./photo/rawDevelop');
+    await openRaw(bytes, baseName(name));
+    return;
+  }
   if (ext !== 'psd' && ext !== 'pdf' && ext !== 'ai') return loadBytes(name, bytes);
   toast(t('file.opening'));
   try {
@@ -326,11 +335,12 @@ export async function importImage(): Promise<void> {
 export async function openPhoto(): Promise<void> {
   if (!confirmDiscard()) return;
   const file = await pickFile(
-    ['png', 'jpg', 'jpeg', 'webp', 'gif'],
-    'image/png,image/jpeg,image/webp,image/gif',
+    ['png', 'jpg', 'jpeg', 'webp', 'gif', ...RAW_EXTENSIONS],
+    ['image/png,image/jpeg,image/webp,image/gif', ...RAW_EXTENSIONS.map((e) => `.${e}`)].join(','),
   );
   if (!file) return;
   const ext = file.name.split('.').pop()!.toLowerCase();
+  if (RAW_EXTENSIONS.includes(ext)) return openBytes(file.name, file.bytes);
   const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
   await openPhotoBytes(file.bytes, mime, baseName(file.name));
 }
@@ -441,6 +451,7 @@ function imageDensity(doc: PoulpeDocument, nodes: SceneNode[]): number {
 /**
  * Ce que le SVG ou le PDF ne savent pas décrire est mis en image :
  * - les calques de réglage, avec tout ce qu'ils modifient (les calques du dessous dans leur parent) ;
+ * - les objets qui ont des filtres en direct ;
  * - pour le PDF (`pdf`), les objets qui ont des effets ou un masque.
  */
 async function rasterizedParts(
@@ -478,12 +489,13 @@ async function rasterizedParts(
     if (!n.visible) return;
     const fx = activeEffects(n);
     // La transparence (outil Transparence) passe aussi en image : svg2pdf ne lit pas les masques.
-    if (!pdf || (!fx.length && !n.mask?.enabled && !n.transparency)) {
+    const live = activeFilters(n).length > 0;
+    if (!live && (!pdf || (!fx.length && !n.mask?.enabled && !n.transparency))) {
       if (n.type === 'group') await visitChildren(n.children, nodeBounds(n));
       return;
     }
     // Le décalage de l'outil Contour dépasse de la boîte (déjà compté avec une transparence).
-    const m = effectMargin(fx) + 2 + (n.transparency ? 0 : contourReach(n));
+    const m = effectMargin(fx) + 2 + (n.transparency ? 0 : contourReach(n)) + filtersReach(n);
     const b = n.transparency ? paintBounds(n) : nodeBounds(n);
     const x = b.x - m,
       y = b.y - m,
@@ -682,7 +694,7 @@ export async function exportDocument(opts: ExportOptions): Promise<void> {
 }
 
 /** Fichier d'un plan de travail dans un format d'export (PDF d'une seule page). */
-async function artboardBytes(
+export async function artboardBytes(
   doc: PoulpeDocument,
   ab: Artboard,
   kind: ExportKind,

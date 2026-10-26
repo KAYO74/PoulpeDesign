@@ -4,6 +4,7 @@ import {
   contourReach,
   dashPattern,
   effectMargin,
+  filtersReach,
   nodeBounds,
   shapePath,
   strokeCap,
@@ -83,6 +84,7 @@ export function paintBounds(node: SceneNode): Box {
     pad += size * 2;
   }
   if (node.effects?.length) pad += effectMargin(activeEffects(node));
+  if (node.filters?.length) pad += filtersReach(node);
   const box = { x: b.x - pad, y: b.y - pad, width: b.width + 2 * pad, height: b.height + 2 * pad };
   if (frozen) reachCache.set(node, box);
   return box;

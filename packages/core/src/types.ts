@@ -207,6 +207,34 @@ interface NodeBase {
   transparency?: Transparency;
   /** Habillage : l'objet repousse le texte des cadres de texte placés dessous. Absent : aucun. */
   wrap?: TextWrap;
+  /**
+   * Filtres en direct du calque (comme les filtres dynamiques de Photoshop ou d'Affinity) : ils
+   * agissent sur ce seul calque, dans l'ordre, et restent modifiables. Absent : aucun.
+   */
+  filters?: LiveFilter[];
+  /**
+   * Plages de fusion (Photoshop : « Fusion si » ; Affinity : plages de fusion) : le calque
+   * s'efface selon sa propre luminosité et celle de ce qui est dessous. Absent : aucun effet.
+   */
+  blendRanges?: BlendRanges;
+}
+
+/**
+ * Pour chaque source, quatre seuils de luminosité (0 à 255) : le calque apparaît de 0 à 1 entre
+ * les deux premiers, puis disparaît de 1 à 0 entre les deux derniers. [0, 0, 255, 255] : tout passe.
+ */
+export interface BlendRanges {
+  /** Luminosité du calque lui-même. */
+  layer: [number, number, number, number];
+  /** Luminosité de ce qui est sous le calque. */
+  under: [number, number, number, number];
+}
+
+/** Filtre en direct posé sur un calque : ses pixels d'origine ne changent pas. */
+export interface LiveFilter {
+  id: string;
+  adjustment: Adjustment;
+  enabled: boolean;
 }
 
 /**
@@ -454,6 +482,18 @@ export interface ImageNode extends NodeBase {
   assetId: string;
   /** Partie de l'image affichée dans la boîte de l'objet. Absent : l'image entière. */
   crop?: Crop;
+  /**
+   * Image liée (objet dynamique lié) : le fichier d'origine sur le disque. L'image reste aussi
+   * incorporée au document ; elle est relue quand le fichier change. Absent : image incorporée.
+   */
+  link?: ImageLink;
+}
+
+export interface ImageLink {
+  /** Chemin du fichier sur le disque. */
+  path: string;
+  /** Date de modification du fichier lors de la dernière lecture (ms depuis 1970). */
+  modified?: number;
 }
 
 /**
@@ -674,6 +714,47 @@ export interface PoulpeDocument {
   symbols?: Record<string, Symbol>;
   /** Styles de calque et de texte enregistrés. */
   styles?: SavedStyle[];
+  /** Tranches de la Persona Export : zones exportées chacune dans un ou plusieurs fichiers. */
+  slices?: Slice[];
+  /** Couches alpha (panneau Couches) : sélections enregistrées pour être rechargées plus tard. */
+  channels?: AlphaChannel[];
+}
+
+/**
+ * Couche alpha (Photoshop et Affinity) : une sélection enregistrée dans le document. L'image ne
+ * compte que par son opacité ; elle couvre la zone donnée, en coordonnées du document.
+ */
+export interface AlphaChannel {
+  id: string;
+  name: string;
+  assetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Format et taille d'un fichier exporté par une tranche. */
+export interface SliceExport {
+  format: 'png' | 'jpeg' | 'svg' | 'pdf';
+  /** Échelle (1, 2, 3…) pour PNG et JPEG. */
+  scale: number;
+}
+
+/**
+ * Tranche (Affinity : Persona Export) : un calque (sa zone suit le calque), un plan de travail,
+ * ou une zone libre, exportés en un clic dans tous leurs formats.
+ */
+export interface Slice {
+  id: string;
+  name: string;
+  /** Plan de travail de la tranche. */
+  artboardId: string;
+  /** Calque suivi ; absent : `rect`, ou tout le plan de travail. */
+  layerId?: string;
+  /** Zone libre, en coordonnées du document. */
+  rect?: { x: number; y: number; width: number; height: number };
+  exports: SliceExport[];
 }
 
 export type Parent = Artboard | GroupNode;

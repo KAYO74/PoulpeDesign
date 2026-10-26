@@ -11,6 +11,11 @@ Modèle de détourage « silueta » (models/silueta.onnx) — dérivé de U²-Ne
 QuickJS — Copyright (c) Fabrice Bellard et Charlie Gordon. Licence MIT. https://bellard.org/quickjs/
 quickjs-emscripten — Copyright (c) Jake Teton-Landis. Licence MIT. https://github.com/justjake/quickjs-emscripten
 
+rawloader (lecture des photos RAW, compilé dans poulpe_raw.wasm) — Copyright (c) Pedro Côrte-Real.
+  Licence LGPL-2.1. https://github.com/pedrocr/rawloader
+  Le code source complet de Poulpe Design et de rawloader est public : on peut reconstruire
+  poulpe_raw.wasm avec une version modifiée de rawloader (crates/poulpe-raw-wasm).
+
 Tauri et ses greffons (dialog, fs, process, updater) — Licence MIT ou Apache 2.0. https://tauri.app
 
 Les autres dépendances (React, Radix UI, Paper.js, pdf.js, jsPDF, ag-psd, opentype.js, fflate, immer, polices

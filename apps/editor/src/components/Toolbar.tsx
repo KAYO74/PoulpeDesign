@@ -83,9 +83,26 @@ export function Toolbar() {
         >
           <Icon name="layout" />
         </button>
+        <button
+          className="persona"
+          aria-pressed={!custom && persona === 'export'}
+          title={t('persona.export')}
+          aria-label={t('persona.export')}
+          data-testid="persona-export"
+          onClick={() => openPersona('export')}
+        >
+          <Icon name="export" />
+        </button>
         <WorkspaceMenu />
       </div>
-      {persona === 'layout' ? (
+      {persona === 'export' ? (
+        <>
+          <CmdButton id="slices.fromSelection" icon="pixelLayer" />
+          <CmdButton id="slices.fromArtboards" icon="artboard" />
+          <span className="tsep" />
+          <CmdButton id="slices.export" icon="export" />
+        </>
+      ) : persona === 'layout' ? (
         <>
           <CmdButton id="pages.add" icon="pages" />
           <CmdButton id="pages.addMaster" icon="master" />
