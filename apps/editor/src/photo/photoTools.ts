@@ -5,11 +5,10 @@ import { brushOptions } from '../tools/brushes/state';
 import { brushSettings, isBrushTool, setBrush, toast, ui, type SelectionMode } from '../store';
 import { BrushEngine } from './brushEngine';
 import { GeometryTools } from './geometryTools';
-import { targetPixels } from './paintTarget';
 import { fillAt, runInpaint } from './photoFill';
 import { drawPhotoOverlay } from './photoOverlay';
-import { images, selectedImage } from './pixels';
-import { QuickSelect, getSelection, selectShape, selectSimilar, selectionIn } from './selection';
+import { images } from './pixels';
+import { QuickSelect, selectShape, selectSimilar } from './selection';
 import { isPhotoTool } from './toolKinds';
 
 // Noms exportés de ce module avant son découpage, inchangés pour les autres fichiers.
@@ -453,16 +452,5 @@ export class PhotoTools {
   /** Dessine les aides de la Persona Photo, en pixels d'écran. */
   draw(ctx: CanvasRenderingContext2D): void {
     drawPhotoOverlay(this, ctx);
-  }
-
-  /** Remplissage d'après le contenu : reconstruit la sélection dans le calque choisi. */
-  async contentAwareFill(): Promise<void> {
-    const node = selectedImage();
-    if (!node || !getSelection()) return;
-    const px = targetPixels(node, 'pixels');
-    if (!px) return;
-    const cover = selectionIn(px.base.width, px.base.height, px.toPx);
-    if (!cover) return;
-    await this.runInpaint(node.id, px.base, cover, 100);
   }
 }

@@ -144,6 +144,35 @@ test('la gomme magique fait disparaître le carré rouge', async ({ page }) => {
   expect(c[2]).toBeGreaterThan(c[0]);
 });
 
+test("remplit la sélection d'après le contenu, avec aperçu, sur un nouveau calque", async ({ page }) => {
+  await openTestPhoto(page);
+  await page.evaluate(() => {
+    const { editor } = (window as any).poulpe;
+    editor.select([editor.doc.artboards[0].children[0].id]);
+  });
+  await page.keyboard.press('m');
+  await drag(page, [160, 110], [240, 190]);
+  await page.getByRole('button', { name: 'Édition' }).click();
+  await page.getByRole('menuitem', { name: "Remplir d'après le contenu" }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(page.getByTestId('contentfill-apply')).toBeEnabled({ timeout: 20_000 });
+  await page.getByTestId('contentfill-variant').click();
+  await expect(page.getByTestId('contentfill-apply')).toBeEnabled({ timeout: 20_000 });
+  await page.getByTestId('contentfill-apply').click();
+  await expect(dialog).toBeHidden();
+  const names = await page.evaluate(() =>
+    (window as any).poulpe.editor.doc.artboards[0].children.map((n: { name: string }) => n.name),
+  );
+  expect(names).toHaveLength(2);
+  expect(names[1]).toBe('Remplissage');
+  // Le nouveau calque couvre le carré rouge avec le bleu d'autour.
+  const c = await pixel(page, 1, 200, 150);
+  expect(c[3]).toBe(255);
+  expect(c[2]).toBeGreaterThan(c[0]);
+  expect((await pixel(page, 1, 20, 20))[3]).toBe(0);
+});
+
 test('ajoute un calque de réglage et un masque', async ({ page }) => {
   await openTestPhoto(page);
   await page.getByRole('toolbar').getByTestId('add-adjustment').click();

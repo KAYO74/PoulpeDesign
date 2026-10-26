@@ -127,6 +127,7 @@ export type Dialog =
   | 'filter'
   | 'liveFilter'
   | 'raw'
+  | 'contentFill'
   | 'selectionModify'
   | 'document'
   | 'batch'

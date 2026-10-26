@@ -24,10 +24,11 @@ export function inpaintAsync(
   height: number,
   hole: Uint8Array,
   onProgress?: (f: number) => void,
+  seed?: number,
 ): Promise<Uint8ClampedArray> {
   const w = getWorker();
   if (!w) {
-    inpaint({ data, width, height }, hole, { onProgress });
+    inpaint({ data, width, height }, hole, { onProgress, seed });
     return Promise.resolve(data);
   }
   const id = nextId++;
@@ -48,6 +49,6 @@ export function inpaintAsync(
     };
     w.addEventListener('message', onMessage);
     w.addEventListener('error', onError);
-    w.postMessage({ id, data, width, height, hole }, [data.buffer]);
+    w.postMessage({ id, data, width, height, hole, seed }, [data.buffer]);
   });
 }

@@ -7,6 +7,7 @@ import { DraftDialog } from './dialogs/DraftDialog';
 import { FilterDialog } from './dialogs/FilterDialog';
 import { LiveFilterDialog } from './dialogs/LiveFilterDialog';
 import { RawDialog } from './dialogs/RawDialog';
+import { ContentFillDialog } from './dialogs/ContentFillDialog';
 import { NewDialog } from './dialogs/NewDialog';
 import { WorkspaceDialog } from './dialogs/WorkspaceDialog';
 import { AboutDialog } from './dialogs/AboutDialog';
@@ -54,6 +55,7 @@ function MainDialog() {
   if (dialog === 'filter') return <FilterDialog />;
   if (dialog === 'liveFilter') return <LiveFilterDialog />;
   if (dialog === 'raw') return <RawDialog />;
+  if (dialog === 'contentFill') return <ContentFillDialog />;
   if (dialog === 'selectionModify') return <SelectionModifyDialog />;
   if (dialog === 'vectorize') return <VectorizeDialog />;
   if (dialog === 'extensions') return <ExtensionsDialog />;

@@ -1,6 +1,6 @@
 /*
- * Textes des filtres en direct des calques, des objets dynamiques (images liées) et du
- * développement RAW.
+ * Textes des filtres en direct des calques, des objets dynamiques (images liées), du
+ * développement RAW et du remplissage d'après le contenu.
  */
 
 export const frLiveFilters = {
@@ -28,6 +28,13 @@ export const frLiveFilters = {
   'raw.title': 'Développement RAW',
   'raw.develop': 'Développer',
   'raw.unreadable': 'Ce fichier RAW n’est pas reconnu (appareil ou format pas encore pris en charge).',
+  'contentfill.hint':
+    'La sélection est reconstruite d’après l’image autour. L’aperçu s’affiche dans le document.',
+  'contentfill.sampling': 'Zone d’échantillonnage',
+  'contentfill.variant': 'Autre variante',
+  'contentfill.newLayer': 'Résultat sur un nouveau calque',
+  'contentfill.layer': 'Remplissage',
+  'history.contentFill': 'Remplissage d’après le contenu',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -57,4 +64,11 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'raw.title': 'Develop RAW',
   'raw.develop': 'Develop',
   'raw.unreadable': 'This RAW file is not recognized (camera or format not supported yet).',
+  'contentfill.hint':
+    'The selection is rebuilt from the surrounding image. The preview shows in the document.',
+  'contentfill.sampling': 'Sampling area',
+  'contentfill.variant': 'Another variant',
+  'contentfill.newLayer': 'Output to a new layer',
+  'contentfill.layer': 'Fill',
+  'history.contentFill': 'Content-aware fill',
 };

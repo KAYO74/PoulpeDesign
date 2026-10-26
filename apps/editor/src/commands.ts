@@ -33,6 +33,7 @@ import { canVectorize } from './smart/vectorize';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
+import { openContentFill } from './photo/contentFill';
 import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
@@ -213,7 +214,7 @@ export const COMMANDS = {
   },
   'edit.contentAwareFill': {
     label: 'edit.contentAwareFill',
-    run: () => void getController()?.photo.contentAwareFill(),
+    run: () => openContentFill(),
     enabled: pixelSel,
   },
   'layer.copyToLayer': {
