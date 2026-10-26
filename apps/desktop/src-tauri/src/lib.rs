@@ -13,7 +13,8 @@ mod launch;
 use std::path::PathBuf;
 use std::sync::Mutex;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
+use tauri::Manager;
 
 /// Fichier passé au lancement de l'appli (double-clic sur un `.poulpe`), en attente d'être ouvert.
 #[derive(Default)]
@@ -136,8 +137,11 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .setup(|_app| {
             // Le fichier ouvert par double-clic est le seul accès au disque donné sans dialogue.
-            if let Some(state) = _app.try_state::<OpenedFile>() {
-                if let Some(path) = state.0.lock().ok().and_then(|slot| slot.clone()) {
+            {
+                if let Some(path) = _app
+                    .try_state::<OpenedFile>()
+                    .and_then(|state| state.0.lock().ok().and_then(|slot| slot.clone()))
+                {
                     use tauri_plugin_fs::FsExt;
                     let _ = _app.fs_scope().allow_file(&path);
                 }
@@ -150,7 +154,6 @@ pub fn run() {
             // dans la barre du haut de l'écran (nativeMenu.ts).
             #[cfg(any(target_os = "windows", target_os = "linux"))]
             {
-                use tauri::Manager;
                 if let Some(window) = _app.get_webview_window("main") {
                     window.set_decorations(false)?;
                 }
