@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { COMMANDS, commandShortcut, formatShortcut, runCommand, type CommandId } from '../commands';
 import { useT } from '../i18n';
 import { setSettings, ui, useEditor, useUi, type Persona } from '../store';
@@ -12,15 +14,45 @@ function CmdButton({ id, icon }: { id: CommandId; icon: IconName }) {
   const cmd = COMMANDS[id] as (typeof COMMANDS)[CommandId] & { enabled?: () => boolean; shortcut?: string };
   const shortcut = commandShortcut(id);
   const label = t(cmd.label) + (shortcut ? ` (${formatShortcut(shortcut)})` : '');
+  const [tip, setTip] = useState<DOMRect | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const tipKey = `cmdtip.${id}`;
+  const desc = t(tipKey as never);
+  const leave = () => {
+    window.clearTimeout(timer.current);
+    setTip(null);
+  };
   return (
     <button
       className="ib"
-      title={label}
       aria-label={label}
       disabled={cmd.enabled ? !cmd.enabled() : false}
-      onClick={() => void runCommand(id)}
+      onClick={() => {
+        leave();
+        void runCommand(id);
+      }}
+      onPointerEnter={(e) => {
+        const el = e.currentTarget;
+        timer.current = window.setTimeout(() => setTip(el.getBoundingClientRect()), 500);
+      }}
+      onPointerLeave={leave}
     >
       <Icon name={icon} />
+      {tip &&
+        createPortal(
+          <div
+            className="tool-tip cmd-tip"
+            role="tooltip"
+            style={{ top: tip.bottom + 8, left: Math.max(8, Math.min(tip.left, window.innerWidth - 268)) }}
+          >
+            <div className="tool-tip-title">
+              {t(cmd.label)}
+              {shortcut ? ` [${formatShortcut(shortcut)}]` : ''}
+            </div>
+            {desc !== tipKey && <p className="tool-tip-desc">{desc}</p>}
+          </div>,
+          document.body,
+        )}
     </button>
   );
 }
@@ -43,7 +75,7 @@ function Toggle({
   );
 }
 
-/** Onglets en haut, comme Affinity : Vectoriel, Pixel, Mise en page, Export. */
+/** Onglets en haut, comme Affinity : Photos, puis Vectoriel, Pixel, Mise en page, Export. */
 const PERSONA_TABS: Persona[] = ['draw', 'photo', 'layout', 'export'];
 const TAB_ICONS: Record<Persona, IconName> = {
   draw: 'tabDraw',
@@ -59,14 +91,26 @@ export function Toolbar() {
   const softProof = useUi((s) => s.softProof);
   const photo = persona === 'photo';
   const custom = useActiveWorkspace();
+  const photoLibrary = useUi((s) => s.photoLibrary);
   return (
     <div className="toolbar" role="toolbar" aria-label="Barre d'outils">
       <div className="personas" role="group" aria-label="Personas">
+        <button
+          className="persona persona-tab"
+          aria-pressed={photoLibrary}
+          title={`${t('plib.open')} (${formatShortcut(commandShortcut('file.photoLibrary') ?? '')})`}
+          aria-label={t('plib.open')}
+          data-testid="persona-library"
+          onClick={() => void runCommand('file.photoLibrary')}
+        >
+          <Icon name="photoLibrary" />
+          <span className="persona-label">{t('tab.library')}</span>
+        </button>
         {PERSONA_TABS.map((p) => (
           <button
             key={p}
             className="persona persona-tab"
-            aria-pressed={!custom && persona === p}
+            aria-pressed={!photoLibrary && !custom && persona === p}
             title={t(`persona.${p}`)}
             aria-label={t(`persona.${p}`)}
             data-testid={`persona-${p}`}

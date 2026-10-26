@@ -119,6 +119,11 @@ export const COMMANDS = {
     enabled: LK.canPlaceLinked,
   },
   'file.openPhoto': { label: 'file.openPhoto', shortcut: 'Mod+Alt+O', run: () => void openPhoto() },
+  'file.photoLibrary': {
+    label: 'plib.open',
+    shortcut: 'Mod+Alt+B',
+    run: () => ui.set((s) => ({ photoLibrary: !s.photoLibrary, dialog: null })),
+  },
   'file.export': { label: 'file.export', shortcut: 'Mod+Shift+E', run: () => ui.set({ dialog: 'export' }) },
   'file.saveTemplate': { label: 'mytpl.save', run: () => ui.set({ dialog: 'saveTemplate' }) },
   'file.batchExport': { label: 'file.batchExport', run: () => ui.set({ dialog: 'batch' }) },
@@ -877,6 +882,8 @@ export function handleKeyDown(e: KeyboardEvent): void {
   const target = e.target as HTMLElement;
   if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
   if (ui.get().dialog || ui.get().updateOpen) return;
+  // La Bibliothèque photo a ses propres touches ; seul son raccourci d'ouverture passe.
+  if (ui.get().photoLibrary && !matches(e, commandShortcut('file.photoLibrary') ?? '')) return;
   if (isEditingText()) {
     // Le focus a quitté le texte édité (clic dans un panneau) : la touche termine l'édition.
     endTextEdit();
