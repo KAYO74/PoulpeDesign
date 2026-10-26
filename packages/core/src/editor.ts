@@ -207,6 +207,16 @@ export class Editor {
     this.notify();
   }
 
+  /** Remplace tout le document (retour à un instantané), en une étape annulable. */
+  replaceDocument(label: string, doc: PoulpeDocument): void {
+    if (doc === this.state.doc) return;
+    const transient = this.settle(label);
+    this.push(label);
+    this.assign(doc, this.state.selection);
+    this.reopen(transient);
+    this.notify();
+  }
+
   private push(label: string) {
     this.past.push({
       label: this.currentLabel,

@@ -1,7 +1,8 @@
 /*
  * Textes des filtres en direct des calques, des objets dynamiques (images liées), du
  * développement RAW, du remplissage d'après le contenu, des plages de fusion et de la
- * déformation en maillage, et de la Persona Export.
+ * déformation en maillage, de la Persona Export et des
+ * instantanés.
  */
 
 export const frLiveFilters = {
@@ -68,6 +69,14 @@ export const frLiveFilters = {
   'history.addSlices': 'Nouvelles tranches',
   'history.slice': 'Tranche',
   'history.removeSlice': 'Suppression de la tranche',
+  'snapshot.title': 'Instantanés',
+  'snapshot.name': 'Instantané {n}',
+  'snapshot.new': 'Nouvel instantané',
+  'snapshot.restore': 'Revenir à cet instantané',
+  'snapshot.rename': 'Renommer l’instantané',
+  'snapshot.delete': 'Supprimer l’instantané',
+  'snapshot.empty': 'Aucun instantané. Le bouton + garde l’état actuel du document.',
+  'history.restoreSnapshot': 'Retour à un instantané',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -135,4 +144,12 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'history.addSlices': 'New slices',
   'history.slice': 'Slice',
   'history.removeSlice': 'Delete slice',
+  'snapshot.title': 'Snapshots',
+  'snapshot.name': 'Snapshot {n}',
+  'snapshot.new': 'New snapshot',
+  'snapshot.restore': 'Restore this snapshot',
+  'snapshot.rename': 'Rename snapshot',
+  'snapshot.delete': 'Delete snapshot',
+  'snapshot.empty': 'No snapshot yet. The + button keeps the current state of the document.',
+  'history.restoreSnapshot': 'Restore snapshot',
 };

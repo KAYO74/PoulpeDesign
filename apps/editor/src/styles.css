@@ -1094,6 +1094,15 @@ h4.sub {
 .history-item.future {
   opacity: 0.45;
 }
+.snapshot-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.snapshot-name {
+  flex: 1;
+  min-width: 0;
+}
 
 /* ——— Barre d'état ——— */
 .statusbar {

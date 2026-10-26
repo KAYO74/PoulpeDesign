@@ -35,6 +35,7 @@ import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
 import { openContentFill } from './photo/contentFill';
 import { exportSlices, sliceFileCount, slicesFromArtboards, slicesFromSelection } from './slices';
+import { takeSnapshot } from './snapshots';
 import { canMeshWarp, openMeshWarp } from './photo/meshWarp';
 import { blendTargets, openBlendRanges } from './components/dialogs/BlendRangesDialog';
 import { toggleQuickMask } from './tools/pixel/quickMask';
@@ -144,6 +145,7 @@ export const COMMANDS = {
     run: () => editor.redo(),
     enabled: () => editor.getState().canRedo,
   },
+  'history.snapshot': { label: 'snapshot.new', run: () => takeSnapshot() },
   'edit.cut': { label: 'edit.cut', shortcut: 'Mod+X', run: A.cutSelection, enabled: hasSel },
   'edit.copy': { label: 'edit.copy', shortcut: 'Mod+C', run: A.copySelection, enabled: hasSel },
   'edit.paste': { label: 'edit.paste', shortcut: 'Mod+V', run: A.paste, enabled: A.hasClipboard },
@@ -645,7 +647,9 @@ export function commandShortcut(id: string): string | undefined {
 
 /** Commandes qu'une macro ne rejoue pas : fichiers, affichage, aide, historique. */
 function recordable(id: string): boolean {
-  return !/^(file|view|help|persona)\.|^macro[:.]/.test(id) && id !== 'edit.undo' && id !== 'edit.redo';
+  return (
+    !/^(file|view|help|persona|history)\.|^macro[:.]/.test(id) && id !== 'edit.undo' && id !== 'edit.redo'
+  );
 }
 
 /**

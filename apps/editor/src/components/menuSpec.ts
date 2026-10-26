@@ -159,6 +159,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
       items: [
         cmd('edit.undo'),
         cmd('edit.redo'),
+        cmd('history.snapshot'),
         sep,
         cmd('edit.cut'),
         cmd('edit.copy'),
