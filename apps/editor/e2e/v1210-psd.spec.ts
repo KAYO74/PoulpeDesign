@@ -55,7 +55,8 @@ test('Fichier › Enregistrer en PSD donne un PSD à calques que Poulpe rouvre t
   );
   page.once('dialog', (d) => void d.accept());
   const chooser = page.waitForEvent('filechooser');
-  await page.keyboard.press('Control+o');
+  await page.getByRole('button', { name: 'Fichier' }).click();
+  await page.getByRole('menuitem', { name: 'Ouvrir…' }).first().click();
   await (
     await chooser
   ).setFiles({ name: 'Projet.psd', mimeType: 'image/vnd.adobe.photoshop', buffer: bytes });
