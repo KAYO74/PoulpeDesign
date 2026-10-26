@@ -2851,6 +2851,13 @@ h4.sub .link {
   font-size: 12px;
   line-height: 1.45;
 }
+.cmd-tip {
+  width: 230px;
+  pointer-events: none;
+}
+.cmd-tip .tool-tip-title {
+  font-size: 13px;
+}
 .tool-tip-title {
   font-size: 15px;
   margin-bottom: 6px;
