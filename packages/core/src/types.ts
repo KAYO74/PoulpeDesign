@@ -56,7 +56,23 @@ export type Paint =
    * Motif : une image répétée. `scale` de la tuile, `angle` en degrés. Origine de la tuile (`x`,
    * `y`) en fractions de la boîte : le coin haut gauche si absente.
    */
-  | { type: 'pattern'; assetId: string; scale: number; angle: number; x?: number; y?: number };
+  | { type: 'pattern'; assetId: string; scale: number; angle: number; x?: number; y?: number }
+  /**
+   * Hachures : traits (`lines`), quadrillage (`cross`) ou points (`dots`) de couleur `color`,
+   * espacés de `spacing` pixels, d'épaisseur `width`, tournés de `angle` degrés. Fond `background`
+   * (transparent si absent).
+   */
+  | {
+      type: 'hatch';
+      style: HatchStyle;
+      color: Color;
+      background?: Color;
+      spacing: number;
+      width: number;
+      angle: number;
+    };
+
+export type HatchStyle = 'lines' | 'cross' | 'dots';
 
 /** Peintures faites de couleurs échelonnées (dégradés). */
 export type GradientPaint = Extract<Paint, { stops: GradientStop[] }>;

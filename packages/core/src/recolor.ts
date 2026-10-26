@@ -38,6 +38,12 @@ function mapPaint(p: Paint, f: Visitor): Paint {
       return { ...p, color: f(p.color) };
     case 'pattern':
       return p;
+    case 'hatch':
+      return {
+        ...p,
+        color: f(p.color),
+        ...(p.background ? { background: f(p.background) } : {}),
+      };
     default:
       return { ...p, stops: p.stops.map((s) => ({ ...s, color: f(s.color) })) };
   }
@@ -70,6 +76,10 @@ export function designColors(target: RecolorTarget): Color[] {
   const paint = (p: Paint) => {
     if (p.type === 'solid') collect(p.color);
     else if (isGradient(p)) p.stops.forEach((s) => collect(s.color));
+    else if (p.type === 'hatch') {
+      collect(p.color);
+      if (p.background) collect(p.background);
+    }
   };
   const visit = (n: SceneNode) => {
     if (n.type === 'group') return n.children.forEach(visit);
