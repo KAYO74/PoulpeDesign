@@ -89,6 +89,10 @@ export const ICON_PATHS = {
   mask: 'M8 2.5a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11z M8 2.5v11',
   folder: 'M1.5 4V3h4.5l1.5 1.5h7v8.5h-13z',
   path: 'M2.5 12.5C4 4 12 12 13.5 3.5 M1.5 11.5h2v2h-2z M12.5 2.5h2v2h-2z',
+  // Bibliothèque photo : planche de vignettes, drapeaux et étoile.
+  photoLibrary: 'M1.5 2.5h5.5v4.5H1.5z M9 2.5h5.5v4.5H9z M1.5 9h5.5v4.5H1.5z M9 9h5.5v4.5H9z',
+  flag: 'M4 14.5V2 M4 2.5h8.5l-2 3 2 3H4',
+  flagReject: 'M4 14.5V2 M4 2.5h8.5l-2 3 2 3H4 M6.5 4l3 3 M9.5 4l-3 3',
   library:
     'M2.5 2.5h4.5v4.5h-4.5z M9 2.5h4.5v4.5H9z M2.5 9h4.5v4.5h-4.5z M11.25 9a2.25 2.25 0 1 1 0 4.5 2.25 2.25 0 0 1 0-4.5z',
   template: 'M2.5 2.5h11v11h-11z M2.5 6.5h11 M6.5 6.5v7',

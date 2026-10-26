@@ -3546,3 +3546,339 @@ h4.sub .link {
 .prefs-section .check {
   color: var(--fg);
 }
+
+/* Bibliothèque photo (comme le module Bibliothèque de Lightroom). */
+.plib {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  gap: 1px;
+  background: var(--line);
+  outline: none;
+}
+.plib.drop .plib-main {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.app.plib-open .contextbar > *,
+.app.plib-open .toolbar > :not(.personas) {
+  visibility: hidden;
+}
+/* La barre de contexte n'a rien à montrer dans la photothèque : sa ligne se replie. */
+.app.plib-open {
+  grid-template-rows: 32px 40px 0 minmax(0, 1fr) 24px;
+}
+.app.plib-open.native-menus {
+  grid-template-rows: 40px 0 minmax(0, 1fr) 24px;
+}
+.plib-side,
+.plib-main,
+.plib-info {
+  background: var(--panel);
+  min-height: 0;
+  overflow: auto;
+}
+.plib-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+}
+.plib-head {
+  margin: 12px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.plib-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding-inline: 8px;
+  border-radius: 6px;
+  color: var(--muted);
+  text-align: left;
+}
+.plib-item > span:nth-child(2) {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plib-item:hover {
+  background: var(--panel-2);
+  color: var(--fg);
+}
+.plib-item[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+.plib-item .num {
+  font-size: 11px;
+  color: var(--faint);
+}
+.plib-hash {
+  width: 16px;
+  text-align: center;
+  color: var(--faint);
+}
+.plib-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.plib-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.plib-search {
+  width: 260px;
+  max-width: 100%;
+}
+.plib-labels {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.plib-label {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--lbl);
+}
+.plib-label[aria-pressed='true'] {
+  border-color: var(--fg);
+}
+.plib-label.all {
+  background: conic-gradient(#e5484d, #f5c84c, #46a758, #3e8ef7, #8e4ec6, #e5484d);
+}
+.plib-label.red,
+.plib-dot.red {
+  --lbl: #e5484d;
+}
+.plib-label.yellow,
+.plib-dot.yellow {
+  --lbl: #f5c84c;
+}
+.plib-label.green,
+.plib-dot.green {
+  --lbl: #46a758;
+}
+.plib-label.blue,
+.plib-dot.blue {
+  --lbl: #3e8ef7;
+}
+.plib-label.purple,
+.plib-dot.purple {
+  --lbl: #8e4ec6;
+}
+.plib-size input {
+  width: 120px;
+}
+.plib-progress {
+  position: relative;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.plib-progress span {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
+}
+.plib-grid {
+  flex: 1;
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  align-content: start;
+}
+.plib-card {
+  border-radius: 8px;
+  padding: 6px;
+  background: var(--panel-2);
+  border: 2px solid transparent;
+  cursor: default;
+  user-select: none;
+}
+.plib-card[aria-selected='true'] {
+  border-color: var(--accent);
+}
+.plib-card.rejected img {
+  opacity: 0.35;
+}
+.plib-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.plib-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.plib-flag,
+.plib-raw {
+  position: absolute;
+  top: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.plib-flag {
+  left: 4px;
+}
+.plib-flag.reject {
+  color: #ff8a8a;
+}
+.plib-raw {
+  right: 4px;
+}
+.plib-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.plib-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lbl);
+  flex: none;
+}
+.plib-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plib-stars {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: -1px;
+}
+.plib-empty {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+.plib-empty p {
+  margin: 0;
+  max-width: 360px;
+}
+.plib-foot {
+  display: flex;
+  gap: 12px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.plib-info {
+  padding: 12px;
+}
+.plib-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.plib-card-info .btn {
+  justify-content: center;
+}
+.plib-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.plib-card-info h3 {
+  margin: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plib-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.plib-star {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--faint);
+}
+.plib-star[aria-pressed='true'] {
+  color: var(--accent);
+}
+.plib-star[aria-pressed='true'] .i path {
+  fill: currentColor;
+}
+.plib-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.plib-keywords .text-input {
+  flex: 1;
+  min-width: 120px;
+}
+.plib-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding-inline: 8px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  font-size: 12px;
+}
+.plib-exif {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.plib-exif div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.plib-exif dt {
+  color: var(--muted);
+}
+.plib-exif dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}

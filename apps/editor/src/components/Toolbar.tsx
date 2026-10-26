@@ -43,7 +43,7 @@ function Toggle({
   );
 }
 
-/** Onglets en haut, comme Affinity : Vectoriel, Pixel, Mise en page, Export. */
+/** Onglets en haut, comme Affinity : Photos, puis Vectoriel, Pixel, Mise en page, Export. */
 const PERSONA_TABS: Persona[] = ['draw', 'photo', 'layout', 'export'];
 const TAB_ICONS: Record<Persona, IconName> = {
   draw: 'tabDraw',
@@ -59,14 +59,26 @@ export function Toolbar() {
   const softProof = useUi((s) => s.softProof);
   const photo = persona === 'photo';
   const custom = useActiveWorkspace();
+  const photoLibrary = useUi((s) => s.photoLibrary);
   return (
     <div className="toolbar" role="toolbar" aria-label="Barre d'outils">
       <div className="personas" role="group" aria-label="Personas">
+        <button
+          className="persona persona-tab"
+          aria-pressed={photoLibrary}
+          title={`${t('plib.open')} (${formatShortcut(commandShortcut('file.photoLibrary') ?? '')})`}
+          aria-label={t('plib.open')}
+          data-testid="persona-library"
+          onClick={() => void runCommand('file.photoLibrary')}
+        >
+          <Icon name="photoLibrary" />
+          <span className="persona-label">{t('tab.library')}</span>
+        </button>
         {PERSONA_TABS.map((p) => (
           <button
             key={p}
             className="persona persona-tab"
-            aria-pressed={!custom && persona === p}
+            aria-pressed={!photoLibrary && !custom && persona === p}
             title={t(`persona.${p}`)}
             aria-label={t(`persona.${p}`)}
             data-testid={`persona-${p}`}

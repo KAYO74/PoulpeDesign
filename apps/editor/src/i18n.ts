@@ -13,6 +13,7 @@ import { enV129, frV129, type MessageKeyV129 } from './i18n-v129';
 import { enV1210, frV1210, type MessageKeyV1210 } from './i18n-v1210';
 import { enPanels, frPanels, type MessageKeyPanels } from './i18n-panels';
 import { enDrop, frDrop, type MessageKeyDrop } from './i18n-drop';
+import { enPhotoLib, frPhotoLib, type MessageKeyPhotoLib } from './i18n-photolib';
 import { enAi, frAi, type MessageKeyAi } from './i18n-ai';
 import { enLiveFilters, frLiveFilters, type MessageKeyLiveFilters } from './i18n-livefilters';
 import { en as en_shapes, fr as fr_shapes } from './tools/shapes/i18n';
@@ -977,6 +978,7 @@ export type MessageKey =
   | MessageKeyV1210
   | MessageKeyPanels
   | MessageKeyDrop
+  | MessageKeyPhotoLib
   | MessageKeyAi
   | MessageKeyLiveFilters;
 
@@ -997,6 +999,7 @@ const en: Record<
     | MessageKeyV1210
     | MessageKeyPanels
     | MessageKeyDrop
+    | MessageKeyPhotoLib
     | MessageKeyAi
     | MessageKeyLiveFilters
   >,
@@ -1940,6 +1943,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frV1210,
     ...frPanels,
     ...frDrop,
+    ...frPhotoLib,
     ...frAi,
     ...frLiveFilters,
     ...fr_shapes,
@@ -1969,6 +1973,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enV1210,
     ...enPanels,
     ...enDrop,
+    ...enPhotoLib,
     ...enAi,
     ...enLiveFilters,
     ...fr_shapes,
