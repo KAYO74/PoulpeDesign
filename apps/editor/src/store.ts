@@ -248,6 +248,8 @@ export interface UiState {
   /** Fichier courant : chemin (bureau) ou nom (navigateur). */
   filePath: string | null;
   dialog: Dialog;
+  /** Bibliothèque photo affichée à la place de la zone de travail. */
+  photoLibrary: boolean;
   /**
    * Petite fenêtre « nouvelle version disponible » : elle s'affiche par-dessus les autres fenêtres
    * (écran d'accueil compris), pour qu'une mise à jour trouvée au démarrage soit toujours proposée.
@@ -348,6 +350,7 @@ export const ui = new Store<UiState>({
   softProof: false,
   filePath: null,
   dialog: null,
+  photoLibrary: false,
   updateOpen: false,
   toast: null,
   cursor: null,

@@ -14,6 +14,7 @@ import { Viewport } from './components/Viewport';
 import { WindowControls } from './components/WindowControls';
 import { useT } from './i18n';
 import { Library } from './panels/Library';
+import { PhotoLibrary } from './photoLibrary/PhotoLibrary';
 import { PagesPanel } from './panels/PagesPanel';
 import { SlicesPanel } from './panels/SlicesPanel';
 import { Studio } from './panels/Studio';
@@ -36,6 +37,7 @@ export function App() {
   const persona = useUi((s) => s.persona);
   const { doc, dirty } = useEditor();
   const libraryW = usePanels((s) => s.libraryW);
+  const photoLibrary = useUi((s) => s.photoLibrary);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -90,7 +92,7 @@ export function App() {
   const name = filePath ? baseName(filePath) : doc.name;
   return (
     <div
-      className={`app${nativeMenus ? ' native-menus' : ''} tools-${settings.toolsSide} studio-${settings.studioSide} persona-${persona}`}
+      className={`app${nativeMenus ? ' native-menus' : ''} tools-${settings.toolsSide} studio-${settings.studioSide} persona-${persona}${photoLibrary ? ' plib-open' : ''}`}
     >
       {!nativeMenus && (
         <header
@@ -149,6 +151,7 @@ export function App() {
         <Studio />
         <ColorWindow />
         <BrushEditor />
+        {photoLibrary && <PhotoLibrary />}
       </main>
       <StatusBar />
       <Dialogs />

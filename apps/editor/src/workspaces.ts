@@ -151,6 +151,8 @@ export function personasOf(ws: Workspace): Persona[] {
 
 /** Revient à une Persona intégrée (Dessin, Photo, Mise en page) et à sa disposition. */
 export function openPersona(persona: Persona): void {
+  // Choisir une Persona quitte la Bibliothèque photo.
+  if (ui.get().photoLibrary) ui.set({ photoLibrary: false });
   if (state.active) {
     const back = state.builtinPanels;
     set({ active: null, builtinPanels: null });
