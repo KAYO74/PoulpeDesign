@@ -36,6 +36,7 @@ import * as LK from './photo/linkedImages';
 import { openContentFill } from './photo/contentFill';
 import { exportSlices, sliceFileCount, slicesFromArtboards, slicesFromSelection } from './slices';
 import { takeSnapshot } from './snapshots';
+import { saveSelectionAsChannel } from './photo/channels';
 import { canMeshWarp, openMeshWarp } from './photo/meshWarp';
 import { blendTargets, openBlendRanges } from './components/dialogs/BlendRangesDialog';
 import { toggleQuickMask } from './tools/pixel/quickMask';
@@ -202,6 +203,7 @@ export const COMMANDS = {
     run: toggleQuickMask,
     enabled: () => ui.get().persona === 'photo',
   },
+  'select.saveChannel': { label: 'channels.save', run: saveSelectionAsChannel, enabled: photoSel },
   'select.fromLayer': {
     label: 'select.fromLayer',
     run: () => {

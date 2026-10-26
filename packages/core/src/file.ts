@@ -108,7 +108,8 @@ const MIGRATIONS: Record<number, (doc: Record<string, unknown>) => Record<string
   // réglage…). Tout est nouveau ou facultatif : rien à convertir.
   6: (doc) => doc,
   // Version 8 : filtres en direct des calques (`filters`), images liées (`link`), plages de
-  // fusion (`blendRanges`), tranches d'export (`slices`). Facultatifs : rien à convertir.
+  // fusion (`blendRanges`), tranches d'export (`slices`), couches alpha (`channels`).
+  // Facultatifs : rien à convertir.
   7: (doc) => doc,
 };
 

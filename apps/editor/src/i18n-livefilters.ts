@@ -1,8 +1,8 @@
 /*
  * Textes des filtres en direct des calques, des objets dynamiques (images liées), du
  * développement RAW, du remplissage d'après le contenu, des plages de fusion et de la
- * déformation en maillage, de la Persona Export et des
- * instantanés.
+ * déformation en maillage, de la Persona Export, des
+ * instantanés et du panneau Couches.
  */
 
 export const frLiveFilters = {
@@ -77,6 +77,20 @@ export const frLiveFilters = {
   'snapshot.delete': 'Supprimer l’instantané',
   'snapshot.empty': 'Aucun instantané. Le bouton + garde l’état actuel du document.',
   'history.restoreSnapshot': 'Retour à un instantané',
+  'studio.channels': 'Couches',
+  'channels.rgb': 'RVB',
+  'channels.red': 'Rouge',
+  'channels.green': 'Vert',
+  'channels.blue': 'Bleu',
+  'channels.alpha': 'Couches alpha',
+  'channels.alphaName': 'Alpha {n}',
+  'channels.load': 'Charger comme sélection (Maj : ajouter, Alt : retirer)',
+  'channels.save': 'Enregistrer la sélection comme couche',
+  'channels.rename': 'Renommer la couche',
+  'channels.delete': 'Supprimer la couche',
+  'channels.empty': 'Aucune couche alpha. Le bouton + enregistre la sélection.',
+  'history.addChannel': 'Nouvelle couche alpha',
+  'history.removeChannel': 'Suppression de la couche',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -152,4 +166,18 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'snapshot.delete': 'Delete snapshot',
   'snapshot.empty': 'No snapshot yet. The + button keeps the current state of the document.',
   'history.restoreSnapshot': 'Restore snapshot',
+  'studio.channels': 'Channels',
+  'channels.rgb': 'RGB',
+  'channels.red': 'Red',
+  'channels.green': 'Green',
+  'channels.blue': 'Blue',
+  'channels.alpha': 'Alpha channels',
+  'channels.alphaName': 'Alpha {n}',
+  'channels.load': 'Load as selection (Shift: add, Alt: subtract)',
+  'channels.save': 'Save selection as channel',
+  'channels.rename': 'Rename channel',
+  'channels.delete': 'Delete channel',
+  'channels.empty': 'No alpha channel. The + button saves the selection.',
+  'history.addChannel': 'New alpha channel',
+  'history.removeChannel': 'Delete channel',
 };

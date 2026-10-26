@@ -274,3 +274,31 @@ test('applique un filtre flou gaussien', async ({ page }) => {
   expect(edge[0]).toBeGreaterThan(0x33 + 10);
   expect(edge[0]).toBeLessThan(0xdd - 10);
 });
+
+test('panneau Couches : enregistre la sélection comme couche alpha et la recharge', async ({ page }) => {
+  await openTestPhoto(page);
+  const hasSel = () => page.evaluate(() => (window as any).poulpe.ui.get().hasPixelSelection);
+  await page.keyboard.press('m');
+  await drag(page, [10, 10], [60, 60]);
+  await page.getByTestId('tab-channels').click();
+  await page.getByTestId('channel-save').click();
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.channels.length)).toBe(1);
+  await page.keyboard.press('Control+d');
+  expect(await hasSel()).toBe(false);
+
+  await page.getByRole('button', { name: 'Alpha 1' }).click();
+  expect(await hasSel()).toBe(true);
+  const box = await page.evaluate(() => {
+    const s = (window as any).poulpe.photo.getSelection();
+    return s && { x: s.x, w: s.canvas.width / s.scale };
+  });
+  expect(box).not.toBeNull();
+
+  // Une couche de couleur se charge aussi comme sélection (d'après sa clarté).
+  await page.keyboard.press('Control+d');
+  await page.getByTestId('channel-r').click();
+  expect(await hasSel()).toBe(true);
+
+  await page.getByRole('button', { name: 'Supprimer la couche' }).click();
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.channels)).toBeUndefined();
+});

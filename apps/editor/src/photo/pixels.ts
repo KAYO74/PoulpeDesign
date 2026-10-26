@@ -104,7 +104,7 @@ export function maskOf(node: SceneNode, doc: PoulpeDocument = editor.doc): HTMLC
 /**
  * Retire les images que plus rien n'utilise : ni comme pixels, ni comme masque, ni comme motif
  * (remplissage ou contour d'un objet, d'un cadre de texte en forme, fond d'un plan de travail,
- * symbole ou style enregistré).
+ * symbole ou style enregistré, couche alpha).
  */
 export function pruneAssets(d: PoulpeDocument): void {
   const used = new Set<string>();
@@ -137,6 +137,7 @@ export function pruneAssets(d: PoulpeDocument): void {
     paint(st.fill);
     strokes(st.stroke, st.strokes);
   }
+  for (const ch of d.channels ?? []) used.add(ch.assetId);
   for (const id of Object.keys(d.assets)) if (!used.has(id)) delete d.assets[id];
 }
 

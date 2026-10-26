@@ -249,6 +249,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('select.grow'),
         cmd('select.shrink'),
         sep,
+        cmd('select.saveChannel'),
         cmd('select.fromLayer'),
         cmd('select.subject'),
         sep,

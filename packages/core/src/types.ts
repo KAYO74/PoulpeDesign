@@ -716,6 +716,22 @@ export interface PoulpeDocument {
   styles?: SavedStyle[];
   /** Tranches de la Persona Export : zones exportées chacune dans un ou plusieurs fichiers. */
   slices?: Slice[];
+  /** Couches alpha (panneau Couches) : sélections enregistrées pour être rechargées plus tard. */
+  channels?: AlphaChannel[];
+}
+
+/**
+ * Couche alpha (Photoshop et Affinity) : une sélection enregistrée dans le document. L'image ne
+ * compte que par son opacité ; elle couvre la zone donnée, en coordonnées du document.
+ */
+export interface AlphaChannel {
+  id: string;
+  name: string;
+  assetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /** Format et taille d'un fichier exporté par une tranche. */

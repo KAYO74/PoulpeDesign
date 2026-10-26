@@ -19,6 +19,7 @@ export const STUDIO_TABS: { id: string; label: MessageKey }[] = [
   { id: 'adjustment', label: 'studio.adjustment' },
   { id: 'histogram', label: 'studio.histogram' },
   { id: 'layers', label: 'studio.layers' },
+  { id: 'channels', label: 'studio.channels' },
   { id: 'history', label: 'studio.history' },
   { id: 'macros', label: 'macro.title' },
 ];
@@ -26,6 +27,7 @@ export const STUDIO_TABS: { id: string; label: MessageKey }[] = [
 const TOP_DRAW = ['color', 'stroke', 'effects', 'transform', 'character'];
 const TOP_PHOTO = ['color', 'brush', 'adjustment', 'histogram', 'effects'];
 const BOTTOM = ['layers', 'history'];
+const BOTTOM_PHOTO = ['layers', 'channels', 'history'];
 const BOTTOM_DRAW = [...BOTTOM, 'macros'];
 
 export type TabsKind = 'draw' | 'photo';
@@ -33,7 +35,7 @@ export const tabsKind = (persona: Persona): TabsKind => (persona === 'photo' ? '
 
 /** Groupes d'origine d'une Persona. */
 export function defaultTabs(kind: TabsKind): StudioTabs {
-  return kind === 'photo' ? { top: TOP_PHOTO, bottom: BOTTOM } : { top: TOP_DRAW, bottom: BOTTOM_DRAW };
+  return kind === 'photo' ? { top: TOP_PHOTO, bottom: BOTTOM_PHOTO } : { top: TOP_DRAW, bottom: BOTTOM_DRAW };
 }
 
 /** Groupe où un panneau va par défaut (celui de la Persona, sinon celui de l'autre Persona). */
