@@ -53,9 +53,10 @@ test('Fichier › Enregistrer en PSD donne un PSD à calques que Poulpe rouvre t
   await page.evaluate(() =>
     (window as any).poulpe.editor.load({ ...(window as any).poulpe.editor.doc, artboards: [] }),
   );
-  page.once('dialog', (d) => void d.accept());
+  // Par le menu : le raccourci clavier se perdait parfois quand la page était chargée (CI).
   const chooser = page.waitForEvent('filechooser');
-  await page.keyboard.press('Control+o');
+  await page.getByRole('button', { name: 'Fichier' }).click();
+  await page.getByRole('menuitem', { name: /^Ouvrir…/ }).click();
   await (
     await chooser
   ).setFiles({ name: 'Projet.psd', mimeType: 'image/vnd.adobe.photoshop', buffer: bytes });
