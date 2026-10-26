@@ -34,6 +34,7 @@ import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
 import { openContentFill } from './photo/contentFill';
+import { canMeshWarp, openMeshWarp } from './photo/meshWarp';
 import { blendTargets, openBlendRanges } from './components/dialogs/BlendRangesDialog';
 import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
@@ -243,6 +244,7 @@ export const COMMANDS = {
   'layer.invertMask': { label: 'layer.invertMask', run: P.invertMask, enabled: P.hasMask },
   'layer.removeMask': { label: 'layer.removeMask', run: P.removeMask, enabled: P.hasMask },
   'layer.rasterize': { label: 'layer.rasterize', run: P.rasterizeSelection, enabled: P.canRasterize },
+  'layer.meshWarp': { label: 'warp.menu', run: openMeshWarp, enabled: canMeshWarp },
   'layer.blendRanges': {
     label: 'blend.menu',
     run: openBlendRanges,

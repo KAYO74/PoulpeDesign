@@ -173,6 +173,28 @@ test("remplit la sélection d'après le contenu, avec aperçu, sur un nouveau ca
   expect((await pixel(page, 1, 20, 20))[3]).toBe(0);
 });
 
+test('déforme le calque en tirant un point de la grille', async ({ page }) => {
+  await openTestPhoto(page);
+  await page.evaluate(() => {
+    const { editor } = (window as any).poulpe;
+    editor.select([editor.doc.artboards[0].children[0].id]);
+  });
+  expect((await pixel(page, 0, 240, 150))[2]).toBeGreaterThan(150);
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Déformation en maillage…' }).click();
+  const c = (await page.getByTestId('warp-canvas').boundingBox())!;
+  // Le point du milieu de la grille 4 × 4 part de 50 px vers la droite.
+  await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(c.x + c.width / 2 + (50 * c.width) / 400, c.y + c.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await page.getByTestId('warp-apply').click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect.poll(() => history(page)).toContain('history.meshWarp');
+  const p = await pixel(page, 0, 240, 150);
+  expect(p[0]).toBeGreaterThan(p[2]);
+});
+
 test('ajoute un calque de réglage et un masque', async ({ page }) => {
   await openTestPhoto(page);
   await page.getByRole('toolbar').getByTestId('add-adjustment').click();

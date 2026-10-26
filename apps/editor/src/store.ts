@@ -129,6 +129,7 @@ export type Dialog =
   | 'raw'
   | 'contentFill'
   | 'blendRanges'
+  | 'meshWarp'
   | 'selectionModify'
   | 'document'
   | 'batch'

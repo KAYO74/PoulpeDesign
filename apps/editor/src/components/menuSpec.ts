@@ -188,6 +188,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
           cmd('layer.removeMask'),
         ]),
         cmd('layer.blendRanges'),
+        cmd('layer.meshWarp'),
         cmd('layer.rasterize'),
         sub(t('menu.smartObject'), [
           cmd('layer.replaceImage'),

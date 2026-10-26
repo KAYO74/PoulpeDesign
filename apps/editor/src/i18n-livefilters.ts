@@ -1,6 +1,7 @@
 /*
  * Textes des filtres en direct des calques, des objets dynamiques (images liées), du
- * développement RAW, du remplissage d'après le contenu et des plages de fusion.
+ * développement RAW, du remplissage d'après le contenu, des plages de fusion et de la
+ * déformation en maillage.
  */
 
 export const frLiveFilters = {
@@ -46,6 +47,12 @@ export const frLiveFilters = {
   'blend.whiteStart': 'début des blancs',
   'blend.whiteEnd': 'fin des blancs',
   'history.blendRanges': 'Plages de fusion',
+  'warp.menu': 'Déformation en maillage…',
+  'warp.title': 'Déformation en maillage',
+  'warp.hint':
+    'Tirez les points de la grille : l’image suit. Choisissez une grille plus fine pour des retouches plus locales.',
+  'warp.grid': 'Grille',
+  'history.meshWarp': 'Déformation en maillage',
 } as const;
 
 export type MessageKeyLiveFilters = keyof typeof frLiveFilters;
@@ -93,4 +100,9 @@ export const enLiveFilters: Record<MessageKeyLiveFilters, string> = {
   'blend.whiteStart': 'highlights start',
   'blend.whiteEnd': 'highlights end',
   'history.blendRanges': 'Blend ranges',
+  'warp.menu': 'Mesh warp…',
+  'warp.title': 'Mesh warp',
+  'warp.hint': 'Drag the grid points: the image follows. Pick a finer grid for more local changes.',
+  'warp.grid': 'Grid',
+  'history.meshWarp': 'Mesh warp',
 };

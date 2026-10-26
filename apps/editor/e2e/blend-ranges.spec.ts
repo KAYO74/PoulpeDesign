@@ -18,7 +18,7 @@ test('le rectangle disparaît sur le fond blanc quand les blancs du dessous sont
   const clip = { x: box.x + 350, y: box.y + 350, width: 10, height: 10 };
   const before = await page.screenshot({ clip });
 
-  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Plages de fusion…' }).click();
   const dialog = page.getByRole('dialog', { name: 'Plages de fusion' });
   await expect(dialog).toBeVisible();

@@ -3231,3 +3231,18 @@ h4.sub .link {
 .blend-range-values {
   color: var(--muted);
 }
+
+/* Déformation en maillage : l'aperçu sur un damier, la grille par-dessus. */
+.warp-stage {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 6px;
+  background: repeating-conic-gradient(var(--line) 0% 25%, transparent 0% 50%) 0 0 / 16px 16px;
+  overflow: auto;
+}
+.warp-canvas {
+  max-width: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}

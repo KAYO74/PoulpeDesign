@@ -59,7 +59,7 @@ test('place une image liée, la met à jour quand le fichier change, puis l’in
   expect(second).toMatchObject({ width: 40, box: first.box, link: { modified: 2000 } });
 
   // Calque › Objet dynamique › Incorporer l'image liée.
-  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Objet dynamique' }).hover();
   await page
     .getByRole('menu', { name: 'Objet dynamique' })
