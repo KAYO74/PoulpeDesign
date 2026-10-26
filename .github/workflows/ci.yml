@@ -76,6 +76,13 @@ jobs:
         run: |
           cargo test --locked
           cargo build --locked --release --target wasm32-unknown-unknown
+      - name: Sécurité des dépendances Rust
+        uses: taiki-e/install-action@cargo-audit
+      - name: Audit des dépendances Rust (failles connues)
+        run: |
+          cargo audit --file apps/desktop/src-tauri/Cargo.lock
+          cargo audit --file crates/poulpe-raw-wasm/Cargo.lock
+          cargo audit --file crates/poulpe-engine-wasm/Cargo.lock
       - name: Tests Rust
         working-directory: apps/desktop/src-tauri
         run: |

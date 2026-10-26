@@ -131,8 +131,17 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        // Garde d'un lancement à l'autre les fichiers et dossiers choisis par l'utilisateur (images liées).
+        .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_process::init())
         .setup(|_app| {
+            // Le fichier ouvert par double-clic est le seul accès au disque donné sans dialogue.
+            if let Some(state) = _app.try_state::<OpenedFile>() {
+                if let Some(path) = state.0.lock().ok().and_then(|slot| slot.clone()) {
+                    use tauri_plugin_fs::FsExt;
+                    let _ = _app.fs_scope().allow_file(&path);
+                }
+            }
             // Mises à jour automatiques : vérifiées et installées depuis l'interface (updater.ts).
             #[cfg(desktop)]
             _app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
@@ -176,6 +185,10 @@ pub fn run() {
         if let tauri::RunEvent::Opened { urls } = &_event {
             for url in urls {
                 if let Ok(path) = url.to_file_path() {
+                    {
+                        use tauri_plugin_fs::FsExt;
+                        let _ = _handle.fs_scope().allow_file(&path);
+                    }
                     let path = path.to_string_lossy().into_owned();
                     if let Some(window) = _handle.get_webview_window("main") {
                         let _ = window.emit("open-file", path.clone());
