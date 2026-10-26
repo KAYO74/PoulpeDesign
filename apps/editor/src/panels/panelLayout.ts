@@ -19,6 +19,15 @@ export type PanelId =
 /** Fenêtre d'un panneau détaché seul de son groupe. */
 export const tabPanel = (tab: string): PanelId => `tab:${tab}`;
 
+/** Les deux groupes d'onglets du Studio. */
+export type StudioGroupId = 'studio-top' | 'studio-bottom';
+
+/** Panneaux de chaque groupe du Studio, dans l'ordre. */
+export interface StudioTabs {
+  top: string[];
+  bottom: string[];
+}
+
 export interface PanelFrame {
   x: number;
   y: number;
@@ -37,6 +46,8 @@ export interface PanelLayout {
   floating: Partial<Record<PanelId, PanelFrame>>;
   /** Ordre d'empilement des fenêtres flottantes (la dernière au premier plan). */
   order: PanelId[];
+  /** Panneaux rangés par l'utilisateur, par type de Persona (absent : groupes d'origine). */
+  tabs: Partial<Record<'draw' | 'photo', StudioTabs>>;
 }
 
 export const PANEL_LIMITS = {
@@ -54,12 +65,13 @@ export const DEFAULT_PANELS: PanelLayout = {
   topH: null,
   floating: {},
   order: [],
+  tabs: {},
 };
 
 function load(): PanelLayout {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<PanelLayout>;
-    return { ...DEFAULT_PANELS, ...saved, floating: { ...saved.floating } };
+    return { ...DEFAULT_PANELS, ...saved, floating: { ...saved.floating }, tabs: { ...saved.tabs } };
   } catch {
     return DEFAULT_PANELS;
   }
@@ -136,7 +148,7 @@ export function raisePanel(id: PanelId): void {
 }
 
 export function resetPanels(): void {
-  panels.set({ ...DEFAULT_PANELS, floating: {}, order: [] });
+  panels.set({ ...DEFAULT_PANELS, floating: {}, order: [], tabs: {} });
 }
 
 /** Redessine les fenêtres flottantes quand la fenêtre de l'appli change de taille. */
@@ -170,6 +182,42 @@ export interface DragOptions {
   size?: { w: number; h: number };
   /** Autre zone où le lâcher ancre le panneau (le groupe d'origine d'un panneau détaché). */
   home?: () => DOMRect | null;
+  /** Panneau seul : lâché sur un groupe du Studio, il y prend place avant l'onglet `before`. */
+  onGroupDrop?: (group: StudioGroupId, before: string | null) => void;
+}
+
+/** Groupe du Studio (ancré ou flottant) sous le pointeur, et l'onglet avant lequel insérer. */
+function groupAt(
+  id: PanelId,
+  x: number,
+  y: number,
+): { group: StudioGroupId; before: string | null; el: HTMLElement } | null {
+  for (const hit of document.elementsFromPoint(x, y)) {
+    if (hit.closest(`[data-testid="float-${id}"]`)) continue;
+    const el = hit.closest<HTMLElement>('[data-group]');
+    if (!el) continue;
+    const group = el.dataset.group as StudioGroupId;
+    const self = id.startsWith('tab:') ? id.slice(4) : null;
+    const tabs = [...el.querySelectorAll<HTMLElement>('[role="tab"][data-tab]')].filter(
+      (b) => b.dataset.tab !== self,
+    );
+    const next = tabs.find((b) => {
+      const r = b.getBoundingClientRect();
+      return x < r.left + r.width / 2;
+    });
+    return { group, before: next?.dataset.tab ?? null, el };
+  }
+  return null;
+}
+
+/** Montre où le panneau va se ranger pendant le glissement. */
+function markDrop(target: ReturnType<typeof groupAt>): void {
+  document.querySelectorAll('.drop-into').forEach((n) => n.classList.remove('drop-into'));
+  document.querySelectorAll('.drop-before').forEach((n) => n.classList.remove('drop-before'));
+  if (!target) return;
+  target.el.classList.add('drop-into');
+  if (target.before)
+    target.el.querySelector(`[role="tab"][data-tab="${target.before}"]`)?.classList.add('drop-before');
 }
 
 function overDock(id: PanelId, opts: DragOptions, x: number, y: number): boolean {
@@ -216,7 +264,9 @@ export function startPanelDrag(
     // Un panneau ancré très large : on garde la poignée sous le pointeur.
     const ox = Math.min(off.x, w - 20);
     floatPanel(id, { x: ev.clientX - ox, y: ev.clientY - off.y, w, h }, false);
-    ui.set({ panelDock: overDock(id, opts, ev.clientX, ev.clientY) ? id : null });
+    const target = opts.onGroupDrop ? groupAt(id, ev.clientX, ev.clientY) : null;
+    markDrop(target);
+    ui.set({ panelDock: !target && overDock(id, opts, ev.clientX, ev.clientY) ? id : null });
   };
   const up = (ev: PointerEvent) => {
     window.removeEventListener('pointermove', move);
@@ -225,7 +275,10 @@ export function startPanelDrag(
     document.body.classList.remove('panel-dragging');
     if (!moved) return;
     ui.set({ panelDock: null });
-    if (ev.type === 'pointerup' && overDock(id, opts, ev.clientX, ev.clientY)) dockPanel(id);
+    markDrop(null);
+    const target = opts.onGroupDrop && ev.type === 'pointerup' ? groupAt(id, ev.clientX, ev.clientY) : null;
+    if (target) opts.onGroupDrop!(target.group, target.before);
+    else if (ev.type === 'pointerup' && overDock(id, opts, ev.clientX, ev.clientY)) dockPanel(id);
     else panels.set({}, true);
     // Le clic qui suit un glissement (s'il a lieu) ne doit pas changer d'onglet.
     const swallow = (c: MouseEvent) => c.stopPropagation();

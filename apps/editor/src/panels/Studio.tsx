@@ -15,7 +15,9 @@ import {
   tabPanel,
   usePanels,
   type PanelId,
+  type StudioGroupId,
 } from './panelLayout';
+import { STUDIO_TABS, currentTabs, defaultTabs, hideTab, moveTab, tabsKind } from './studioTabs';
 import { findNode } from '@poulpe/core';
 import { AdjustmentPanel } from './AdjustmentPanel';
 import { BrushPanel } from './BrushPanel';
@@ -95,14 +97,19 @@ function StudioGroup({
     const x = side === 'left' ? r.right + 24 : r.left - r.width - 24;
     floatPanel(tabPanel(tab), { x, y: r.top + 20, w: r.width, h: Math.max(r.height, 240) });
   };
+  const kind = tabsKind(useUi((s) => s.persona));
+  /** Lâché sur un groupe du Studio, le panneau y prend place (Photoshop, Affinity). */
+  const dropInto = (tab: string) => (group: StudioGroupId, before: string | null) =>
+    moveTab(kind, tab, group, before);
   const tabDown = (e: React.PointerEvent, tab: string) => {
-    // Un groupe d'un seul onglet se déplace tout entier par son onglet.
-    if (tabs.length < 2) return;
+    // Fenêtre d'un panneau seul : son onglet la déplace tout entière.
+    if (home) return;
     e.stopPropagation();
     const r = ref.current!.getBoundingClientRect();
     startPanelDrag(e, tabPanel(tab), e.currentTarget as HTMLElement, {
       size: { w: r.width, h: Math.max(r.height, 240) },
       home: () => homeRect(id),
+      onGroupDrop: dropInto(tab),
     });
   };
   const toggleFloat = (e: React.MouseEvent) => {
@@ -117,13 +124,21 @@ function StudioGroup({
       ref={ref}
       className={`studio-group${open ? ' open' : ''}`}
       data-testid={`studio-${id}`}
+      data-group={home ? undefined : id}
       style={style}
     >
       <header
         className="studio-tabs panel-handle"
         role="tablist"
         title={t(floating ? 'panel.dockHint' : 'panel.floatHint')}
-        onPointerDown={(e) => startPanelDrag(e, id, ref.current, home ? { home: () => homeRect(home) } : {})}
+        onPointerDown={(e) =>
+          startPanelDrag(
+            e,
+            id,
+            ref.current,
+            home ? { home: () => homeRect(home), onGroupDrop: dropInto(tabs[0].id) } : {},
+          )
+        }
         onDoubleClick={toggleFloat}
       >
         <span className="panel-grip" aria-hidden="true" />
@@ -134,10 +149,11 @@ function StudioGroup({
             aria-selected={i === current}
             className="studio-tab"
             data-testid={`tab-${tab.id}`}
-            title={tabs.length > 1 ? t('panel.tabHint') : undefined}
+            data-tab={tab.id}
+            title={home ? undefined : t('panel.tabHint')}
             onClick={() => setActive(tab.id)}
             onPointerDown={(e) => tabDown(e, tab.id)}
-            onDoubleClick={() => (home ? dockPanel(id) : tabs.length > 1 && detachTab(tab.id))}
+            onDoubleClick={() => (home ? dockPanel(id) : detachTab(tab.id))}
           >
             {t(tab.label)}
           </button>
@@ -164,6 +180,18 @@ function StudioGroup({
         >
           <Icon name={open ? 'chevronDown' : 'chevron'} size={12} />
         </button>
+        {home && (
+          <button
+            className="ib small"
+            data-no-drag
+            title={t('panel.close')}
+            aria-label={t('panel.close')}
+            data-testid={`close-${id}`}
+            onClick={() => hideTab(kind, tabs[0].id)}
+          >
+            <Icon name="close" size={12} />
+          </button>
+        )}
       </header>
       {open && (
         <div className="studio-content" role="tabpanel">
@@ -187,64 +215,67 @@ interface GroupDef {
   initial?: number;
 }
 
-const TABS: Record<string, Tab> = {
-  color: { id: 'color', label: 'studio.color', render: () => <ColorPanel /> },
-  stroke: { id: 'stroke', label: 'studio.stroke', render: () => <StrokePanel /> },
-  effects: { id: 'effects', label: 'studio.effects', render: () => <EffectsPanel /> },
-  transform: { id: 'transform', label: 'studio.transform', render: () => <TransformPanel /> },
-  character: { id: 'character', label: 'studio.character', render: () => <CharacterPanel /> },
-  brush: { id: 'brush', label: 'studio.brush', render: () => <BrushPanel /> },
-  adjustment: { id: 'adjustment', label: 'studio.adjustment', render: () => <AdjustmentPanel /> },
-  histogram: { id: 'histogram', label: 'studio.histogram', render: () => <HistogramPanel /> },
-  layers: { id: 'layers', label: 'studio.layers', render: () => <LayersPanel /> },
-  history: { id: 'history', label: 'studio.history', render: () => <HistoryPanel /> },
-  macros: { id: 'macros', label: 'macro.title', render: () => <MacrosPanel /> },
+const RENDER: Record<string, () => React.ReactNode> = {
+  color: () => <ColorPanel />,
+  stroke: () => <StrokePanel />,
+  effects: () => <EffectsPanel />,
+  transform: () => <TransformPanel />,
+  character: () => <CharacterPanel />,
+  brush: () => <BrushPanel />,
+  adjustment: () => <AdjustmentPanel />,
+  histogram: () => <HistogramPanel />,
+  layers: () => <LayersPanel />,
+  history: () => <HistoryPanel />,
+  macros: () => <MacrosPanel />,
 };
 
-const TOP_DRAW = ['color', 'stroke', 'effects', 'transform', 'character'];
-const TOP_PHOTO = ['color', 'brush', 'adjustment', 'histogram', 'effects'];
-const BOTTOM = ['layers', 'history'];
-const BOTTOM_DRAW = [...BOTTOM, 'macros'];
+const TABS: Record<string, Tab> = Object.fromEntries(
+  STUDIO_TABS.map((tab) => [tab.id, { ...tab, render: RENDER[tab.id] }]),
+);
 
 /** Onglets du Studio d'une Persona, dans l'ordre (pour la boîte « Espace de travail »). */
 export function studioTabsFor(persona: Persona): { id: string; label: MessageKey }[] {
-  return [...(persona === 'photo' ? [...TOP_PHOTO, ...BOTTOM] : [...TOP_DRAW, ...BOTTOM_DRAW])].map(
-    (id) => TABS[id],
-  );
+  const def = defaultTabs(tabsKind(persona));
+  return [...def.top, ...def.bottom].map((id) => TABS[id]);
 }
 
 /** Tous les onglets du Studio, toutes Personas confondues (espaces de travail mixtes). */
 export function studioTabsAll(): { id: string; label: MessageKey }[] {
-  return [...TOP_DRAW, ...TOP_PHOTO, ...BOTTOM_DRAW]
-    .filter((id, i, all) => all.indexOf(id) === i)
-    .map((id) => TABS[id]);
+  return STUDIO_TABS;
 }
 
 /** Groupes du Studio de la Persona, et panneaux détachés seuls (avec leur groupe d'origine). */
-function useGroups(): { groups: GroupDef[]; detached: { tab: Tab; home: PanelId }[] } {
+function useGroups(): {
+  groups: GroupDef[];
+  detached: { tab: Tab; home: PanelId }[];
+  empty: PanelId[];
+} {
   const editingText = useUi((s) => s.tool === 'text');
   const persona = useUi((s) => s.persona);
-  const allowed = useActiveWorkspace()?.tabs ?? null;
+  useActiveWorkspace();
   const floating = usePanels((s) => s.floating);
+  const kind = tabsKind(persona);
+  usePanels((s) => s.tabs[kind]);
+  const cur = currentTabs(kind);
   const { doc, selection } = useEditor();
   const adjusting = selection.length === 1 && findNode(doc, selection[0])?.node.type === 'adjustment';
   const detached: { tab: Tab; home: PanelId }[] = [];
   const pick = (ids: string[], home: PanelId) =>
     ids
-      .filter((id) => !allowed || allowed.includes(id))
       .map((id) => TABS[id])
       .filter((tab) => {
+        if (!tab) return false;
         if (!floating[tabPanel(tab.id)]) return true;
         detached.push({ tab, home });
         return false;
       });
-  const photo = persona === 'photo';
+  const photo = kind === 'photo';
   const focus = photo ? (adjusting ? 'adjustment' : null) : editingText ? 'character' : null;
-  const top = pick(photo ? TOP_PHOTO : TOP_DRAW, 'studio-top');
+  const top = pick(cur.top, 'studio-top');
   const groups: GroupDef[] = [
     {
       id: 'studio-top',
-      stateKey: `${photo ? 'photo' : 'draw'}${focus ? `-${focus}` : ''}`,
+      stateKey: `${photo ? 'photo' : 'draw'}${focus && top.some((tab) => tab.id === focus) ? `-${focus}` : ''}`,
       initial: Math.max(
         0,
         top.findIndex((tab) => tab.id === focus),
@@ -254,15 +285,19 @@ function useGroups(): { groups: GroupDef[]; detached: { tab: Tab; home: PanelId 
     {
       id: 'studio-bottom',
       stateKey: photo ? 'layers' : 'layers-draw',
-      tabs: pick(photo ? BOTTOM : BOTTOM_DRAW, 'studio-bottom'),
+      tabs: pick(cur.bottom, 'studio-bottom'),
     },
   ];
-  return { groups: groups.filter((g) => g.tabs.length > 0), detached };
+  return {
+    groups: groups.filter((g) => g.tabs.length > 0),
+    detached,
+    empty: groups.filter((g) => g.tabs.length === 0).map((g) => g.id),
+  };
 }
 
 export function Studio() {
   const t = useT();
-  const { groups, detached } = useGroups();
+  const { groups, detached, empty } = useGroups();
   const side = useUi((s) => s.settings.studioSide);
   const dropping = useUi((s) => s.panelDock !== null && s.panelDock !== 'tools');
   const floating = usePanels((s) => s.floating);
@@ -272,6 +307,12 @@ export function Studio() {
   const docked = groups.filter((g) => !floating[g.id]);
   const loose = groups.filter((g) => floating[g.id]);
   const both = docked.length === 2;
+  /** Groupe vidé de ses panneaux : une place où en déposer un. */
+  const emptyGroup = (g: PanelId) => (
+    <div key={g} className="studio-empty" data-group={g} data-testid={`empty-${g}`}>
+      {t('panel.dropHere')}
+    </div>
+  );
   return (
     <>
       {docked.length > 0 && (
@@ -282,6 +323,7 @@ export function Studio() {
           data-testid="studio"
           style={{ width }}
         >
+          {empty.includes('studio-top') && emptyGroup('studio-top')}
           {docked.map((g, i) => [
             i === 1 && (
               <div
@@ -319,6 +361,7 @@ export function Studio() {
               }
             />,
           ])}
+          {empty.includes('studio-bottom') && emptyGroup('studio-bottom')}
           <div
             className={`split-h ${side === 'right' ? 'at-left' : 'at-right'}`}
             role="separator"
