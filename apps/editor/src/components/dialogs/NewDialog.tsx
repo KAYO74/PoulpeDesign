@@ -5,7 +5,7 @@ import { useT } from '../../i18n';
 import { newDocument, openDocument, openPhoto } from '../../io';
 import { newFromTemplate } from '../../libraryActions';
 import { TemplateCard } from '../../panels/Library';
-import { setSettings, useUi } from '../../store';
+import { setSettings, ui, useUi } from '../../store';
 import { MyTemplates } from './MyTemplates';
 import { NumberField } from '../fields';
 import { Icon } from '../Icon';
@@ -59,6 +59,13 @@ export function NewDialog() {
             </button>
           ))}
           <span className="spacer" />
+          <button
+            onClick={() => ui.set({ dialog: null, photoLibrary: true })}
+            data-testid="welcome-photo-library"
+          >
+            <Icon name="photoLibrary" />
+            {t('plib.open')}
+          </button>
           <button onClick={() => void openPhoto()} data-testid="welcome-open-photo">
             <Icon name="photo" />
             {t('new.openPhoto')}
