@@ -3,8 +3,8 @@
  */
 
 export const frPhotoLib = {
-  'plib.title': 'Bibliothèque photo',
-  'plib.open': 'Bibliothèque photo',
+  'plib.title': 'Photothèque',
+  'plib.open': 'Photothèque',
   'plib.close': 'Retour au document',
   'plib.import': 'Importer des photos…',
   'plib.importFolder': 'Importer un dossier…',
@@ -76,8 +76,8 @@ export const frPhotoLib = {
 export type MessageKeyPhotoLib = keyof typeof frPhotoLib;
 
 export const enPhotoLib: Record<MessageKeyPhotoLib, string> = {
-  'plib.title': 'Photo library',
-  'plib.open': 'Photo library',
+  'plib.title': 'Photos',
+  'plib.open': 'Photos',
   'plib.close': 'Back to the document',
   'plib.import': 'Import photos…',
   'plib.importFolder': 'Import a folder…',

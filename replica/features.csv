@@ -23,7 +23,7 @@ Remplissage génératif (IA en ligne),Photo,skip,Photoshop Generative Fill,no,se
 Bibliothèques Adobe / Stock,Ressources,skip,Adobe Stock / CC Libraries,no,contenu sous licence et service cloud
 Format .afphoto/.afdesign,Fichiers,skip,Affinity,no,format fermé; passer par PSD
 Polices et pinceaux propriétaires,Ressources,skip,les deux,no,licences; .abr importable par l'utilisateur
-Bibliothèque photo (catalogue),Photo,must,Lightroom Library,yes,"vue Bibliothèque photo : import fichiers/dossier, étoiles, drapeaux, couleurs, mots-clés, EXIF, filtres"
+Photothèque (catalogue),Photo,must,Lightroom Library,yes,"vue Photothèque : import fichiers/dossier, étoiles, drapeaux, couleurs, mots-clés, EXIF, filtres"
 Retouche par lot et préréglages,Photo,should,Lightroom Sync settings / Presets,no,
 Retouches locales en Développement,Photo,should,Lightroom Masking,no,pinceau + dégradés + sujet/ciel
 Avant/après en une touche,Photo,should,Lightroom \ (backslash),no,
