@@ -80,7 +80,9 @@ jobs:
         uses: taiki-e/install-action@cargo-audit
       - name: Audit des dépendances Rust (failles connues)
         run: |
-          cargo audit --file apps/desktop/src-tauri/Cargo.lock
+          # zip 4.x ne sert qu'à l'extracteur de mises à jour de Tauri, après vérification de la signature
+          # (aucun zip d'origine inconnue n'est ouvert) : à lever dès que tauri-plugin-updater passe à zip 9.
+          cargo audit --file apps/desktop/src-tauri/Cargo.lock --ignore RUSTSEC-2026-0367 --ignore RUSTSEC-2026-0368 --ignore RUSTSEC-2026-0369
           cargo audit --file crates/poulpe-raw-wasm/Cargo.lock
           cargo audit --file crates/poulpe-engine-wasm/Cargo.lock
       - name: Tests Rust
