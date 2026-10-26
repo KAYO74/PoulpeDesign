@@ -32,6 +32,7 @@ import { canCutout, removeBackground, selectSubject } from './smart/cutout';
 import { canVectorize } from './smart/vectorize';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
+import * as LK from './photo/linkedImages';
 import { toggleQuickMask } from './tools/pixel/quickMask';
 import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
@@ -106,6 +107,11 @@ export const COMMANDS = {
   'file.saveAs': { label: 'file.saveAs', shortcut: 'Mod+Shift+S', run: () => void saveDocument(true) },
   'file.saveAsPsd': { label: 'file.saveAsPsd', run: () => void savePsdDocument() },
   'file.importImage': { label: 'file.importImage', shortcut: 'Mod+Shift+I', run: () => void importImage() },
+  'file.placeLinked': {
+    label: 'link.place',
+    run: () => LK.placeLinkedImage(),
+    enabled: LK.canPlaceLinked,
+  },
   'file.openPhoto': { label: 'file.openPhoto', shortcut: 'Mod+Alt+O', run: () => void openPhoto() },
   'file.export': { label: 'file.export', shortcut: 'Mod+Shift+E', run: () => ui.set({ dialog: 'export' }) },
   'file.saveTemplate': { label: 'mytpl.save', run: () => ui.set({ dialog: 'saveTemplate' }) },
@@ -235,6 +241,13 @@ export const COMMANDS = {
   'layer.invertMask': { label: 'layer.invertMask', run: P.invertMask, enabled: P.hasMask },
   'layer.removeMask': { label: 'layer.removeMask', run: P.removeMask, enabled: P.hasMask },
   'layer.rasterize': { label: 'layer.rasterize', run: P.rasterizeSelection, enabled: P.canRasterize },
+  'layer.replaceImage': { label: 'link.replace', run: () => LK.replaceImage(), enabled: LK.canReplaceImage },
+  'layer.embedImage': { label: 'link.embed', run: LK.embedImages, enabled: LK.canEmbedImage },
+  'layer.updateLinks': {
+    label: 'link.update',
+    run: () => LK.updateLinkedImages(true),
+    enabled: LK.hasLinkedImages,
+  },
   'image.vectorize': {
     label: 'image.vectorize',
     run: () => ui.set({ dialog: 'vectorize' }),

@@ -997,6 +997,12 @@ h4.sub {
 .layer.hidden .layer-name {
   opacity: 0.5;
 }
+/* Image liée : petit maillon devant le nom. */
+.layer-link {
+  display: inline-flex;
+  color: var(--muted);
+  margin-right: 4px;
+}
 /* Filtre en direct, sous son calque. */
 .layer.filter .layer-name {
   font-style: italic;

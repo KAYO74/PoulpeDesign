@@ -221,6 +221,15 @@ const NodeRow = memo(function NodeRow({
           />
         </span>
         {n.mask && <MaskThumb node={n} active={maskActive} onClick={() => {}} />}
+        {n.type === 'image' && n.link && (
+          <span
+            className="layer-link"
+            title={t('link.badge', { path: n.link.path })}
+            data-testid={`layer-link-${n.id}`}
+          >
+            <Icon name="link" size={12} />
+          </span>
+        )}
         {renaming ? (
           <input
             className="rename"

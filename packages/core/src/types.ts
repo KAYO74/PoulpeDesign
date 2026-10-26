@@ -466,6 +466,18 @@ export interface ImageNode extends NodeBase {
   assetId: string;
   /** Partie de l'image affichée dans la boîte de l'objet. Absent : l'image entière. */
   crop?: Crop;
+  /**
+   * Image liée (objet dynamique lié) : le fichier d'origine sur le disque. L'image reste aussi
+   * incorporée au document ; elle est relue quand le fichier change. Absent : image incorporée.
+   */
+  link?: ImageLink;
+}
+
+export interface ImageLink {
+  /** Chemin du fichier sur le disque. */
+  path: string;
+  /** Date de modification du fichier lors de la dernière lecture (ms depuis 1970). */
+  modified?: number;
 }
 
 /**

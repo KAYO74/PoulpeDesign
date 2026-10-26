@@ -26,6 +26,7 @@ import {
   type Artboard,
   type Cmyk,
   type Paint,
+  type ImageLink,
   type PoulpeDocument,
   type SceneNode,
   type TextStyle,
@@ -392,14 +393,23 @@ export function placeImage(
   width: number,
   height: number,
   at?: { x: number; y: number },
+  link?: ImageLink,
 ): void {
   const doc = editor.doc;
   const assetId = newId('img');
+  /** Image liée : le lien est posé sur l'objet créé, dans la même étape d'historique. */
+  const linkTo = (d: PoulpeDocument, id: string | null | undefined) => {
+    const n = id && link ? findNode(d, id)?.node : null;
+    // Dans un cadre d'image, l'objet trouvé est le cadre : l'image est un de ses enfants.
+    const img = n?.type === 'group' ? n.children.find((c) => c.type === 'image' && c.assetId === assetId) : n;
+    if (img?.type === 'image') img.link = link;
+  };
   const frame = frameTarget(doc, at);
   if (frame) {
     editor.apply('history.image', (d) => {
       d.assets[assetId] = { id: assetId, mime, width, height, data };
       const id = fillFrame(frame, assetId, width, height, d);
+      linkTo(d, id);
       return id ? [id] : undefined;
     });
     ui.set({ tool: 'select' });
@@ -420,6 +430,7 @@ export function placeImage(
     assetId,
     name: t('name.image'),
   });
+  if (link) node.link = link;
   editor.apply('history.image', (d) => {
     d.assets[assetId] = { id: assetId, mime, width, height, data };
     findArtboard(d, ab.id)!.children.push(node);

@@ -107,7 +107,8 @@ const MIGRATIONS: Record<number, (doc: Record<string, unknown>) => Record<string
   // Version 7 : outils photo et vectoriels avancés (tables LUT, modes de fusion des calques de
   // réglage…). Tout est nouveau ou facultatif : rien à convertir.
   6: (doc) => doc,
-  // Version 8 : filtres en direct des calques (`filters`). Facultatifs : rien à convertir.
+  // Version 8 : filtres en direct des calques (`filters`), images liées (`link`). Facultatifs :
+  // rien à convertir.
   7: (doc) => doc,
 };
 

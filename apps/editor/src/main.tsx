@@ -21,6 +21,7 @@ import { normalizeTables } from './tools/frames/tableActions';
 import * as frames from './tools/frames/actions';
 import * as textFlow from './tools/textFlow/actions';
 import * as prefs from './preferences';
+import * as linked from './photo/linkedImages';
 import { artboardToSvg } from '@poulpe/core';
 import { getPerformanceSettings, renderStats, setPerformanceSettings } from './perf';
 import { editor, ui } from './store';
@@ -52,6 +53,7 @@ if (isDesktop() || location.search.includes('bench'))
   void import('./bench').then((b) => b.maybeRunBenchmark(isDesktop()));
 
 if (isDesktop()) {
+  linked.watchLinkedImages();
   // Sur Mac, les menus passent dans la barre du haut de l'écran, à côté de la pomme.
   if (isMac) void import('./nativeMenu').then((m) => m.installMacMenu());
   // Fichier passé au lancement (double-clic sur un .poulpe) ou ouvert pendant que l'appli tourne.
@@ -80,6 +82,7 @@ if (isDesktop()) {
   engine: { start: startRustEngine },
   loadBenchDocument: (count: number) => import('./bench').then((b) => editor.load(b.benchDocument(count))),
   photo: { ...photo, ...pixelSelection, ...retouch, openPhotoBytes },
+  links: linked,
   prefs,
   offerUpdate: (found: { version: string; current: string; notes?: string }) =>
     import('./updater').then((u) => u.offerUpdate(found)),
