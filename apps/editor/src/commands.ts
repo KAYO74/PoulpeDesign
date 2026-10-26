@@ -611,6 +611,11 @@ export const COMMANDS = {
     shortcut: 'Mod+/',
     run: () => ui.set({ dialog: 'shortcuts' }),
   },
+  'help.search': {
+    label: 'help.search',
+    shortcut: 'Mod+K',
+    run: () => ui.set({ dialog: 'palette' }),
+  },
   'help.about': { label: 'help.about', run: () => ui.set({ dialog: 'about' }) },
   'help.checkUpdates': {
     label: 'help.checkUpdates',
