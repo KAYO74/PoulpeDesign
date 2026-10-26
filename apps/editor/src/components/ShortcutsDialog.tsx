@@ -10,7 +10,9 @@ import {
 } from '../commands';
 import { getLang, useT } from '../i18n';
 import { eventToShortcut, isCustomized, resetShortcut, setShortcut, useShortcuts } from '../shortcuts';
-import { toast, ui } from '../store';
+import { setSettings, toast, ui, useUi } from '../store';
+import { KEY_PRESETS } from '../toolKeyPresets';
+import { Select } from './fields';
 import { Modal } from './Dialogs';
 
 const close = () => ui.set({ dialog: null });
@@ -38,6 +40,7 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
   const [query, setQuery] = useState('');
   const [capturing, setCapturing] = useState<string | null>(null);
   const persona = ui.get().persona;
+  const settings = useUi((s) => s.settings);
   const tools = toolKeysFor(persona);
 
   const version = useSyncExternalStore(subscribeCommands, commandsVersion);
@@ -98,6 +101,17 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
   return (
     <>
       <p className="note">{t('shortcuts.hint')}</p>
+      {!only && (
+        <div className="picker-row">
+          <Select
+            label={t('shortcuts.preset')}
+            testId="key-preset"
+            value={settings.keyPreset}
+            onChange={(v) => setSettings({ keyPreset: v })}
+            options={KEY_PRESETS.map((p) => ({ value: p, label: t(`shortcuts.preset.${p}`) }))}
+          />
+        </div>
+      )}
       {!only && (
         <div className="picker-row">
           <input
