@@ -3546,3 +3546,25 @@ h4.sub .link {
 .prefs-section .check {
   color: var(--fg);
 }
+
+/* ——— Nouveautés ——— */
+.whats-new {
+  max-height: 55vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.whats-new h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+.whats-new ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.whats-new li::marker {
+  color: var(--accent);
+}

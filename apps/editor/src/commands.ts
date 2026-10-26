@@ -607,6 +607,7 @@ export const COMMANDS = {
     run: () => ui.set({ dialog: 'shortcuts' }),
   },
   'help.about': { label: 'help.about', run: () => ui.set({ dialog: 'about' }) },
+  'help.whatsNew': { label: 'help.whatsNew', run: () => ui.set({ whatsNewOpen: true }) },
   'help.checkUpdates': {
     label: 'help.checkUpdates',
     run: () => void checkForUpdates(),

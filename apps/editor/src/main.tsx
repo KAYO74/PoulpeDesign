@@ -48,6 +48,7 @@ void loadSystemFonts();
 // La langue d'abord (installeur ou premier lancement), puis le brouillon ou l'écran d'accueil.
 void chooseStartLanguage().then(startDrafts);
 void import('./updater').then((u) => u.startUpdateChecks());
+void import('./whatsNew').then((w) => w.startWhatsNew());
 void import('./extensions/host').then((x) => x.startExtensions());
 if (isDesktop() || location.search.includes('bench'))
   void import('./bench').then((b) => b.maybeRunBenchmark(isDesktop()));
