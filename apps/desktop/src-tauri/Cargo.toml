@@ -19,6 +19,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+tauri-plugin-persisted-scope = "2"
 tauri-plugin-process = "2"
 fontdb = "0.23"
 # Moteur de calcul des images (carte graphique via wgpu, ou tous les cœurs du processeur).
