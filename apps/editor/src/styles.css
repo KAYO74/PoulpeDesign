@@ -3882,3 +3882,68 @@ h4.sub .link {
   text-align: right;
   overflow-wrap: anywhere;
 }
+
+/* Recherche de commande (Ctrl+K). */
+.palette-input {
+  height: 36px;
+  font-size: 14px;
+}
+.palette-list {
+  max-height: min(50vh, 420px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding-inline: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  flex: none;
+}
+.palette-item[aria-selected='true'] {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+.palette-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg);
+}
+.palette-kind {
+  font-size: 11px;
+  color: var(--faint);
+}
+.palette-dot {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  position: relative;
+}
+.palette-dot::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.palette-item kbd {
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.palette-none {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+}
