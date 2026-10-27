@@ -172,6 +172,7 @@ const fr = {
   'help.about': 'À propos de Poulpe Design',
   'help.aboutText': 'Poulpe Design {version}, application libre de création graphique sous licence MPL-2.0.',
 
+  'toolbar.label': 'Barre d’outils',
   'persona.draw': 'Dessin',
   'persona.photo': 'Photo',
 
@@ -1160,6 +1161,7 @@ const en: Record<
   'help.about': 'About Poulpe Design',
   'help.aboutText': 'Poulpe Design {version}, a free graphic design app under the MPL-2.0 license.',
 
+  'toolbar.label': 'Toolbar',
   'persona.draw': 'Draw',
   'persona.photo': 'Photo',
 

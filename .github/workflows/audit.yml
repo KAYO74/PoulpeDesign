@@ -1,0 +1,30 @@
+name: Audit de sécurité
+
+# Chaque lundi : les failles connues peuvent apparaître sans qu'aucun code ne change.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Failles connues (JavaScript et Rust)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Dépendances JavaScript
+        run: pnpm audit --prod --audit-level high
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-audit
+      - name: Dépendances Rust
+        run: |
+          # zip 4.x ne sert qu'à l'extracteur de mises à jour de Tauri (même exception que dans ci.yml).
+          cargo audit --file apps/desktop/src-tauri/Cargo.lock --ignore RUSTSEC-2026-0367 --ignore RUSTSEC-2026-0368 --ignore RUSTSEC-2026-0369
+          cargo audit --file crates/poulpe-raw-wasm/Cargo.lock
+          cargo audit --file crates/poulpe-engine-wasm/Cargo.lock
