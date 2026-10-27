@@ -821,7 +821,7 @@ svg.i {
   flex: none;
   /* Beaucoup d'onglets (Persona Photo) : ils défilent au lieu d'être coupés. */
   overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 .studio-tab {
   flex: none;

@@ -180,6 +180,8 @@ test('la langue et le thème se règlent seulement dans les Préférences', asyn
   await page.getByTestId('prefs-tab-general').click();
   await choose(page.getByTestId('prefs-language'), 'en');
   await expect(page.getByRole('dialog', { name: 'Preferences' })).toBeVisible();
+  // Le document de départ, intact, prend le nom de la nouvelle langue.
+  expect(await page.evaluate(() => (window as any).poulpe.editor.doc.artboards[0].name)).toBe('Artboard 1');
   await page.reload();
   await expect(page.getByRole('button', { name: 'File' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
