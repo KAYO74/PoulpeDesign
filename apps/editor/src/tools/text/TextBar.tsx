@@ -2,6 +2,7 @@ import { memo, type ReactNode } from 'react';
 import { isLinked, type TextNode, type TextStyle } from '@poulpe/core';
 import { setTextStyle } from '../../actions';
 import { commandShortcut, formatShortcut } from '../../commands';
+import { FontPicker } from '../../components/FontPicker';
 import { NumberField, Select, paintPreview } from '../../components/fields';
 import { Icon, type IconName } from '../../components/Icon';
 import { useFonts } from '../../fonts';
@@ -171,10 +172,10 @@ const ControlsView = memo(function ControlsView({ snapshot }: { snapshot: string
   );
   return (
     <>
-      <Select
+      <FontPicker
         label={t('char.font')}
         value={st.fontFamily}
-        options={families.map((f) => ({ value: f, label: f }))}
+        fonts={families}
         onChange={(f) => setTextStyle({ fontFamily: f })}
         width={150}
         testId="text-font"

@@ -77,3 +77,43 @@ export function useFonts(): string[] {
 }
 
 export const WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+
+export type FontCategory = 'serif' | 'sans' | 'script' | 'mono';
+
+const CATEGORY: Record<string, FontCategory> = {
+  Inter: 'sans',
+  Montserrat: 'sans',
+  'Playfair Display': 'serif',
+  Lora: 'serif',
+  Oswald: 'sans',
+  'Bricolage Grotesque': 'sans',
+  Pacifico: 'script',
+  Arial: 'sans',
+  Georgia: 'serif',
+  'Times New Roman': 'serif',
+  'Courier New': 'mono',
+  Verdana: 'sans',
+  'Trebuchet MS': 'sans',
+};
+
+/** Famille d'une police : connue pour celles de Poulpe, devinée d'après le nom pour les autres. */
+export function fontCategory(name: string): FontCategory {
+  if (CATEGORY[name]) return CATEGORY[name];
+  const n = name.toLowerCase();
+  if (/mono|courier|consol|typewriter|code/.test(n)) return 'mono';
+  if (/script|hand|brush|callig|cursive|marker|signature|chancery|pacifico/.test(n)) return 'script';
+  if (/sans|gothic|grotesk|grotesque/.test(n)) return 'sans';
+  if (
+    /serif|times|georgia|garamond|palatino|book|roman|minion|didot|baskerville|cambria|bodoni|caslon|slab|merriweather|lora|playfair/.test(
+      n,
+    )
+  )
+    return 'serif';
+  return 'sans';
+}
+
+/** Vrai si la police a une graisse « gras » : celles de Poulpe (sauf Pacifico), ou un nom qui l'annonce. */
+export function fontHasBold(name: string): boolean {
+  if (BUNDLED_FONTS.includes(name)) return name !== 'Pacifico';
+  return /bold|black|heavy|semibold|demi|extra|arial|georgia|times|verdana|trebuchet|courier/i.test(name);
+}

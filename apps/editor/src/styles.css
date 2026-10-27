@@ -4082,3 +4082,61 @@ h4.sub .link {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
+/* Choix de la police (FontPicker) : recherche, filtres, noms écrits dans leur police. */
+.font-pop {
+  z-index: 60;
+  width: 300px;
+  max-height: var(--radix-popover-content-available-height);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px #0006;
+}
+.font-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.font-filters .font-chip {
+  flex: none;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.font-filters .font-chip[aria-pressed='true'] {
+  color: var(--fg);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.font-list {
+  flex: 1;
+  min-height: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.font-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 16px;
+  text-align: left;
+  border-radius: 6px;
+  cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 34px;
+}
+.font-opt:hover,
+.font-opt[aria-selected='true'] {
+  background: var(--hover, #ffffff12);
+}
