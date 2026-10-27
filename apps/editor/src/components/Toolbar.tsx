@@ -93,7 +93,7 @@ export function Toolbar() {
   const custom = useActiveWorkspace();
   const photoLibrary = useUi((s) => s.photoLibrary);
   return (
-    <div className="toolbar" role="toolbar" aria-label="Barre d'outils">
+    <div className="toolbar" role="toolbar" aria-label={t('toolbar.label')}>
       <div className="personas" role="group" aria-label="Personas">
         <button
           className="persona persona-tab"

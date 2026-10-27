@@ -196,6 +196,7 @@ test('le moteur Rust est chargé et la carte graphique se choisit', async ({ pag
   await gpu.click();
   await expect(page.getByRole('menuitemradio')).toHaveCount(4);
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toBeHidden();
   await choose(gpu, 'cpu');
   expect(await page.evaluate(() => (window as any).poulpe.prefs.getPerf().hardwareAcceleration)).toBe(false);
   // Dans le navigateur, l'interface graphique et la mémoire vidéo sont réglées par l'appli de bureau.

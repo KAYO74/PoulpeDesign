@@ -87,9 +87,13 @@ test('habillage : un rectangle posé sur un cadre repousse son texte des deux c�
   const r = { x0: wrapped.x - frame.x - 10, x1: wrapped.x + wrapped.width - frame.x + 10 };
   const top = wrapped.y - frame.y - 10,
     bottom = wrapped.y + wrapped.height - frame.y + 10;
-  const lines = (await flow(page, frame.id))[0].lines;
-  const beside = lines.filter((l: AnyNode) => l.top + l.height > top && l.top < bottom);
-  expect(beside.length).toBeGreaterThan(4);
+  const besideLines = async () =>
+    ((await flow(page, frame.id))[0].lines as AnyNode[]).filter(
+      (l: AnyNode) => l.top + l.height > top && l.top < bottom,
+    );
+  // Le texte se remet en forme un instant après le réglage : on attend que les lignes soient là.
+  await expect.poll(async () => (await besideLines()).length).toBeGreaterThan(4);
+  const beside = await besideLines();
   for (const l of beside) expect(l.right <= r.x0 + 0.01 || l.left >= r.x1 - 0.01).toBe(true);
   expect(beside.some((l: AnyNode) => l.left >= r.x1 - 0.01)).toBe(true);
 
@@ -251,7 +255,12 @@ test('réglages du cadre : marges intérieures et texte en trop masqué', async 
   expect((await nodes(page))[0].insets).toEqual([20, 20, 20, 60]);
   // Sans sélection, le « + » rouge signale le texte en trop, sauf s'il est masqué.
   const marks = () =>
-    page.evaluate(() => (window as any).poulpe.controller().overflowMarks.map((m: AnyNode) => m.id));
+    page.evaluate(() => {
+      // Les repères sont calculés au dessin : on le force, sans attendre le prochain.
+      const c = (window as any).poulpe.controller();
+      c.draw();
+      return c.overflowMarks.map((m: AnyNode) => m.id);
+    });
   await page.evaluate(() => (window as any).poulpe.editor.select([]));
   await expect.poll(marks).toContain(frame.id);
   await page.evaluate((id) => (window as any).poulpe.editor.select([id]), frame.id);
