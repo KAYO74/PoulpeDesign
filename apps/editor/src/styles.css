@@ -4062,3 +4062,11 @@ h4.sub .link {
   text-align: center;
   color: var(--muted);
 }
+.shortcut-section {
+  margin: 14px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
