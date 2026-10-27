@@ -46,16 +46,29 @@ export function RawDialog() {
   const [locals, setLocals] = useState<LocalAdjust[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [size, setSize] = useState({ w: 4, h: 3 });
+  const [before, setBefore] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const current = locals.find((l) => l.id === active) ?? null;
   const patch = (id: string, p: Partial<LocalAdjust>) =>
     setLocals((list) => list.map((l) => (l.id === id ? { ...l, ...p } : l)));
 
+  // « \ » (comme Lightroom) bascule entre la photo réglée et la photo d'origine.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== '\\' || e.ctrlKey || e.metaKey || e.altKey) return;
+      if ((e.target as HTMLElement).closest('input:not([type="range"]), textarea')) return;
+      e.preventDefault();
+      setBefore((b) => !b);
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, []);
+
   useEffect(() => {
     if (!photo) return;
     const id = requestAnimationFrame(() => {
-      const img = applyLocals(photo.render(s, 900), locals);
+      const img = before ? photo.render(DEFAULT_DEVELOP, 900) : applyLocals(photo.render(s, 900), locals);
       const c = canvas.current;
       if (!c) return;
       c.width = img.width;
@@ -64,7 +77,7 @@ export function RawDialog() {
       setSize((old) => (old.w === img.width && old.h === img.height ? old : { w: img.width, h: img.height }));
     });
     return () => cancelAnimationFrame(id);
-  }, [photo, s, locals]);
+  }, [photo, s, locals, before]);
 
   /** Glisser sur l'aperçu place le masque du réglage local choisi. */
   const drag = (e: React.PointerEvent) => {
@@ -133,6 +146,7 @@ export function RawDialog() {
               </svg>
             )}
           </div>
+          {before && <span className="raw-badge">{t('raw.before')}</span>}
         </div>
         <div className="raw-params">
           <p className="note">
@@ -148,6 +162,15 @@ export function RawDialog() {
           ))}
           <button className="btn small" onClick={() => setS(DEFAULT_DEVELOP)}>
             {t('param.reset')}
+          </button>
+          <button
+            className="btn small"
+            aria-pressed={before}
+            title={t('raw.beforeAfterHint')}
+            data-testid="raw-before-after"
+            onClick={() => setBefore((b) => !b)}
+          >
+            {t('raw.beforeAfter')}
           </button>
           <div className="raw-copy">
             <button
