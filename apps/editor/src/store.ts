@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useSyncExternalStore } from 'react';
-import { t } from './i18n';
+import { subscribeLang, t } from './i18n';
 import type { PanelId } from './panels/panelLayout';
 import {
   Editor,
@@ -325,6 +325,17 @@ export function starterDocument(): PoulpeDocument {
 }
 
 export const editor = new Editor(starterDocument());
+
+/** Changer de langue renomme le document de départ tant qu'on n'y a pas touché. */
+let starterNames = starterDocument().name + starterDocument().artboards[0].name;
+subscribeLang(() => {
+  const { doc, canUndo, dirty } = editor.getState();
+  const fresh = starterDocument();
+  if (!canUndo && !dirty && doc.artboards.length === 1 && doc.name + doc.artboards[0].name === starterNames) {
+    editor.load(fresh, { unsaved: false });
+  }
+  starterNames = fresh.name + fresh.artboards[0].name;
+});
 
 export const ui = new Store<UiState>({
   persona: 'draw',
