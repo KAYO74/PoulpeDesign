@@ -13,6 +13,23 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.5.0',
+    fr: [
+      'Photothèque : classez et retouchez vos photos RAW, style Lightroom.',
+      'Onglets de documents : « + » pour travailler sur plusieurs projets à la fois.',
+      'Recherche de commande (Ctrl+K) et infobulles avec raccourci.',
+      'Préréglages de touches Affinity, Photoshop et Illustrator.',
+      'Retouches locales en dégradé linéaire et radial.',
+    ],
+    en: [
+      'Photo library: sort and edit RAW photos, Lightroom style.',
+      'Document tabs: "+" to work on several projects at once.',
+      'Command search (Ctrl+K) and tooltips with shortcuts.',
+      'Key presets for Affinity, Photoshop and Illustrator.',
+      'Local adjustments with linear and radial gradients.',
+    ],
+  },
+  {
     version: '1.4.0',
     fr: [
       'Onglets en haut : Vectoriel, Pixel, Mise en page, Export.',
