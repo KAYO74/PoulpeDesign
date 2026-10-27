@@ -11,6 +11,8 @@ export const frPrefs = {
   'prefs.tab.display': 'Affichage',
   'prefs.tab.layers': 'Calques',
   'prefs.tab.shortcuts': 'Raccourcis',
+  'shortcuts.section.tools': 'Outils',
+  'shortcuts.section.other': 'Autres',
   'prefs.tab.advanced': 'Avancé',
   'prefs.tab.diagnostic': 'Diagnostic',
 
@@ -193,6 +195,8 @@ export const enPrefs: Record<MessageKeyPrefs, string> = {
   'prefs.tab.display': 'Display',
   'prefs.tab.layers': 'Layers',
   'prefs.tab.shortcuts': 'Shortcuts',
+  'shortcuts.section.tools': 'Tools',
+  'shortcuts.section.other': 'Other',
   'prefs.tab.advanced': 'Advanced',
   'prefs.tab.diagnostic': 'Diagnostics',
 

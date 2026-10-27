@@ -8,7 +8,7 @@ import {
   formatShortcut,
   subscribeCommands,
 } from '../commands';
-import { getLang, useT } from '../i18n';
+import { getLang, useT, type MessageKey } from '../i18n';
 import { eventToShortcut, isCustomized, resetShortcut, setShortcut, useShortcuts } from '../shortcuts';
 import { setSettings, toast, ui, useUi } from '../store';
 import { KEY_PRESETS } from '../toolKeyPresets';
@@ -16,6 +16,24 @@ import { Select } from './fields';
 import { Modal } from './Dialogs';
 
 const close = () => ui.set({ dialog: null });
+
+/** Sections de la liste, dans l'ordre des menus ; le préfixe de l'identifiant de commande décide. */
+const SECTIONS: [string, MessageKey][] = [
+  ['file', 'menu.file'],
+  ['edit', 'menu.edit'],
+  ['select', 'menu.select'],
+  ['view', 'menu.view'],
+  ['layer', 'menu.layer'],
+  ['arrange', 'menu.arrange'],
+  ['text', 'menu.text'],
+  ['adjust', 'menu.adjust'],
+  ['filter', 'menu.filters'],
+  ['help', 'menu.help'],
+];
+const sectionOf = (id: string) => {
+  const prefix = id.split('.')[0] === 'livefilter' ? 'filter' : id.split('.')[0];
+  return SECTIONS.some(([p]) => p === prefix) ? prefix : 'other';
+};
 
 /**
  * Aide > Raccourcis clavier : la liste de toutes les commandes (menus, macros, extensions), et
@@ -129,6 +147,7 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
         </div>
       )}
       <div className={`shortcuts${only ? ' only' : ''}`}>
+        {!only && <h4 className="shortcut-section">{t('shortcuts.section.tools')}</h4>}
         {!only && (
           <table>
             <tbody>
@@ -149,34 +168,45 @@ export function ShortcutsEditor({ only }: { only?: string[] }) {
             </tbody>
           </table>
         )}
-        <table className="shortcut-edit">
-          <tbody>
-            {shown.map(({ id, title }) => {
-              const s = commandShortcut(id);
-              return (
-                <tr key={id}>
-                  <td>{title}</td>
-                  <td>
-                    <button
-                      className={`kbd-btn${capturing === id ? ' capturing' : ''}`}
-                      data-testid={`shortcut-${id}`}
-                      onClick={() => setCapturing(id)}
-                      onBlur={() => capturing === id && setCapturing(null)}
-                      onKeyDown={(e) => capturing === id && capture(id, e)}
-                    >
-                      {capturing === id ? t('shortcuts.press') : s ? formatShortcut(s) : '—'}
-                    </button>
-                    {isCustomized(id) && (
-                      <button className="link" onClick={() => resetShortcut(id)}>
-                        {t('shortcuts.reset')}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        {[...SECTIONS, ['other', 'shortcuts.section.other' as MessageKey] as [string, MessageKey]].map(
+          ([sec, label]) => {
+            const list = shown.filter((r) => sectionOf(r.id) === sec);
+            if (!list.length) return null;
+            return (
+              <section key={sec} data-testid={`shortcut-section-${sec}`}>
+                {!only && <h4 className="shortcut-section">{t(label)}</h4>}
+                <table className="shortcut-edit">
+                  <tbody>
+                    {list.map(({ id, title }) => {
+                      const s = commandShortcut(id);
+                      return (
+                        <tr key={id}>
+                          <td>{title}</td>
+                          <td>
+                            <button
+                              className={`kbd-btn${capturing === id ? ' capturing' : ''}`}
+                              data-testid={`shortcut-${id}`}
+                              onClick={() => setCapturing(id)}
+                              onBlur={() => capturing === id && setCapturing(null)}
+                              onKeyDown={(e) => capturing === id && capture(id, e)}
+                            >
+                              {capturing === id ? t('shortcuts.press') : s ? formatShortcut(s) : '—'}
+                            </button>
+                            {isCustomized(id) && (
+                              <button className="link" onClick={() => resetShortcut(id)}>
+                                {t('shortcuts.reset')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </section>
+            );
+          },
+        )}
       </div>
     </>
   );
