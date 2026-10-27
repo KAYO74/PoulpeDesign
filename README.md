@@ -10,18 +10,18 @@
   <img src="https://img.shields.io/badge/langues-fran%C3%A7ais%20%C2%B7%20English-4DA3FF" alt="Français et anglais">
 </p>
 
-<p align="center">
-  <b>Poulpe Design</b> est une application libre et gratuite de création graphique.<br>
-  La puissance d'Affinity, Illustrator et Photoshop, la simplicité de Canva.
-  <b>Gratuit, sans compte</b>, export PSD avec calques, SVG, PDF, PNG et JPEG.
-</p>
+<h3 align="center">
+  La puissance d'Affinity, Illustrator et Photoshop, la simplicité de Canva.<br>
+  Libre, gratuit, sans compte.
+</h3>
 
 # Poulpe Design — création graphique libre (alternative Canva, Photoshop, Illustrator, Affinity)
 
 > **Free and open-source graphic design app** (vector drawing, photo editing, page layout) for Windows, macOS and Linux, in French and English. Alternative libre à Canva, Photoshop, Illustrator et Affinity : dessin vectoriel, retouche photo, mise en page CMJN et PDF/X.
 
 <p align="center">
-  <a href="#installer-poulpe-design"><b>Installer</b></a> ·
+  <a href="#installer-poulpe-design"><b>⬇️ Télécharger</b></a> ·
+  <a href="#pourquoi-poulpe-design-">Pourquoi</a> ·
   <a href="#fonctionnalités">Fonctionnalités</a> ·
   <a href="#feuille-de-route">Feuille de route</a> ·
   <a href="#contribuer">Contribuer</a> ·
@@ -29,14 +29,34 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/dessin-modele.png" alt="L'appli Poulpe Design sous Windows ou Linux : les menus dans la barre de titre, le modèle « Concours » ouvert, la bibliothèque de modèles à gauche" width="100%">
+  <img src="docs/images/dessin-modele.png" alt="L'appli Poulpe Design : les onglets Vectoriel, Pixel, Mise en page et Export en haut, le modèle « Concours » ouvert, la bibliothèque de modèles à gauche" width="100%">
 </p>
 
+<details>
+<summary><b>Sommaire</b></summary>
+
+- [Pourquoi Poulpe Design ?](#pourquoi-poulpe-design-)
+- [Installer Poulpe Design](#installer-poulpe-design)
+- [Fonctionnalités](#fonctionnalités)
+- [Feuille de route](#feuille-de-route)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
+
+</details>
+
 > [!NOTE]
-> Voici la version 1.2 : chaque outil des espaces Vectoriel, Pixel et Mise en page fonctionne maintenant comme dans Affinity, avec les mêmes gestes et les mêmes raccourcis. Nouveau : une vingtaine de formes avec leurs poignées sur la toile, des outils propres à la mise en page (cadres de texte et d'image, tableaux, habillage, écoulement automatique), le recadrage et de nouveaux outils de retouche côté photo. Le détail est dans [Version 1.2](docs/version-1.2.md).
+> **Nouveautés de la 1.5.1.** Photothèque façon Lightroom, onglets Vectoriel / Pixel / Mise en page / Export en haut, plusieurs projets ouverts à la fois, recherche de commande avec Ctrl+K, développement RAW (retouches locales, avant/après), préréglages de touches Affinity, Photoshop et Illustrator, et une fenêtre Nouveautés après chaque mise à jour. Tout est dans la [feuille de route](#feuille-de-route).
 
 > [!TIP]
 > **Fait avec l'IA.** Poulpe Design est un projet personnel, construit avec l'intelligence artificielle : le code, la documentation et les images de cette page ont été écrits par Claude (Anthropic) à partir des demandes de son créateur, pour offrir à tous une vraie application de design, libre et gratuite. Rien n'est repris de logiciels propriétaires ; voir [Licences et origine du contenu](docs/licences.md).
+
+## Pourquoi Poulpe Design ?
+
+- **Libre et gratuit** : licence MPL-2.0, aucun abonnement, aucun compte, vos fichiers restent sur votre ordinateur.
+- **Tout-en-un** : dessin vectoriel, retouche photo, développement RAW et mise en page dans la même appli, avec des espaces de travail façon Affinity.
+- **Simple comme Canva** : modèles prêts à l'emploi, bibliothèque d'éléments, redimensionnement d'un format à l'autre.
+- **Compatible** : ouvre et enregistre les fichiers Photoshop (PSD, avec calques), ouvre PDF et Illustrator, exporte en SVG, PDF, PNG et JPEG.
+- **Pour tous les systèmes** : Windows, macOS et Linux, en français et en anglais, avec mises à jour automatiques.
 
 ## Installer Poulpe Design
 
@@ -99,6 +119,14 @@ L'appli n'est pas encore signée : au premier lancement, Windows et macOS affich
     <td align="center">Vos propres espaces de travail, comme dans Affinity</td>
     <td align="center">Extensions et macros</td>
   </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/recherche-commandes.png" alt="La recherche « Que voulez-vous faire ? » ouverte avec Ctrl+K"></td>
+    <td width="50%"><img src="docs/images/raccourcis.png" alt="Les raccourcis clavier rangés par sections, avec des préréglages Affinity, Photoshop et Illustrator"></td>
+  </tr>
+  <tr>
+    <td align="center">Ctrl+K : trouvez n'importe quelle commande</td>
+    <td align="center">Raccourcis au choix : Affinity, Photoshop, Illustrator</td>
+  </tr>
 </table>
 
 Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à gauche. On peut aussi créer les siens (vectoriel, pixel, présentation), détacher les panneaux en fenêtres flottantes, les déplacer et les redimensionner, ranger chaque panneau dans le groupe de son choix, et afficher ou fermer chacun depuis le menu Fenêtre.
@@ -148,24 +176,32 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Les versions jusqu'à la 1.5.1. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
+Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La version actuelle est la **1.5.1**. Le détail de chaque version est sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases) et dans la [feuille de route](docs/feuille-de-route.md).
 
-| Version | Contenu                                                                                                                                                                                                    | État          |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                                                                                         | ✅ Disponible |
-| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes                                                                 | ✅ Disponible |
-| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                                                                                               | ✅ Disponible |
-| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                                                                                   | ✅ Disponible |
-| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                                                                                          | ✅ Disponible |
-| v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                                                                                             | ✅ Disponible |
-| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                                                                                   | ✅ Disponible |
-| v1.3.1  | **Roue chromatique** : carré, roue ou triangle dans le panneau Couleur, couleur barrée, couleur du thème, glisser-déposer de fichiers                                                                      | ✅ Disponible |
-| v1.3.2  | **Panneaux et IA** : menu Fenêtre, panneaux rangés librement comme Photoshop et Affinity ; connexion d'IA en ligne ou locales                                                                              | ✅ Disponible |
-| v1.4.0  | **Photo pro** : texte des PDF, filtres modifiables, objets liés, RAW, remplissage intelligent, déformation, Persona Export, instantanés, Couches, hachures, couleurs et menus modernes                     | ✅ Disponible |
-| v1.5.0  | **Photothèque et rapidité** : photothèque façon Lightroom, onglets Vectoriel/Pixel/Mise en page/Export, plusieurs projets à la fois, recherche Ctrl+K, retouches locales en dégradé, infobulles            | ✅ Disponible |
-| v1.5.1  | **Finitions** : fenêtre Nouveautés après chaque mise à jour, comparaison avant/après en Développement RAW, panneaux à onglets défilables, raccourcis en anglais, document de départ dans la langue choisie | ✅ Disponible |
+### Ce qui reste à faire
 
-La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
+| Chantier                             | Contenu                                                                                                                                           | État         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Photothèque et développement RAW** | copier-coller des réglages, développement par lots, retouches locales avec masque sujet ou ciel, export rapide et par lots (filigrane, renommage) | 🚧 En cours  |
+| **Retouche avancée**                 | séparation de fréquences, panorama, HDR, fusion de mises au point                                                                                 | 📅 À venir   |
+| **Déformation**                      | marionnette, Fluidité avec masque de protection                                                                                                   | 📅 À venir   |
+| **Vectoriel**                        | grille isométrique, outil de dégradé entre formes, maillage de dégradé, recoloriage d'illustration                                                | 📅 À venir   |
+| **Mise en page**                     | compositions de calques, contraintes de redimensionnement                                                                                         | 📅 À venir   |
+| **Diffusion**                        | GIF de démo, publication sur les boutiques (Flathub…), signature des installeurs Mac et Windows                                                   | ⏸️ Plus tard |
+
+Une idée ou un bogue ? Ouvrez une [discussion ou un ticket](https://github.com/KAYO74/PoulpeDesign/issues).
+
+### Déjà disponible
+
+<details>
+<summary><b>Versions 1.2.5 à 1.5.1, en résumé</b></summary>
+
+- **1.5** : photothèque façon Lightroom, onglets en haut, plusieurs projets à la fois, recherche Ctrl+K, retouches locales en dégradé, avant/après en RAW, préréglages de touches, fenêtre Nouveautés, sécurité renforcée (accès disque limité, clés d'API chiffrées).
+- **1.4** : texte des PDF, filtres modifiables, objets liés, RAW, remplissage intelligent, déformation, Persona Export, instantanés, panneau Couches, hachures, couleurs et menus modernes.
+- **1.3** : documentation en anglais, roue chromatique, menu Fenêtre, panneaux libres, connexion d'IA en ligne ou locales.
+- **1.2.5 à 1.2.10** : panneaux déplaçables, calques et groupes, sélecteur de couleur RVB, création et partage de pinceaux, projet enregistré en PSD.
+
+</details>
 
 ## Contribuer
 
