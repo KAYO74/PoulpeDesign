@@ -3,7 +3,7 @@ import * as A from './actions';
 import type { NodeAction } from './canvas/pathTools';
 import { beginTextEdit, endTextEdit, isEditingText } from './canvas/textEdit';
 import { getController } from './components/Viewport';
-import { t, type MessageKey } from './i18n';
+import { getLang, t, type MessageKey } from './i18n';
 import { isRecording, recordStep } from './macros/recorder';
 import { beginRecording, endRecording } from './macros/macros';
 import { shortcutOf } from './shortcuts';
@@ -852,13 +852,14 @@ function opacityKey(e: KeyboardEvent): boolean {
 export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 export function formatShortcut(s: string): string {
+  const fr = getLang() === 'fr';
   return s
     .replace('Mod', isMac ? '⌘' : 'Ctrl')
-    .replace('Shift', isMac ? '⇧' : 'Maj')
+    .replace('Shift', isMac ? '⇧' : fr ? 'Maj' : 'Shift')
     .replace('Alt', isMac ? '⌥' : 'Alt')
-    .replace('Delete', isMac ? '⌫' : 'Suppr')
+    .replace('Delete', isMac ? '⌫' : fr ? 'Suppr' : 'Del')
     .replace(/\+/g, isMac ? '' : '+')
-    .replace(/(Ctrl|Maj|Alt)(?=[^+])/g, '$1+');
+    .replace(/(Ctrl|Maj|Shift|Alt)(?=[^+])/g, '$1+');
 }
 
 export function matches(e: KeyboardEvent, shortcut: string): boolean {
