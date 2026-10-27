@@ -141,6 +141,10 @@ function StudioGroup({
           )
         }
         onDoubleClick={toggleFloat}
+        onWheel={(e) => {
+          // Molette verticale : fait défiler les onglets coupés.
+          if (e.deltaY) e.currentTarget.scrollLeft += e.deltaY;
+        }}
       >
         <span className="panel-grip" aria-hidden="true" />
         {tabs.map((tab, i) => (
@@ -152,7 +156,10 @@ function StudioGroup({
             data-testid={`tab-${tab.id}`}
             data-tab={tab.id}
             title={home ? undefined : t('panel.tabHint')}
-            onClick={() => setActive(tab.id)}
+            onClick={(e) => {
+              setActive(tab.id);
+              e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }}
             onPointerDown={(e) => tabDown(e, tab.id)}
             onDoubleClick={() => (home ? dockPanel(id) : detachTab(tab.id))}
           >
