@@ -3972,6 +3972,11 @@ h4.sub .link {
   overflow-wrap: anywhere;
 }
 
+.raw-copy {
+  display: flex;
+  gap: 6px;
+}
+
 /* Recherche de commande (Ctrl+K). */
 .palette-input {
   height: 36px;

@@ -10,8 +10,10 @@ import {
 } from '../../photo/localAdjust';
 import {
   closeRaw,
+  copyDevelopSettings,
   DEFAULT_DEVELOP,
   developRaw,
+  pastedDevelopSettings,
   rawPhoto,
   type DevelopSettings,
 } from '../../photo/rawDevelop';
@@ -40,6 +42,7 @@ export function RawDialog() {
   const t = useT();
   const photo = rawPhoto();
   const [s, setS] = useState<DevelopSettings>(DEFAULT_DEVELOP);
+  const [canPaste, setCanPaste] = useState(() => pastedDevelopSettings() !== null);
   const [locals, setLocals] = useState<LocalAdjust[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [size, setSize] = useState({ w: 4, h: 3 });
@@ -146,6 +149,31 @@ export function RawDialog() {
           <button className="btn small" onClick={() => setS(DEFAULT_DEVELOP)}>
             {t('param.reset')}
           </button>
+          <div className="raw-copy">
+            <button
+              className="btn small"
+              title={t('raw.copyHint')}
+              data-testid="raw-copy"
+              onClick={() => {
+                copyDevelopSettings(s);
+                setCanPaste(true);
+              }}
+            >
+              {t('raw.copy')}
+            </button>
+            <button
+              className="btn small"
+              disabled={!canPaste}
+              title={t('raw.pasteHint')}
+              data-testid="raw-paste"
+              onClick={() => {
+                const p = pastedDevelopSettings();
+                if (p) setS(p);
+              }}
+            >
+              {t('raw.paste')}
+            </button>
+          </div>
 
           <h3 className="raw-sub">{t('raw.local')}</h3>
           <div className="raw-copy">
