@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.5.0-FF5F86" alt="Version 1.5.0"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.5.1-FF5F86" alt="Version 1.5.1"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -148,21 +148,22 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Les versions jusqu'à la 1.5.0. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
+Les versions jusqu'à la 1.5.1. Les versions plus anciennes sont sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases).
 
-| Version | Contenu                                                                                                                                                                                         | État          |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                                                                              | ✅ Disponible |
-| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes                                                      | ✅ Disponible |
-| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                                                                                    | ✅ Disponible |
-| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                                                                        | ✅ Disponible |
-| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                                                                               | ✅ Disponible |
-| v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                                                                                  | ✅ Disponible |
-| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                                                                        | ✅ Disponible |
-| v1.3.1  | **Roue chromatique** : carré, roue ou triangle dans le panneau Couleur, couleur barrée, couleur du thème, glisser-déposer de fichiers                                                           | ✅ Disponible |
-| v1.3.2  | **Panneaux et IA** : menu Fenêtre, panneaux rangés librement comme Photoshop et Affinity ; connexion d'IA en ligne ou locales                                                                   | ✅ Disponible |
-| v1.4.0  | **Photo pro** : texte des PDF, filtres modifiables, objets liés, RAW, remplissage intelligent, déformation, Persona Export, instantanés, Couches, hachures, couleurs et menus modernes          | ✅ Disponible |
-| v1.5.0  | **Photothèque et rapidité** : photothèque façon Lightroom, onglets Vectoriel/Pixel/Mise en page/Export, plusieurs projets à la fois, recherche Ctrl+K, retouches locales en dégradé, infobulles | ✅ Disponible |
+| Version | Contenu                                                                                                                                                                                                    | État          |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| v1.2.5  | **Panneaux** : déplacer plus simplement Calques, Pinceau, Historique… ; taille de l'interface dans les Préférences                                                                                         | ✅ Disponible |
+| v1.2.6  | **Calques** : fusionner objets et courbes par clic droit ou en les glissant, supprimer des formes ou un plan de travail, créer des groupes                                                                 | ✅ Disponible |
+| v1.2.7  | **Couleurs** : sélecteur RVB avec roue, plaçable n'importe où, et « aucune couleur » partout                                                                                                               | ✅ Disponible |
+| v1.2.8  | **Création de pinceaux** : fenêtre de création, avec essai du pinceau sur le document, qu'on peut fermer                                                                                                   | ✅ Disponible |
+| v1.2.9  | **Partage de pinceaux** : partager et installer des pinceaux comme des extensions                                                                                                                          | ✅ Disponible |
+| v1.2.10 | **Projet en PSD** : enregistrer un vrai fichier Photoshop, que Poulpe Design rouvre modifiable                                                                                                             | ✅ Disponible |
+| v1.3.0  | **Finition** : toute la documentation en anglais, vérification complète, zéro régression                                                                                                                   | ✅ Disponible |
+| v1.3.1  | **Roue chromatique** : carré, roue ou triangle dans le panneau Couleur, couleur barrée, couleur du thème, glisser-déposer de fichiers                                                                      | ✅ Disponible |
+| v1.3.2  | **Panneaux et IA** : menu Fenêtre, panneaux rangés librement comme Photoshop et Affinity ; connexion d'IA en ligne ou locales                                                                              | ✅ Disponible |
+| v1.4.0  | **Photo pro** : texte des PDF, filtres modifiables, objets liés, RAW, remplissage intelligent, déformation, Persona Export, instantanés, Couches, hachures, couleurs et menus modernes                     | ✅ Disponible |
+| v1.5.0  | **Photothèque et rapidité** : photothèque façon Lightroom, onglets Vectoriel/Pixel/Mise en page/Export, plusieurs projets à la fois, recherche Ctrl+K, retouches locales en dégradé, infobulles            | ✅ Disponible |
+| v1.5.1  | **Finitions** : fenêtre Nouveautés après chaque mise à jour, comparaison avant/après en Développement RAW, panneaux à onglets défilables, raccourcis en anglais, document de départ dans la langue choisie | ✅ Disponible |
 
 La signature des installeurs (Mac et Windows) et Flathub ne sont pas prioritaires pour le moment. Le détail est dans la [feuille de route](docs/feuille-de-route.md).
 

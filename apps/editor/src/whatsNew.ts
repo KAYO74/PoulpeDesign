@@ -13,6 +13,23 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.5.1',
+    fr: [
+      'Cette fenêtre Nouveautés s’affiche après chaque mise à jour.',
+      'Développement RAW : touche \\ pour comparer avant et après.',
+      'Panneaux : onglets défilables à la molette.',
+      'Raccourcis affichés en anglais quand l’app est en anglais.',
+      'Le document de départ prend le nom de la langue choisie.',
+    ],
+    en: [
+      'This What’s new window now appears after every update.',
+      'RAW develop: press \\ to compare before and after.',
+      'Panels: tabs scroll with the mouse wheel.',
+      'Shortcuts shown in English when the app is in English.',
+      'The starting document is named in the chosen language.',
+    ],
+  },
+  {
     version: '1.5.0',
     fr: [
       'Photothèque : classez et retouchez vos photos RAW, style Lightroom.',
