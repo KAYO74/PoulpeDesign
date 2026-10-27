@@ -111,7 +111,7 @@ export function Toolbar() {
             key={p}
             className="persona persona-tab"
             aria-pressed={!photoLibrary && !custom && persona === p}
-            title={t(`persona.${p}`)}
+            title={t(`tab.${p}`)}
             aria-label={t(`persona.${p}`)}
             data-testid={`persona-${p}`}
             onClick={() => openPersona(p)}
