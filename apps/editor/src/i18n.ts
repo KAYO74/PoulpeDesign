@@ -16,6 +16,7 @@ import { enWhatsNew, frWhatsNew, type MessageKeyWhatsNew } from './i18n-whatsnew
 import { enDocTabs, frDocTabs, type MessageKeyDocTabs } from './i18n-doctabs';
 import { enTips, frTips, type MessageKeyTips } from './i18n-tips';
 import { enDrop, frDrop, type MessageKeyDrop } from './i18n-drop';
+import { enKeyPresets, frKeyPresets, type MessageKeyKeyPresets } from './i18n-keypresets';
 import { enPalette, frPalette, type MessageKeyPalette } from './i18n-palette';
 import { enPhotoLib, frPhotoLib, type MessageKeyPhotoLib } from './i18n-photolib';
 import { enAi, frAi, type MessageKeyAi } from './i18n-ai';
@@ -985,6 +986,7 @@ export type MessageKey =
   | MessageKeyDocTabs
   | MessageKeyTips
   | MessageKeyDrop
+  | MessageKeyKeyPresets
   | MessageKeyPalette
   | MessageKeyPhotoLib
   | MessageKeyAi
@@ -1013,6 +1015,7 @@ const en: Record<
     | MessageKeyTips
     | MessageKeyTips
     | MessageKeyDrop
+    | MessageKeyKeyPresets
     | MessageKeyPalette
     | MessageKeyPhotoLib
     | MessageKeyAi
@@ -1961,6 +1964,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frDocTabs,
     ...frTips,
     ...frDrop,
+    ...frKeyPresets,
     ...frPalette,
     ...frPhotoLib,
     ...frAi,
@@ -1995,6 +1999,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enDocTabs,
     ...enTips,
     ...enDrop,
+    ...enKeyPresets,
     ...enPalette,
     ...enPhotoLib,
     ...enAi,

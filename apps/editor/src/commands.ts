@@ -44,6 +44,7 @@ import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
 import { toggleBrushEditor } from './tools/brushes/BrushEditor';
 import { openPersona } from './workspaces';
+import { PRESET_KEYS } from './toolKeyPresets';
 import { selectAdjacentLayer } from './layers';
 import { LUT_PRESETS, type LutPreset } from '@poulpe/core';
 
@@ -748,6 +749,9 @@ export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
 };
 
 export function toolKeysFor(persona: Persona): Record<string, ToolId[]> {
+  const preset = ui.get().settings.keyPreset;
+  const group = persona === 'photo' ? 'photo' : persona === 'layout' ? 'layout' : 'draw';
+  if (preset && preset !== 'affinity' && PRESET_KEYS[preset]) return PRESET_KEYS[preset][group];
   return persona === 'photo' ? PHOTO_TOOL_KEYS : persona === 'layout' ? LAYOUT_TOOL_KEYS : TOOL_KEYS;
 }
 
