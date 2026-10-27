@@ -23,6 +23,7 @@ import { ResizeDialog } from './dialogs/ResizeDialog';
 import { SelectionModifyDialog } from './dialogs/SelectionModifyDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { UpdateDialog } from './UpdateDialog';
+import { WhatsNewDialog } from './WhatsNewDialog';
 import { PreferencesDialog } from './PreferencesDialog';
 import { AiAssistantDialog, AiImageDialog } from './dialogs/AiDialogs';
 import { HelpDialog } from './HelpDialog';
@@ -39,6 +40,7 @@ export function Dialogs() {
     <>
       <MainDialog />
       <UpdateDialog />
+      <WhatsNewDialog />
     </>
   );
 }
