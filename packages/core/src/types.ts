@@ -450,6 +450,14 @@ export interface TextPath {
    * gauche, milieu d'un texte centré, fin d'un texte aligné à droite.
    */
   offset: number;
+  /** Déformation du texte (arc, vague) : la courbe est calculée, pas dessinée. Absent : tracé libre. */
+  warp?: TextWarp;
+}
+
+/** Déformation du texte : forme et courbure de -1 à 1 (le signe inverse le sens). */
+export interface TextWarp {
+  kind: 'arc' | 'wave';
+  bend: number;
 }
 
 /**
