@@ -23,6 +23,7 @@ import {
   toggleUnderline,
 } from './actions';
 import { TextIcon, type TextIconName } from './icons';
+import { TextWarpControls } from './TextWarpBar';
 
 /*
  * Barre contextuelle du texte, comme celle d'Affinity : police, style de police, taille, gras,
@@ -409,6 +410,7 @@ export function TextContext() {
       </span>
       {node && <TextColor node={node} />}
       <TextControls frame={isFrame(node)} />
+      {single && <TextWarpControls node={single} />}
       {single?.path && (
         <>
           <label className="field">

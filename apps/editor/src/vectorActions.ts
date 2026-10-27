@@ -22,6 +22,8 @@ import {
   type Paint,
   type SceneNode,
   type Stroke,
+  type TextWarp,
+  warpPath,
   type StrokeJoin,
   pathToSvg,
   isStyled,
@@ -311,6 +313,41 @@ export function removeTextFromPath(): void {
     n.autoWidth = true;
     n.rotation = normalizeAngle(n.rotation);
   });
+}
+
+/**
+ * Déforme le texte sélectionné (arc, vague) : le texte suit une courbe calculée d'après sa largeur.
+ * `null` le remet droit. Sans effet sur un texte posé sur un tracé libre.
+ */
+export function setTextWarp(warp: TextWarp | null, gesture = false): void {
+  const ids = sel();
+  if (ids.length !== 1) return;
+  const found = findNode(editor.doc, ids[0])?.node;
+  if (found?.type !== 'text' || (found.path && !found.path.warp)) return;
+  const id = found.id;
+  const recipe = (d: Parameters<Parameters<typeof editor.apply>[1]>[0]) => {
+    const n = findNode(d, id)?.node;
+    if (n?.type !== 'text') return;
+    if (!warp) {
+      if (n.path?.warp) {
+        delete n.path;
+        n.autoWidth = true;
+      }
+      return;
+    }
+    const { d: pathD, height } = warpPath(warp, n.width);
+    n.path = {
+      d: pathD,
+      viewBox: { x: 0, y: 0, width: Math.max(1, n.width), height },
+      offset: 0.5,
+      warp,
+    };
+    n.height = height;
+    n.autoWidth = false;
+    n.style = { ...n.style, align: 'center' };
+  };
+  if (gesture) editor.preview(recipe);
+  else editor.apply('history.textWarp', recipe);
 }
 
 export function setTextPathOffset(offset: number, gesture = false): void {

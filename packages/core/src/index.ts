@@ -6,6 +6,7 @@ export * from './ids';
 export * from './factory';
 export * from './tree';
 export * from './text';
+export * from './textWarp';
 export * from './editor';
 export * from './svg';
 export * from './file';
