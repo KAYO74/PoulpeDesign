@@ -1,5 +1,6 @@
 import { CANVAS_FEATURES, OPENTYPE_FEATURES, findNode, type TextNode, type TextStyle } from '@poulpe/core';
 import { setTextStyle, updateSelected } from '../actions';
+import { FontPicker } from '../components/FontPicker';
 import { NumberField, Select } from '../components/fields';
 import { Icon, type IconName } from '../components/Icon';
 import { WEIGHTS, useFonts } from '../fonts';
@@ -42,10 +43,10 @@ export function CharacterPanel() {
   return (
     <div className="panel-body">
       {!text && <p className="empty">{t('char.noText')}</p>}
-      <Select
+      <FontPicker
         label={t('char.font')}
         value={st.fontFamily}
-        options={families.map((f) => ({ value: f, label: f }))}
+        fonts={families}
         onChange={(f) => setTextStyle({ fontFamily: f })}
       />
       <div className="picker-row">
