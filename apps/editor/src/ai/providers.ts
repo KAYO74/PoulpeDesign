@@ -4,10 +4,11 @@
  *
  * La liste des fournisseurs est enregistrée sans les clés. Dans l'appli de bureau, les clés vont
  * dans le trousseau du système et les requêtes partent de Rust (src-tauri/src/ai.rs) : la clé ne
- * revient jamais dans l'interface. Dans le navigateur, elles restent dans le stockage de ce navigateur.
+ * revient jamais dans l'interface. Dans le navigateur, elles sont chiffrées (keyVault.ts) dans le stockage de ce navigateur.
  */
 import { useSyncExternalStore } from 'react';
 import { isDesktop } from '../io';
+import { isSealed, seal, unseal } from './keyVault';
 
 /** Façon de parler au fournisseur. `openai` couvre tous les services compatibles (Ollama, LM Studio…). */
 export type AiKind = 'openai' | 'anthropic' | 'google';
@@ -219,7 +220,8 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
   return core.invoke<T>(cmd, args);
 }
 
-function browserKeys(): Record<string, string> {
+/** Clés du navigateur : chiffrées dans le stockage local ; une ancienne clé en clair est chiffrée au passage. */
+function storedKeys(): Record<string, string> {
   try {
     return JSON.parse(localStorage.getItem(KEYS) ?? '{}') as Record<string, string>;
   } catch {
@@ -227,19 +229,31 @@ function browserKeys(): Record<string, string> {
   }
 }
 
+async function browserKey(id: string): Promise<string | null> {
+  const value = storedKeys()[id];
+  if (!value) return null;
+  if (isSealed(value)) return unseal(value);
+  await storeBrowserKey(id, value);
+  return value;
+}
+
+async function storeBrowserKey(id: string, key: string): Promise<void> {
+  localStorage.setItem(KEYS, JSON.stringify({ ...storedKeys(), [id]: await seal(key) }));
+}
+
 export async function saveKey(p: AiProvider, key: string): Promise<void> {
   if (isDesktop()) return invoke('ai_key_set', { id: p.id, url: p.baseUrl, key });
-  localStorage.setItem(KEYS, JSON.stringify({ ...browserKeys(), [p.id]: key }));
+  await storeBrowserKey(p.id, key);
 }
 
 export async function hasKey(id: string): Promise<boolean> {
   if (isDesktop()) return invoke<boolean>('ai_key_has', { id }).catch(() => false);
-  return !!browserKeys()[id];
+  return !!storedKeys()[id];
 }
 
 async function deleteKey(id: string): Promise<void> {
   if (isDesktop()) return invoke<void>('ai_key_delete', { id }).catch(() => undefined);
-  const keys = browserKeys();
+  const keys = storedKeys();
   delete keys[id];
   localStorage.setItem(KEYS, JSON.stringify(keys));
 }
@@ -279,7 +293,7 @@ export async function aiFetch(req: AiFetch): Promise<AiReply> {
   const headers = new Headers(req.headers ?? []);
   if (body) headers.set('content-type', 'application/json');
   if (req.key) {
-    const k = browserKeys()[req.key.id];
+    const k = await browserKey(req.key.id);
     if (!k) throw new Error('no key');
     headers.set(req.key.header, (req.key.prefix ?? '') + k);
   }

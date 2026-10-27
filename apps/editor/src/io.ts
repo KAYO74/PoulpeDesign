@@ -33,6 +33,7 @@ import {
 } from '@poulpe/render';
 import { placeImage } from './actions';
 import { decodeFile, encodeFile } from './fileWorker';
+import { makeRoomForDocument } from './docTabs';
 import { t } from './i18n';
 import { editor, toast, ui } from './store';
 import { placeSvg } from './vectorActions';
@@ -157,16 +158,12 @@ export async function pickFile(
   });
 }
 
-export function confirmDiscard(): boolean {
-  return !editor.getState().dirty || window.confirm(t('file.unsaved'));
-}
-
 export function newDocument(
   width: number,
   height: number,
   opts: { dpi?: number; pages?: number; facing?: boolean } = {},
 ): void {
-  if (!confirmDiscard()) return;
+  makeRoomForDocument();
   const doc = createDocument({ name: t('app.untitled'), width, height });
   const pages = Math.max(1, Math.round(opts.pages ?? 1));
   if (opts.dpi || opts.facing || pages > 1) {
@@ -195,9 +192,10 @@ export async function loadBytes(name: string, bytes: Uint8Array): Promise<void> 
 }
 
 export async function openDocument(): Promise<void> {
-  if (!confirmDiscard()) return;
   const file = await pickFile(OPEN_EXTENSIONS, OPEN_EXTENSIONS.map((e) => `.${e}`).join(','));
-  if (file) await openBytes(file.name, file.bytes);
+  if (!file) return;
+  makeRoomForDocument();
+  await openBytes(file.name, file.bytes);
 }
 
 /** Ouvre un document Poulpe Design, Photoshop, PDF ou Illustrator d'après son extension. */
@@ -333,12 +331,12 @@ export async function importImage(): Promise<void> {
 
 /** Ouvre une photo dans un nouveau document à sa taille, en Persona Photo (comme Affinity Photo). */
 export async function openPhoto(): Promise<void> {
-  if (!confirmDiscard()) return;
   const file = await pickFile(
     ['png', 'jpg', 'jpeg', 'webp', 'gif', ...RAW_EXTENSIONS],
     ['image/png,image/jpeg,image/webp,image/gif', ...RAW_EXTENSIONS.map((e) => `.${e}`)].join(','),
   );
   if (!file) return;
+  makeRoomForDocument();
   const ext = file.name.split('.').pop()!.toLowerCase();
   if (RAW_EXTENSIONS.includes(ext)) return openBytes(file.name, file.bytes);
   const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;

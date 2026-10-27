@@ -23,12 +23,14 @@ import { ResizeDialog } from './dialogs/ResizeDialog';
 import { SelectionModifyDialog } from './dialogs/SelectionModifyDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { UpdateDialog } from './UpdateDialog';
+import { WhatsNewDialog } from './WhatsNewDialog';
 import { PreferencesDialog } from './PreferencesDialog';
 import { AiAssistantDialog, AiImageDialog } from './dialogs/AiDialogs';
 import { HelpDialog } from './HelpDialog';
 import { ExtensionParamsDialog, ExtensionsDialog } from '../extensions/ExtensionsDialog';
 import { VectorizeDialog } from '../smart/VectorizeDialog';
 import { SaveTemplateDialog } from './dialogs/SaveTemplateDialog';
+import { CommandPalette } from './dialogs/CommandPalette';
 
 // Cadre commun des fenêtres : les autres modules de l'éditeur continuent de l'importer d'ici.
 export { Modal } from './dialogs/Modal';
@@ -38,6 +40,7 @@ export function Dialogs() {
     <>
       <MainDialog />
       <UpdateDialog />
+      <WhatsNewDialog />
     </>
   );
 }
@@ -45,6 +48,7 @@ export function Dialogs() {
 function MainDialog() {
   const dialog = useUi((s) => s.dialog);
   if (dialog === 'new') return <NewDialog />;
+  if (dialog === 'palette') return <CommandPalette />;
   if (dialog === 'export') return <ExportDialog />;
   if (dialog === 'shortcuts') return <ShortcutsDialog />;
   if (dialog === 'about') return <AboutDialog />;

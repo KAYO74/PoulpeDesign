@@ -118,6 +118,7 @@ export type Theme = 'dark' | 'light';
 export type Dialog =
   | null
   | 'new'
+  | 'palette'
   | 'export'
   | 'shortcuts'
   | 'about'
@@ -161,6 +162,8 @@ export interface Settings {
   toolsLayout: ToolsLayout;
   /** Colonne d'outils verrouillée : elle ne se détache plus en palette flottante. */
   toolsLocked: boolean;
+  /** Touches des outils : celles d'Affinity (par défaut), de Photoshop ou d'Illustrator. */
+  keyPreset: import('./toolKeyPresets').KeyPreset;
   studioSide: Side;
   rulers: boolean;
   grid: boolean;
@@ -171,6 +174,8 @@ export interface Settings {
   showWelcome: boolean;
   /** Appli de bureau : chercher les mises à jour au lancement. */
   autoUpdate: boolean;
+  /** Dernière version dont les nouveautés ont été montrées (null : jamais lancé). */
+  lastSeenVersion: string | null;
   /** Images par seconde et mémoire utilisée dans la barre d'état. */
   perfMeter: boolean;
   /** Taille de l'interface (1 = 100 %), appli de bureau. */
@@ -255,6 +260,8 @@ export interface UiState {
    * (écran d'accueil compris), pour qu'une mise à jour trouvée au démarrage soit toujours proposée.
    */
   updateOpen: boolean;
+  /** Fenêtre des nouveautés ouverte. */
+  whatsNewOpen: boolean;
   toast: string | null;
   cursor: { x: number; y: number } | null;
   /** Panneau glissé au-dessus de sa zone d'ancrage (surbrillance du point de chute). */
@@ -274,6 +281,7 @@ function loadSettings(): Settings {
     toolsColumns: 'auto',
     toolsLayout: 'all',
     toolsLocked: false,
+    keyPreset: 'affinity',
     studioSide: 'right',
     rulers: true,
     grid: false,
@@ -281,6 +289,7 @@ function loadSettings(): Settings {
     library: true,
     showWelcome: true,
     autoUpdate: true,
+    lastSeenVersion: null,
     perfMeter: false,
     uiScale: 1,
     colorShape: 'box',
@@ -352,6 +361,7 @@ export const ui = new Store<UiState>({
   dialog: null,
   photoLibrary: false,
   updateOpen: false,
+  whatsNewOpen: false,
   toast: null,
   cursor: null,
   panelDock: null,

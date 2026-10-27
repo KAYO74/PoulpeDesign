@@ -12,7 +12,12 @@ import { enV128, frV128, type MessageKeyV128 } from './i18n-v128';
 import { enV129, frV129, type MessageKeyV129 } from './i18n-v129';
 import { enV1210, frV1210, type MessageKeyV1210 } from './i18n-v1210';
 import { enPanels, frPanels, type MessageKeyPanels } from './i18n-panels';
+import { enWhatsNew, frWhatsNew, type MessageKeyWhatsNew } from './i18n-whatsnew';
+import { enDocTabs, frDocTabs, type MessageKeyDocTabs } from './i18n-doctabs';
+import { enTips, frTips, type MessageKeyTips } from './i18n-tips';
 import { enDrop, frDrop, type MessageKeyDrop } from './i18n-drop';
+import { enKeyPresets, frKeyPresets, type MessageKeyKeyPresets } from './i18n-keypresets';
+import { enPalette, frPalette, type MessageKeyPalette } from './i18n-palette';
 import { enPhotoLib, frPhotoLib, type MessageKeyPhotoLib } from './i18n-photolib';
 import { enAi, frAi, type MessageKeyAi } from './i18n-ai';
 import { enLiveFilters, frLiveFilters, type MessageKeyLiveFilters } from './i18n-livefilters';
@@ -977,7 +982,12 @@ export type MessageKey =
   | MessageKeyV129
   | MessageKeyV1210
   | MessageKeyPanels
+  | MessageKeyWhatsNew
+  | MessageKeyDocTabs
+  | MessageKeyTips
   | MessageKeyDrop
+  | MessageKeyKeyPresets
+  | MessageKeyPalette
   | MessageKeyPhotoLib
   | MessageKeyAi
   | MessageKeyLiveFilters;
@@ -998,7 +1008,15 @@ const en: Record<
     | MessageKeyV129
     | MessageKeyV1210
     | MessageKeyPanels
+    | MessageKeyWhatsNew
+    | MessageKeyWhatsNew
+    | MessageKeyDocTabs
+    | MessageKeyDocTabs
+    | MessageKeyTips
+    | MessageKeyTips
     | MessageKeyDrop
+    | MessageKeyKeyPresets
+    | MessageKeyPalette
     | MessageKeyPhotoLib
     | MessageKeyAi
     | MessageKeyLiveFilters
@@ -1942,7 +1960,12 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frV129,
     ...frV1210,
     ...frPanels,
+    ...frWhatsNew,
+    ...frDocTabs,
+    ...frTips,
     ...frDrop,
+    ...frKeyPresets,
+    ...frPalette,
     ...frPhotoLib,
     ...frAi,
     ...frLiveFilters,
@@ -1972,7 +1995,12 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enV129,
     ...enV1210,
     ...enPanels,
+    ...enWhatsNew,
+    ...enDocTabs,
+    ...enTips,
     ...enDrop,
+    ...enKeyPresets,
+    ...enPalette,
     ...enPhotoLib,
     ...enAi,
     ...enLiveFilters,

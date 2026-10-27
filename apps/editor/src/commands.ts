@@ -3,7 +3,7 @@ import * as A from './actions';
 import type { NodeAction } from './canvas/pathTools';
 import { beginTextEdit, endTextEdit, isEditingText } from './canvas/textEdit';
 import { getController } from './components/Viewport';
-import { t, type MessageKey } from './i18n';
+import { getLang, t, type MessageKey } from './i18n';
 import { isRecording, recordStep } from './macros/recorder';
 import { beginRecording, endRecording } from './macros/macros';
 import { shortcutOf } from './shortcuts';
@@ -44,6 +44,7 @@ import { resetPanels } from './panels/panelLayout';
 import { toggleColorWindow } from './panels/ColorWindow';
 import { toggleBrushEditor } from './tools/brushes/BrushEditor';
 import { openPersona } from './workspaces';
+import { PRESET_KEYS } from './toolKeyPresets';
 import { selectAdjacentLayer } from './layers';
 import { LUT_PRESETS, type LutPreset } from '@poulpe/core';
 
@@ -611,7 +612,13 @@ export const COMMANDS = {
     shortcut: 'Mod+/',
     run: () => ui.set({ dialog: 'shortcuts' }),
   },
+  'help.search': {
+    label: 'help.search',
+    shortcut: 'Mod+K',
+    run: () => ui.set({ dialog: 'palette' }),
+  },
   'help.about': { label: 'help.about', run: () => ui.set({ dialog: 'about' }) },
+  'help.whatsNew': { label: 'help.whatsNew', run: () => ui.set({ whatsNewOpen: true }) },
   'help.checkUpdates': {
     label: 'help.checkUpdates',
     run: () => void checkForUpdates(),
@@ -742,6 +749,9 @@ export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
 };
 
 export function toolKeysFor(persona: Persona): Record<string, ToolId[]> {
+  const preset = ui.get().settings.keyPreset;
+  const group = persona === 'photo' ? 'photo' : persona === 'layout' ? 'layout' : 'draw';
+  if (preset && preset !== 'affinity' && PRESET_KEYS[preset]) return PRESET_KEYS[preset][group];
   return persona === 'photo' ? PHOTO_TOOL_KEYS : persona === 'layout' ? LAYOUT_TOOL_KEYS : TOOL_KEYS;
 }
 
@@ -842,13 +852,14 @@ function opacityKey(e: KeyboardEvent): boolean {
 export const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 export function formatShortcut(s: string): string {
+  const fr = getLang() === 'fr';
   return s
     .replace('Mod', isMac ? '⌘' : 'Ctrl')
-    .replace('Shift', isMac ? '⇧' : 'Maj')
+    .replace('Shift', isMac ? '⇧' : fr ? 'Maj' : 'Shift')
     .replace('Alt', isMac ? '⌥' : 'Alt')
-    .replace('Delete', isMac ? '⌫' : 'Suppr')
+    .replace('Delete', isMac ? '⌫' : fr ? 'Suppr' : 'Del')
     .replace(/\+/g, isMac ? '' : '+')
-    .replace(/(Ctrl|Maj|Alt)(?=[^+])/g, '$1+');
+    .replace(/(Ctrl|Maj|Shift|Alt)(?=[^+])/g, '$1+');
 }
 
 export function matches(e: KeyboardEvent, shortcut: string): boolean {

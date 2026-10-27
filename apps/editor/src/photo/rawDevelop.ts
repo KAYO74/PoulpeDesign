@@ -2,6 +2,7 @@ import { DEFAULT_DEVELOP, RAW_EXTENSIONS, RawPhoto, type DevelopSettings } from 
 import rawUrl from '@poulpe/engine/wasm/poulpe_raw.wasm?url';
 import { t } from '../i18n';
 import { ui } from '../store';
+import { applyLocals, type LocalAdjust } from './localAdjust';
 import { openPhotoDocument } from './photoActions';
 
 /*
@@ -35,9 +36,9 @@ export async function openRaw(bytes: Uint8Array, name: string): Promise<boolean>
 }
 
 /** Développe en taille réelle et ouvre le résultat en Persona Photo. */
-export function developRaw(settings: DevelopSettings): void {
+export function developRaw(settings: DevelopSettings, locals: LocalAdjust[] = []): void {
   if (!photo) return;
-  const img = photo.render(settings, 0);
+  const img = applyLocals(photo.render(settings, 0), locals);
   const canvas = document.createElement('canvas');
   canvas.width = img.width;
   canvas.height = img.height;
@@ -54,3 +55,37 @@ export function closeRaw(): void {
 }
 
 export { DEFAULT_DEVELOP, type DevelopSettings };
+
+/*
+ * Réglages copiés d'une photo RAW pour les coller sur une autre (comme « Copier / Coller les
+ * réglages de développement » de Lightroom). Gardés pour la session et d'un lancement à l'autre.
+ */
+const CLIPBOARD_KEY = 'poulpe.developClipboard';
+let copied: DevelopSettings | null = null;
+
+export function copyDevelopSettings(s: DevelopSettings): void {
+  copied = { ...s };
+  try {
+    localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(copied));
+  } catch {
+    /* stockage indisponible : le presse-papiers reste en mémoire pour la session */
+  }
+}
+
+/** Réglages copiés, ou null s'il n'y en a pas. Les valeurs inconnues sont ignorées. */
+export function pastedDevelopSettings(): DevelopSettings | null {
+  if (!copied) {
+    try {
+      copied = JSON.parse(localStorage.getItem(CLIPBOARD_KEY) ?? 'null');
+    } catch {
+      copied = null;
+    }
+  }
+  if (!copied || typeof copied !== 'object') return null;
+  const out = { ...DEFAULT_DEVELOP };
+  for (const k of Object.keys(DEFAULT_DEVELOP) as (keyof DevelopSettings)[]) {
+    const v = (copied as unknown as Record<string, unknown>)[k];
+    if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+  }
+  return out;
+}

@@ -57,3 +57,51 @@ test('une IA locale se connecte, répond et génère une image', async ({ page }
   await page.getByTestId('ai-generate').click();
   await expect.poll(kinds).toEqual(['text', 'image']);
 });
+
+test('la clé API est chiffrée dans le navigateur et reste utilisable', async ({ page }) => {
+  await page.addInitScript(() =>
+    localStorage.setItem('poulpe.settings', JSON.stringify({ showWelcome: false })),
+  );
+  let sent = '';
+  await page.route('http://localhost:11434/v1/**', async (route) => {
+    sent = route.request().headers()['authorization'] ?? '';
+    return route.fulfill({
+      json: { data: [{ id: 'm1' }] },
+      headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' },
+    });
+  });
+  await page.goto('/');
+  await page.evaluate(() => (window as any).poulpe.ui.set({ dialog: 'preferences', prefsTab: 'ai' }));
+  await choose(page.getByTestId('ai-preset'), 'ollama');
+  await page.getByTestId('ai-add').click();
+  await page.getByTestId('ai-key').fill('sk-secret-12345');
+  await page.getByRole('button', { name: 'Enregistrer la clé' }).click();
+  await expect(page.getByTestId('ai-key')).toHaveAttribute('placeholder', /enregistrée/i);
+
+  const raw = await page.evaluate(() => localStorage.getItem('poulpe.ai.keys')!);
+  expect(raw).not.toContain('sk-secret-12345');
+  expect(raw).toContain('v1:');
+
+  await page.getByTestId('ai-test').click();
+  await expect(page.getByText('Connexion réussie : 1 modèle')).toBeVisible();
+  expect(sent).toContain('sk-secret-12345');
+});
+
+test('une ancienne clé en clair est chiffrée au premier usage', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('poulpe.ai.keys')) return;
+    localStorage.setItem('poulpe.settings', JSON.stringify({ showWelcome: false }));
+    localStorage.setItem('poulpe.ai.keys', JSON.stringify({ ollama: 'sk-old-plain' }));
+  });
+  await page.goto('/');
+  await page.evaluate(async () => {
+    const path = '/src/ai/providers.ts';
+    const { aiFetch } = await import(/* @vite-ignore */ path);
+    await aiFetch({ url: 'http://localhost:1/x', key: { id: 'ollama', header: 'authorization' } }).catch(
+      () => undefined,
+    );
+  });
+  const raw = await page.evaluate(() => localStorage.getItem('poulpe.ai.keys')!);
+  expect(raw).not.toContain('sk-old-plain');
+  expect(raw).toContain('v1:');
+});
