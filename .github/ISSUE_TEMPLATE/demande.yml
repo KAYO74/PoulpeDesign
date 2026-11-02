@@ -1,0 +1,17 @@
+name: Demander une fonction
+description: Il manque un outil ou une fonction d'Affinity, d'Illustrator, de Photoshop ou de Canva ? Dites-le ici.
+title: "Demande : "
+labels: ["demande"]
+body:
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Qu'est-ce qui vous manque ?
+      description: Décrivez ce que vous voulez faire, avec vos mots.
+    validations:
+      required: true
+  - type: input
+    id: autre-logiciel
+    attributes:
+      label: Où l'avez-vous vu ?
+      description: Dans quel logiciel et sous quel nom (facultatif).

@@ -1,0 +1,26 @@
+name: Signaler un bogue
+description: Quelque chose ne marche pas comme prévu.
+title: "Bogue : "
+labels: ["bogue"]
+body:
+  - type: textarea
+    id: probleme
+    attributes:
+      label: Que s'est-il passé ?
+      description: Ce que vous avez fait, ce que vous attendiez, ce qui est arrivé.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version de Poulpe Design
+      placeholder: "1.6.0"
+  - type: dropdown
+    id: systeme
+    attributes:
+      label: Système
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Navigateur
