@@ -242,6 +242,7 @@ export const COMMANDS = {
     shortcut: 'Mod+Shift+N',
     run: () => void newPixelLayer(),
   },
+  'layer.newPixelMany': { label: 'layer.newPixelMany', run: () => ui.set({ dialog: 'layerCount' }) },
   'layer.addMask': { label: 'layer.addMask', run: () => P.addMask(), enabled: P.canAddMask },
   'layer.editMask': {
     label: 'layer.editMask',
