@@ -191,6 +191,35 @@ export async function loadBytes(name: string, bytes: Uint8Array): Promise<void> 
   }
 }
 
+let pathMode: 'open' | 'save' = 'open';
+export const pathEntryMode = (): 'open' | 'save' => pathMode;
+/** Ouvre la fenêtre « chemin du fichier » (appli de bureau) pour ouvrir ou enregistrer sous un chemin tapé. */
+export function openPathEntry(mode: 'open' | 'save'): void {
+  pathMode = mode;
+  ui.set({ dialog: 'pathEntry' });
+}
+
+/** Ouvre ou enregistre le fichier dont on a tapé le chemin. Renvoie un message d'erreur, sinon null. */
+export async function usePath(path: string, mode: 'open' | 'save'): Promise<string | null> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  const p = path.trim().replace(/^["']|["']$/g, '');
+  try {
+    await invoke('allow_path', { path: p, write: mode === 'save' });
+  } catch (e) {
+    return String(e);
+  }
+  if (mode === 'open') {
+    const { readFile } = await import('@tauri-apps/plugin-fs');
+    makeRoomForDocument();
+    await openBytes(p, await readFile(p));
+    ui.set({ dialog: null });
+  } else {
+    ui.set({ dialog: null, filePath: p });
+    await saveDocument(false);
+  }
+  return null;
+}
+
 export async function openDocument(): Promise<void> {
   const file = await pickFile(OPEN_EXTENSIONS, OPEN_EXTENSIONS.map((e) => `.${e}`).join(','));
   if (!file) return;

@@ -109,6 +109,41 @@ fn save_launch_prefs(app: tauri::AppHandle, prefs: String) -> Result<(), String>
     launch::write(&app.config().identifier, &prefs)
 }
 
+/// Extensions des fichiers que l'on peut désigner en tapant un chemin (documents, images, photos).
+const PATH_EXTENSIONS: &[&str] = &[
+    "poulpe", "poulpemodele", "psd", "pdf", "ai", "png", "jpg", "jpeg", "webp", "gif", "bmp", "svg", "tif",
+    "tiff", "avif", "heic", "zip", "dng", "cr2", "cr3", "nef", "arw", "orf", "rw2", "raf",
+];
+
+/// Autorise l'appli à lire (`write` faux) ou écrire (`write` vrai) UN fichier désigné en tapant son
+/// chemin, comme le fait le dialogue système. Seuls les types de fichiers ci-dessus, jamais un dossier.
+#[tauri::command]
+fn allow_path(app: tauri::AppHandle, path: String, write: bool) -> Result<(), String> {
+    use tauri_plugin_fs::FsExt;
+    let p = std::path::PathBuf::from(path.trim());
+    if !p.is_absolute() {
+        return Err("chemin complet attendu".into());
+    }
+    let ok_ext = p
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| PATH_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()));
+    if !ok_ext || p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+        return Err("type de fichier non autorisé".into());
+    }
+    if p.is_dir() {
+        return Err("c'est un dossier".into());
+    }
+    if write {
+        if !p.parent().is_some_and(|d| d.is_dir()) {
+            return Err("dossier introuvable".into());
+        }
+    } else if !p.is_file() {
+        return Err("fichier introuvable".into());
+    }
+    app.fs_scope().allow_file(&p).map_err(|e| e.to_string())
+}
+
 /// Langue choisie dans l'installeur Windows : `langue.txt`, écrit à côté de l'appli par l'installeur
 /// (windows/langue.nsh). Rien sous macOS et Linux, ni avec l'installeur MSI : l'appli la demande
 /// alors au premier lancement.
@@ -171,6 +206,7 @@ pub fn run() {
             system_memory,
             save_launch_prefs,
             installer_language,
+            allow_path,
             engine::engine_info,
             engine::engine_configure,
             engine::engine_apply,

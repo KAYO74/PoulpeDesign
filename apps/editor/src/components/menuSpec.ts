@@ -1,7 +1,7 @@
 import { COLOR_ADJUSTMENTS, FORMAT_PRESETS, LIVE_FILTERS, LUT_PRESETS, type LutPreset } from '@poulpe/core';
 import { addArtboard } from '../actions';
 import { allCommands } from '../commands';
-import { exportDocument } from '../io';
+import { exportDocument, isDesktop } from '../io';
 import { t } from '../i18n';
 import { editor, setSettings, ui } from '../store';
 import { STUDIO_TABS, isTabShown, tabsKind, toggleTab } from '../panels/studioTabs';
@@ -127,11 +127,13 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
       items: [
         cmd('file.new'),
         cmd('file.open'),
+        ...(isDesktop() ? [cmd('file.openPath')] : []),
         cmd('file.openPhoto'),
         cmd('file.photoLibrary', ui.get().photoLibrary),
         sep,
         cmd('file.save'),
         cmd('file.saveAs'),
+        ...(isDesktop() ? [cmd('file.saveAsPath')] : []),
         cmd('file.saveAsPsd'),
         cmd('file.saveTemplate'),
         sep,
