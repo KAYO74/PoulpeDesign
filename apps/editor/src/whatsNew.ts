@@ -13,6 +13,21 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.6.0',
+    fr: [
+      'Choix de police : recherche, filtres (avec ou sans empattement, écriture, gras…) et noms écrits dans leur police.',
+      'Texte déformé : arc et vague.',
+      'Photothèque : exportez vos photos avec taille, qualité et filigrane.',
+      'Un champ de recherche (Ctrl+K) toujours visible dans la barre de titre.',
+    ],
+    en: [
+      'Font picker: search, filters (serif, sans serif, script, bold…) and names shown in their own font.',
+      'Warped text: arc and wave.',
+      'Photo library: export your photos with size, quality and watermark.',
+      'A search field (Ctrl+K) always visible in the title bar.',
+    ],
+  },
+  {
     version: '1.5.1',
     fr: [
       'Cette fenêtre Nouveautés s’affiche après chaque mise à jour.',
