@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { pathEntryMode, usePath } from '../../io';
+import { pathEntryMode, applyPath } from '../../io';
 import { useT } from '../../i18n';
 import { Modal } from './Modal';
 import { close } from './close';
@@ -12,7 +12,7 @@ export function PathEntryDialog() {
   const [error, setError] = useState('');
   const go = async () => {
     if (!path.trim()) return;
-    const e = await usePath(path, mode);
+    const e = await applyPath(path, mode);
     if (e) setError(e);
   };
   return (

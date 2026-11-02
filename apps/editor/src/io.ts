@@ -200,7 +200,7 @@ export function openPathEntry(mode: 'open' | 'save'): void {
 }
 
 /** Ouvre ou enregistre le fichier dont on a tapé le chemin. Renvoie un message d'erreur, sinon null. */
-export async function usePath(path: string, mode: 'open' | 'save'): Promise<string | null> {
+export async function applyPath(path: string, mode: 'open' | 'save'): Promise<string | null> {
   const { invoke } = await import('@tauri-apps/api/core');
   const p = path.trim().replace(/^["']|["']$/g, '');
   try {
