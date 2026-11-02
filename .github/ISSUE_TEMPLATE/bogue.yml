@@ -1,7 +1,7 @@
 name: Signaler un bogue
 description: Quelque chose ne marche pas comme prévu.
-title: "Bogue : "
-labels: ["bogue"]
+title: 'Bogue : '
+labels: ['bogue']
 body:
   - type: textarea
     id: probleme
@@ -14,7 +14,7 @@ body:
     id: version
     attributes:
       label: Version de Poulpe Design
-      placeholder: "1.6.0"
+      placeholder: '1.6.0'
   - type: dropdown
     id: systeme
     attributes:

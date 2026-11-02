@@ -1,7 +1,7 @@
 name: Demander une fonction
 description: Il manque un outil ou une fonction d'Affinity, d'Illustrator, de Photoshop ou de Canva ? Dites-le ici.
-title: "Demande : "
-labels: ["demande"]
+title: 'Demande : '
+labels: ['demande']
 body:
   - type: textarea
     id: besoin
