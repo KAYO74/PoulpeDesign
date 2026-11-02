@@ -128,6 +128,7 @@ export type Dialog =
   | 'filter'
   | 'liveFilter'
   | 'raw'
+  | 'photoExport'
   | 'contentFill'
   | 'blendRanges'
   | 'meshWarp'

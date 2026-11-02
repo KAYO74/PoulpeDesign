@@ -7,6 +7,7 @@ import { makeRoomForDocument } from '../docTabs';
 import { openBytes, openPhotoBytes } from '../io';
 import { toast, ui } from '../store';
 import { formatExposure } from './exif';
+import { openPhotoExport } from './exportPhotos';
 import {
   DEFAULT_FILTER,
   LABELS,
@@ -536,6 +537,9 @@ function PhotoInfo({
       </dl>
       <button className="btn primary" onClick={() => void openLibraryPhoto(p)} data-testid="plib-open">
         {isRaw(p.name) ? t('plib.develop') : t('plib.openPhoto')}
+      </button>
+      <button className="btn" onClick={() => openPhotoExport(ids)} data-testid="plib-export">
+        {t('plib.export')}
       </button>
       <button className="btn" onClick={onRemove}>
         <Icon name="trash" />

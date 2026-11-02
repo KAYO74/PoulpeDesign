@@ -134,3 +134,26 @@ test('ouvre un dossier du disque sans copier les photos', async ({ page }) => {
   await expect(lib).toBeHidden();
   await expect(page.getByTestId('persona-photo')).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('exporte les photos choisies dans un ZIP réduit', async ({ page }) => {
+  await page.evaluate(() => delete (window as any).showSaveFilePicker);
+  await page.getByTestId('persona-library').click();
+  const lib = page.getByTestId('photo-library');
+  await page.getByTestId('plib-files').setInputFiles([
+    { name: 'plage.png', mimeType: 'image/png', buffer: PNG },
+    { name: 'photo.dng', mimeType: 'image/x-adobe-dng', buffer: DNG },
+  ]);
+  await expect(lib.getByRole('option')).toHaveCount(2);
+  await lib.getByRole('option', { name: 'plage.png' }).click();
+  await lib.getByRole('option', { name: 'photo.dng' }).click({ modifiers: ['Control'] });
+  await page.getByTestId('plib-export').click();
+  await expect(page.getByRole('dialog', { name: 'Exporter des photos' })).toBeVisible();
+  await page.getByTestId('pexp-watermark').fill('© Poulpe');
+  const download = page.waitForEvent('download');
+  await page.getByTestId('pexp-go').click();
+  const file = await (await download).path();
+  const { unzipSync } = await import('fflate');
+  const zip = unzipSync(new Uint8Array(readFileSync(file)));
+  expect(Object.keys(zip).sort()).toEqual(['photo.jpg', 'plage.jpg']);
+  for (const bytes of Object.values(zip)) expect([bytes[0], bytes[1]]).toEqual([0xff, 0xd8]);
+});
