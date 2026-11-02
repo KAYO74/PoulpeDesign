@@ -52,7 +52,9 @@
 
 ## Pourquoi Poulpe Design ?
 
-- **Libre et gratuit** : licence MPL-2.0, aucun abonnement, aucun compte, vos fichiers restent sur votre ordinateur.
+- **Libre et gratuit** : licence MPL-2.0, aucun abonnement, **aucun compte** (même pas un compte Canva ou Adobe), **aucune publicité**, vos fichiers restent sur votre ordinateur.
+- **Respect de vos données** : rien n'est envoyé sans votre accord ; aucune télémétrie, et les connexions d'IA en ligne ne servent que si vous ajoutez vous-même une clé.
+- **Une feuille de route publique** : vous voyez ce qui arrive, et vous pouvez demander ce qui vous manque (voir « Vos demandes » ci-dessous).
 - **Tout-en-un** : dessin vectoriel, retouche photo, développement RAW et mise en page dans la même appli, avec des espaces de travail façon Affinity.
 - **Simple comme Canva** : modèles prêts à l'emploi, bibliothèque d'éléments, redimensionnement d'un format à l'autre.
 - **Compatible** : ouvre et enregistre les fichiers Photoshop (PSD, avec calques), ouvre PDF et Illustrator, exporte en SVG, PDF, PNG et JPEG.
@@ -190,6 +192,10 @@ Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La 
 | **Diffusion**                        | GIF de démo, publication sur les boutiques (Flathub…), signature des installeurs Mac et Windows                                                   | ⏸️ Plus tard |
 
 Une idée ou un bogue ? Ouvrez une [discussion ou un ticket](https://github.com/KAYO74/PoulpeDesign/issues).
+
+### Vos demandes
+
+Il manque un outil, un bogue vous gêne, une fonction d'Affinity, d'Illustrator ou de Photoshop vous manque ? [Ouvrez un ticket](https://github.com/KAYO74/PoulpeDesign/issues) : les demandes sont lues et classées, et celles qui reviennent le plus passent en tête de la feuille de route.
 
 ### Déjà disponible
 
