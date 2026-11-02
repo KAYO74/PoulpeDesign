@@ -72,6 +72,22 @@ export const frPhotoLib = {
   'plib.removeConfirm':
     'Retirer {n} photo(s) de la bibliothèque ? Les fichiers sur votre disque ne sont pas touchés.',
   'plib.missing': 'Photo introuvable (déplacée, renommée ou accès refusé) : rouvrez son dossier.',
+  'plib.export': 'Exporter…',
+  'plib.exportTitle': 'Exporter des photos',
+  'plib.exportHint':
+    '{n} photo(s) seront développées, réduites et réunies dans un fichier ZIP. Les originaux ne sont pas touchés.',
+  'plib.exportSize': 'Taille',
+  'plib.exportOriginal': 'Taille d’origine',
+  'plib.exportLongSide': 'Grand côté : {px} px',
+  'plib.exportWatermark': 'Filigrane',
+  'plib.exportWatermarkHint': 'Texte en bas à droite (facultatif)',
+  'plib.exportCopied': 'RAW : appliquer les réglages copiés',
+  'plib.exportGo': 'Exporter',
+  'plib.exporting': 'Export des photos : {done} sur {total}',
+  'plib.exportName': 'Photos exportées',
+  'plib.exported': '{n} photo(s) exportée(s)',
+  'plib.exportedSome': '{n} photo(s) exportée(s), {failed} ignorée(s)',
+  'plib.exportFailed': 'Aucune photo exportée ({n} illisible(s))',
   'plib.shortcuts':
     'Raccourcis : 0 à 5 note · P retenir · X rejeter · U sans drapeau · 6 à 9 couleur · Entrée ouvrir · Suppr retirer',
 } as const;
@@ -146,6 +162,22 @@ export const enPhotoLib: Record<MessageKeyPhotoLib, string> = {
   'plib.remove': 'Remove from library',
   'plib.removeConfirm': 'Remove {n} photo(s) from the library? The files on your disk are not touched.',
   'plib.missing': 'Photo not found (moved, renamed or access denied): open its folder again.',
+  'plib.export': 'Export…',
+  'plib.exportTitle': 'Export photos',
+  'plib.exportHint':
+    '{n} photo(s) will be developed, resized and gathered in a ZIP file. The originals are not touched.',
+  'plib.exportSize': 'Size',
+  'plib.exportOriginal': 'Original size',
+  'plib.exportLongSide': 'Long edge: {px} px',
+  'plib.exportWatermark': 'Watermark',
+  'plib.exportWatermarkHint': 'Text at the bottom right (optional)',
+  'plib.exportCopied': 'RAW: apply the copied settings',
+  'plib.exportGo': 'Export',
+  'plib.exporting': 'Exporting photos: {done} of {total}',
+  'plib.exportName': 'Exported photos',
+  'plib.exported': '{n} photo(s) exported',
+  'plib.exportedSome': '{n} photo(s) exported, {failed} skipped',
+  'plib.exportFailed': 'No photo exported ({n} unreadable)',
   'plib.shortcuts':
     'Shortcuts: 0 to 5 rating · P pick · X reject · U unflag · 6 to 9 color · Enter open · Delete remove',
 };
