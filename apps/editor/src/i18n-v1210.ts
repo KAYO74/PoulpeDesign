@@ -3,6 +3,13 @@
  */
 
 export const frV1210 = {
+  'file.openPath': 'Ouvrir un chemin…',
+  'file.saveAsPath': 'Enregistrer sous un chemin…',
+  'path.title.open': 'Ouvrir un fichier par son chemin',
+  'path.title.save': 'Enregistrer sous un chemin',
+  'path.hint':
+    'Collez le chemin complet du fichier, par exemple /home/moi/affiche.poulpe ou C:\\Images\\affiche.psd.',
+  'path.error': 'Impossible : {e}',
   'layer.newPixelMany': 'Plusieurs calques de pixels…',
   'layer.manyTitle': 'Créer plusieurs calques',
   'layer.manyCount': 'Nombre de calques',
@@ -15,6 +22,13 @@ export const frV1210 = {
 export type MessageKeyV1210 = keyof typeof frV1210;
 
 export const enV1210: Record<MessageKeyV1210, string> = {
+  'file.openPath': 'Open a path…',
+  'file.saveAsPath': 'Save to a path…',
+  'path.title.open': 'Open a file by its path',
+  'path.title.save': 'Save to a path',
+  'path.hint':
+    'Paste the full path of the file, for example /home/me/poster.poulpe or C:\\Images\\poster.psd.',
+  'path.error': 'Not possible: {e}',
   'layer.newPixelMany': 'Several pixel layers…',
   'layer.manyTitle': 'Create several layers',
   'layer.manyCount': 'Number of layers',
