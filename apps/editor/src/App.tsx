@@ -9,6 +9,7 @@ import { StatusBar } from './components/StatusBar';
 import { ToolColumn } from './components/ToolColumn';
 import { ColorWindow } from './panels/ColorWindow';
 import { BrushEditor } from './tools/brushes/BrushEditor';
+import { SearchPill } from './components/SearchPill';
 import { Toolbar } from './components/Toolbar';
 import { Viewport } from './components/Viewport';
 import { WindowControls } from './components/WindowControls';
@@ -112,6 +113,7 @@ export function App() {
             <b data-tauri-drag-region={ownTitleBar || undefined}>{t('app.name')}</b> — {name}
             {dirty ? ' •' : ''}
           </div>
+          <SearchPill />
           {ownTitleBar && <WindowControls />}
         </header>
       )}

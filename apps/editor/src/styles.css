@@ -4140,3 +4140,39 @@ h4.sub .link {
 .font-opt[aria-selected='true'] {
   background: var(--hover, #ffffff12);
 }
+
+/* Champ de recherche visible dans la barre du haut : ouvre « Que voulez-vous faire ? » (Ctrl+K). */
+.search-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 8px;
+  margin-right: 6px;
+  color: var(--muted);
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.search-pill:hover {
+  border-color: var(--line-2);
+  color: var(--fg);
+}
+.search-pill kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+@media (max-width: 1200px) {
+  .search-pill-text {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .search-pill kbd {
+    display: none;
+  }
+}
