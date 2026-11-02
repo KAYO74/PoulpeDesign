@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.5.1-FF5F86" alt="Version 1.5.1"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.6.0-FF5F86" alt="Version 1.6.0"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -45,14 +45,16 @@
 </details>
 
 > [!NOTE]
-> **Nouveautés de la 1.5.1.** Photothèque façon Lightroom, onglets Vectoriel / Pixel / Mise en page / Export en haut, plusieurs projets ouverts à la fois, recherche de commande avec Ctrl+K, développement RAW (retouches locales, avant/après), préréglages de touches Affinity, Photoshop et Illustrator, et une fenêtre Nouveautés après chaque mise à jour. Tout est dans la [feuille de route](#feuille-de-route).
+> **Nouveautés de la 1.6.0.** Choix de police avec recherche et filtres, texte déformé en arc et en vague, export des photos de la photothèque (taille, qualité, filigrane), champ de recherche visible en haut. Et depuis la 1.5 : Photothèque façon Lightroom, onglets Vectoriel / Pixel / Mise en page / Export en haut, plusieurs projets ouverts à la fois, recherche de commande avec Ctrl+K, développement RAW (retouches locales, avant/après), préréglages de touches Affinity, Photoshop et Illustrator, et une fenêtre Nouveautés après chaque mise à jour. Tout est dans la [feuille de route](#feuille-de-route).
 
 > [!TIP]
 > **Fait avec l'IA.** Poulpe Design est un projet personnel, construit avec l'intelligence artificielle : le code, la documentation et les images de cette page ont été écrits par Claude (Anthropic) à partir des demandes de son créateur, pour offrir à tous une vraie application de design, libre et gratuite. Rien n'est repris de logiciels propriétaires ; voir [Licences et origine du contenu](docs/licences.md).
 
 ## Pourquoi Poulpe Design ?
 
-- **Libre et gratuit** : licence MPL-2.0, aucun abonnement, aucun compte, vos fichiers restent sur votre ordinateur.
+- **Libre et gratuit** : licence MPL-2.0, aucun abonnement, **aucun compte** (même pas un compte Canva ou Adobe), **aucune publicité**, vos fichiers restent sur votre ordinateur.
+- **Respect de vos données** : rien n'est envoyé sans votre accord ; aucune télémétrie, et les connexions d'IA en ligne ne servent que si vous ajoutez vous-même une clé.
+- **Une feuille de route publique** : vous voyez ce qui arrive, et vous pouvez demander ce qui vous manque (voir « Vos demandes » ci-dessous).
 - **Tout-en-un** : dessin vectoriel, retouche photo, développement RAW et mise en page dans la même appli, avec des espaces de travail façon Affinity.
 - **Simple comme Canva** : modèles prêts à l'emploi, bibliothèque d'éléments, redimensionnement d'un format à l'autre.
 - **Compatible** : ouvre et enregistre les fichiers Photoshop (PSD, avec calques), ouvre PDF et Illustrator, exporte en SVG, PDF, PNG et JPEG.
@@ -176,7 +178,7 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La version actuelle est la **1.5.1**. Le détail de chaque version est sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases) et dans la [feuille de route](docs/feuille-de-route.md).
+Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La version actuelle est la **1.6.0**. Le détail de chaque version est sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases) et dans la [feuille de route](docs/feuille-de-route.md).
 
 ### Ce qui reste à faire
 
@@ -191,11 +193,16 @@ Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La 
 
 Une idée ou un bogue ? Ouvrez une [discussion ou un ticket](https://github.com/KAYO74/PoulpeDesign/issues).
 
+### Vos demandes
+
+Il manque un outil, un bogue vous gêne, une fonction d'Affinity, d'Illustrator ou de Photoshop vous manque ? [Ouvrez un ticket](https://github.com/KAYO74/PoulpeDesign/issues) : les demandes sont lues et classées, et celles qui reviennent le plus passent en tête de la feuille de route.
+
 ### Déjà disponible
 
 <details>
-<summary><b>Versions 1.2.5 à 1.5.1, en résumé</b></summary>
+<summary><b>Versions 1.2.5 à 1.6.0, en résumé</b></summary>
 
+- **1.6** : choix de police avec recherche et filtres, texte déformé en arc et en vague, export des photos de la photothèque (taille, qualité, filigrane), champ de recherche Ctrl+K visible dans la barre de titre.
 - **1.5** : photothèque façon Lightroom, onglets en haut, plusieurs projets à la fois, recherche Ctrl+K, retouches locales en dégradé, avant/après en RAW, préréglages de touches, fenêtre Nouveautés, sécurité renforcée (accès disque limité, clés d'API chiffrées).
 - **1.4** : texte des PDF, filtres modifiables, objets liés, RAW, remplissage intelligent, déformation, Persona Export, instantanés, panneau Couches, hachures, couleurs et menus modernes.
 - **1.3** : documentation en anglais, roue chromatique, menu Fenêtre, panneaux libres, connexion d'IA en ligne ou locales.

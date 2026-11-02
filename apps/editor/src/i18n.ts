@@ -56,6 +56,7 @@ const fr = {
   'file.exportSvg': 'Exporter en SVG…',
   'file.exportPdf': 'Exporter en PDF…',
   'file.unsaved': 'Le document a des modifications non enregistrées. Continuer quand même ?',
+  'file.psdSkipped': '{n} calque(s) de réglage Photoshop n’ont pas d’équivalent et sont ignorés.',
   'file.invalid': "Ce fichier n'est pas un document Poulpe Design valide.",
   'file.tooNew':
     'Ce document a été créé avec une version plus récente de Poulpe Design. Mettez l’appli à jour pour l’ouvrir.',
@@ -1052,6 +1053,7 @@ const en: Record<
   'file.exportSvg': 'Export as SVG…',
   'file.exportPdf': 'Export as PDF…',
   'file.unsaved': 'The document has unsaved changes. Continue anyway?',
+  'file.psdSkipped': '{n} Photoshop adjustment layer(s) have no equivalent and were skipped.',
   'file.invalid': 'This file is not a valid Poulpe Design document.',
   'file.tooNew': 'This document was made with a newer version of Poulpe Design. Update the app to open it.',
   'file.saved': 'Document saved',

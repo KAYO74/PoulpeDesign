@@ -184,6 +184,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
       label: t('menu.layer'),
       items: [
         cmd('layer.newPixel'),
+        cmd('layer.newPixelMany'),
         cmd('layer.copyToLayer'),
         sub(t('menu.mask'), [
           cmd('layer.addMask'),

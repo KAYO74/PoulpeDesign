@@ -10,6 +10,10 @@ export const frV1210 = {
   'path.hint':
     'Collez le chemin complet du fichier, par exemple /home/moi/affiche.poulpe ou C:\\Images\\affiche.psd.',
   'path.error': 'Impossible : {e}',
+  'layer.newPixelMany': 'Plusieurs calques de pixels…',
+  'layer.manyTitle': 'Créer plusieurs calques',
+  'layer.manyCount': 'Nombre de calques',
+  'layer.manyGo': 'Créer',
   'file.saveAsPsd': 'Enregistrer en PSD (Photoshop, Affinity)…',
   'psdSave.savedActive':
     'Enregistré : le PSD montre le plan de travail actif, Poulpe Design garde tout le document',
@@ -25,6 +29,10 @@ export const enV1210: Record<MessageKeyV1210, string> = {
   'path.hint':
     'Paste the full path of the file, for example /home/me/poster.poulpe or C:\\Images\\poster.psd.',
   'path.error': 'Not possible: {e}',
+  'layer.newPixelMany': 'Several pixel layers…',
+  'layer.manyTitle': 'Create several layers',
+  'layer.manyCount': 'Number of layers',
+  'layer.manyGo': 'Create',
   'file.saveAsPsd': 'Save as PSD (Photoshop, Affinity)…',
   'psdSave.savedActive': 'Saved: the PSD shows the active artboard, Poulpe Design keeps the whole document',
 };

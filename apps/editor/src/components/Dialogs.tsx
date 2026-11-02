@@ -7,6 +7,7 @@ import { DraftDialog } from './dialogs/DraftDialog';
 import { FilterDialog } from './dialogs/FilterDialog';
 import { LiveFilterDialog } from './dialogs/LiveFilterDialog';
 import { PathEntryDialog } from './dialogs/PathEntryDialog';
+import { LayerCountDialog } from './dialogs/LayerCountDialog';
 import { PhotoExportDialog } from './dialogs/PhotoExportDialog';
 import { RawDialog } from './dialogs/RawDialog';
 import { ContentFillDialog } from './dialogs/ContentFillDialog';
@@ -65,6 +66,7 @@ function MainDialog() {
   if (dialog === 'raw') return <RawDialog />;
   if (dialog === 'photoExport') return <PhotoExportDialog />;
   if (dialog === 'pathEntry') return <PathEntryDialog />;
+  if (dialog === 'layerCount') return <LayerCountDialog />;
   if (dialog === 'contentFill') return <ContentFillDialog />;
   if (dialog === 'blendRanges') return <BlendRangesDialog />;
   if (dialog === 'meshWarp') return <MeshWarpDialog />;

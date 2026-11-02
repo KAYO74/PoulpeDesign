@@ -130,6 +130,7 @@ export type Dialog =
   | 'raw'
   | 'photoExport'
   | 'pathEntry'
+  | 'layerCount'
   | 'contentFill'
   | 'blendRanges'
   | 'meshWarp'

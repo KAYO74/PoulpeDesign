@@ -250,9 +250,11 @@ export async function openBytes(name: string, bytes: Uint8Array): Promise<void> 
         requestAnimationFrame(() => window.dispatchEvent(new Event('poulpe:fit')));
         return;
       }
-      const { psdToDocument } = await import('./importers/psd');
+      const { psdToDocument, psdSkippedLayers } = await import('./importers/psd');
       const doc = await psdToDocument(bytes, baseName(name));
       editor.load(doc, { unsaved: true });
+      const lost = psdSkippedLayers().length;
+      if (lost) toast(t('file.psdSkipped').replace('{n}', String(lost)));
       ui.set({ filePath: null, dialog: null, persona: 'photo', tool: 'select', maskEditId: null });
     } else {
       // Un fichier Illustrator se lit par sa partie PDF (« Créer un fichier compatible PDF »).
