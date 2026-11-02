@@ -76,6 +76,24 @@ export function psdBlendMode(mode: BlendMode): NonNullable<Layer['blendMode']> {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/** Couleur Photoshop → couleur CSS. */
+function cssColor(c: unknown): string | null {
+  if (!c || typeof c !== 'object') return null;
+  const o = c as Record<string, number>;
+  const h = (n: number) =>
+    Math.round(clamp(n, 0, 255))
+      .toString(16)
+      .padStart(2, '0');
+  if ('r' in o) return `#${h(o.r)}${h(o.g)}${h(o.b)}`;
+  if ('fr' in o) return `#${h(o.fr * 255)}${h(o.fg * 255)}${h(o.fb * 255)}`;
+  if ('k' in o) return `#${h(o.k)}${h(o.k)}${h(o.k)}`;
+  return null;
+}
+
+/** Calques non importés lors de la dernière lecture (réglages ou effets sans équivalent). */
+let skipped: string[] = [];
+export const psdSkippedLayers = (): string[] => skipped;
+
 /** Réglage Poulpe équivalent à un calque de réglage Photoshop, quand il existe. */
 function adjustmentOf(layer: Layer): Adjustment | null {
   const a = layer.adjustment;
@@ -120,6 +138,47 @@ function adjustmentOf(layer: Layer): Adjustment | null {
         saturation: a.master?.saturation ?? 0,
         lightness: a.master?.lightness ?? 0,
       };
+    case 'color balance': {
+      const v = (c?: {
+        cyanRed: number;
+        magentaGreen: number;
+        yellowBlue: number;
+      }): [number, number, number] => [
+        clamp(c?.cyanRed ?? 0, -100, 100),
+        clamp(c?.magentaGreen ?? 0, -100, 100),
+        clamp(c?.yellowBlue ?? 0, -100, 100),
+      ];
+      return {
+        kind: 'colorBalance',
+        shadows: v(a.shadows),
+        midtones: v(a.midtones),
+        highlights: v(a.highlights),
+      };
+    }
+    case 'black & white':
+      return {
+        kind: 'blackWhite',
+        red: clamp(a.reds ?? 40, -200, 300),
+        green: clamp(a.greens ?? 40, -200, 300),
+        blue: clamp(a.blues ?? 20, -200, 300),
+      };
+    case 'photo filter':
+      return {
+        kind: 'photoFilter',
+        color: cssColor(a.color) ?? '#ec8a00',
+        density: clamp(a.density ?? 25, 0, 100),
+      };
+    case 'gradient map': {
+      const stops = (a.colorStops ?? []).map((st) => ({
+        offset: clamp(st.location / 4096, 0, 1),
+        color: cssColor(st.color) ?? '#000000',
+      }));
+      if (stops.length < 2) return null;
+      return {
+        kind: 'gradientMap',
+        stops: a.reverse ? stops.map((st) => ({ ...st, offset: 1 - st.offset })).reverse() : stops,
+      };
+    }
     case 'invert':
       return { kind: 'invert' };
     case 'posterize':
@@ -192,7 +251,10 @@ function convertLayers(doc: PoulpeDocument, layers: Layer[], psd: Psd): SceneNod
       continue;
     }
     const canvas = layer.canvas;
-    if (!canvas || !canvas.width || !canvas.height) continue;
+    if (!canvas || !canvas.width || !canvas.height) {
+      if (layer.adjustment) skipped.push(common.name);
+      continue;
+    }
     const x = layer.left ?? 0,
       y = layer.top ?? 0;
     const node = createImage({
@@ -211,6 +273,7 @@ function convertLayers(doc: PoulpeDocument, layers: Layer[], psd: Psd): SceneNod
 /** Document Poulpe à partir des octets d'un fichier .psd. */
 export async function psdToDocument(bytes: Uint8Array, name: string): Promise<PoulpeDocument> {
   const { readPsd } = await import('ag-psd');
+  skipped = [];
   const psd = readPsd(bytes, { skipThumbnail: true });
   const doc = createDocument({ name, width: psd.width, height: psd.height });
   const ab = doc.artboards[0];
