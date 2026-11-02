@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { allCommands, commandShortcut, commandTitle, formatShortcut, runCommand } from '../../commands';
+import {
+  allCommands,
+  commandShortcut,
+  commandTitle,
+  formatShortcut,
+  runCommand,
+  toolKeysFor,
+} from '../../commands';
 import { t as tr, useT } from '../../i18n';
 import { setPersona } from '../../photo/persona';
 import { ui, type ToolId } from '../../store';
@@ -37,10 +44,15 @@ function chooseTool(id: ToolId): void {
 
 function entries(): Entry[] {
   const persona = ui.get().persona;
+  // La touche de chaque outil dans la Persona courante (ex. P pour la plume).
+  const keyOf = new Map<ToolId, string>();
+  for (const [key, list] of Object.entries(toolKeysFor(persona)))
+    for (const id of list) if (!keyOf.has(id)) keyOf.set(id, key.toUpperCase());
   const tools = [...new Set(TOOL_CATALOG.flatMap((g) => g.tools))].map((id): Entry => ({
     key: `tool:${id}`,
     kind: 'tool',
     title: tr(`tool.${id}`),
+    shortcut: keyOf.get(id),
     icon: id in ICON_PATHS ? (id as IconName) : undefined,
     run: () => chooseTool(id),
   }));

@@ -281,73 +281,75 @@ export function PhotoLibrary() {
             {t('plib.close')}
           </button>
         </div>
-        <div className="plib-bar filters">
-          <Select
-            label={t('plib.minRating')}
-            testId="plib-min-rating"
-            value={filter.minRating}
-            onChange={(v) => patch({ minRating: v })}
-            options={[0, 1, 2, 3, 4, 5].map((n) => ({
-              value: n,
-              label: n ? t('plib.stars', { n }) : t('plib.anyRating'),
-            }))}
-          />
-          <Select
-            label={t('plib.flagFilter')}
-            testId="plib-flag"
-            value={filter.flag}
-            onChange={(v) => patch({ flag: v })}
-            options={[
-              { value: 'all', label: t('plib.flagAll') },
-              { value: 'pick', label: t('plib.flagPick') },
-              { value: 'none', label: t('plib.flagNone') },
-              { value: 'reject', label: t('plib.flagReject') },
-            ]}
-          />
-          <div className="plib-labels" role="group" aria-label={t('plib.labelFilter')}>
-            <button
-              className="plib-label all"
-              aria-pressed={filter.label === 'all'}
-              title={t('plib.labelAll')}
-              aria-label={t('plib.labelAll')}
-              onClick={() => patch({ label: 'all' })}
+        {photos.length > 0 && (
+          <div className="plib-bar filters">
+            <Select
+              label={t('plib.minRating')}
+              testId="plib-min-rating"
+              value={filter.minRating}
+              onChange={(v) => patch({ minRating: v })}
+              options={[0, 1, 2, 3, 4, 5].map((n) => ({
+                value: n,
+                label: n ? t('plib.stars', { n }) : t('plib.anyRating'),
+              }))}
             />
-            {LABELS.map((l) => (
+            <Select
+              label={t('plib.flagFilter')}
+              testId="plib-flag"
+              value={filter.flag}
+              onChange={(v) => patch({ flag: v })}
+              options={[
+                { value: 'all', label: t('plib.flagAll') },
+                { value: 'pick', label: t('plib.flagPick') },
+                { value: 'none', label: t('plib.flagNone') },
+                { value: 'reject', label: t('plib.flagReject') },
+              ]}
+            />
+            <div className="plib-labels" role="group" aria-label={t('plib.labelFilter')}>
               <button
-                key={l}
-                className={`plib-label ${l}`}
-                aria-pressed={filter.label === l}
-                title={t(`plib.label.${l}`)}
-                aria-label={t(`plib.label.${l}`)}
-                onClick={() => patch({ label: filter.label === l ? 'all' : l })}
+                className="plib-label all"
+                aria-pressed={filter.label === 'all'}
+                title={t('plib.labelAll')}
+                aria-label={t('plib.labelAll')}
+                onClick={() => patch({ label: 'all' })}
               />
-            ))}
-          </div>
-          <Select
-            label={t('plib.sort')}
-            testId="plib-sort"
-            value={filter.sort}
-            onChange={(v) => patch({ sort: v })}
-            options={[
-              { value: 'date', label: t('plib.sortDate') },
-              { value: 'added', label: t('plib.sortAdded') },
-              { value: 'name', label: t('plib.sortName') },
-              { value: 'rating', label: t('plib.sortRating') },
-            ]}
-          />
-          <span className="spacer" />
-          <label className="plib-size">
-            <input
-              type="range"
-              min={96}
-              max={320}
-              step={8}
-              value={size}
-              aria-label={t('plib.size')}
-              onChange={(e) => setSize(+e.target.value)}
+              {LABELS.map((l) => (
+                <button
+                  key={l}
+                  className={`plib-label ${l}`}
+                  aria-pressed={filter.label === l}
+                  title={t(`plib.label.${l}`)}
+                  aria-label={t(`plib.label.${l}`)}
+                  onClick={() => patch({ label: filter.label === l ? 'all' : l })}
+                />
+              ))}
+            </div>
+            <Select
+              label={t('plib.sort')}
+              testId="plib-sort"
+              value={filter.sort}
+              onChange={(v) => patch({ sort: v })}
+              options={[
+                { value: 'date', label: t('plib.sortDate') },
+                { value: 'added', label: t('plib.sortAdded') },
+                { value: 'name', label: t('plib.sortName') },
+                { value: 'rating', label: t('plib.sortRating') },
+              ]}
             />
-          </label>
-        </div>
+            <span className="spacer" />
+            <label className="plib-size">
+              <input
+                type="range"
+                min={96}
+                max={320}
+                step={8}
+                value={size}
+                aria-label={t('plib.size')}
+                onChange={(e) => setSize(+e.target.value)}
+              />
+            </label>
+          </div>
+        )}
 
         {importing && (
           <div className="plib-progress" role="status">
@@ -395,8 +397,8 @@ export function PhotoLibrary() {
           </div>
         ) : (
           <div className="plib-empty">
-            <Icon name="photoLibrary" size={40} />
-            <p>{photos.length ? t('plib.noMatch') : t('plib.empty')}</p>
+            <Icon name="photoLibrary" size={48} />
+            <p className="plib-empty-title">{photos.length ? t('plib.noMatch') : t('plib.empty')}</p>
             {!photos.length && <p className="muted">{t('plib.emptyHint')}</p>}
           </div>
         )}

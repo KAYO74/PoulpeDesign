@@ -3910,9 +3910,20 @@ h4.sub .link {
   text-align: center;
   color: var(--muted);
 }
+.plib-empty {
+  margin: 14px;
+  border: 1.5px dashed var(--line-2);
+  border-radius: 14px;
+}
 .plib-empty p {
   margin: 0;
   max-width: 360px;
+}
+.plib-empty .plib-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-top: 4px;
 }
 .plib-foot {
   display: flex;
