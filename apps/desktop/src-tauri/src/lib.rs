@@ -124,22 +124,31 @@ fn allow_path(app: tauri::AppHandle, path: String, write: bool) -> Result<(), St
     if !p.is_absolute() {
         return Err("chemin complet attendu".into());
     }
-    let ok_ext = p
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| PATH_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()));
-    if !ok_ext || p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
+    let ext_ok = |q: &std::path::Path| {
+        q.extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| PATH_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+    };
+    if !ext_ok(&p) || p.components().any(|c| matches!(c, std::path::Component::ParentDir)) {
         return Err("type de fichier non autorisé".into());
     }
     if p.is_dir() {
         return Err("c'est un dossier".into());
     }
-    if write {
-        if !p.parent().is_some_and(|d| d.is_dir()) {
-            return Err("dossier introuvable".into());
+    // Chemin réel (liens symboliques résolus), puis l'extension est revérifiée sur la cible.
+    let p = if write {
+        let dir = p.parent().filter(|d| d.is_dir()).ok_or("dossier introuvable")?;
+        let name = p.file_name().ok_or("nom de fichier manquant")?;
+        let target = dir.canonicalize().map_err(|e| e.to_string())?.join(name);
+        if target.is_symlink() {
+            return Err("lien symbolique refusé".into());
         }
-    } else if !p.is_file() {
-        return Err("fichier introuvable".into());
+        target
+    } else {
+        p.canonicalize().map_err(|_| "fichier introuvable".to_string())?
+    };
+    if !ext_ok(&p) || (!write && !p.is_file()) {
+        return Err("type de fichier non autorisé".into());
     }
     app.fs_scope().allow_file(&p).map_err(|e| e.to_string())
 }
