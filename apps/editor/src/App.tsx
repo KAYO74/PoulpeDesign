@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { baseName, isDesktop } from './io';
 import { dropFiles, hasFiles } from './dropFiles';
 import { handleKeyDown, handleKeyUp, isMac } from './commands';
@@ -17,7 +17,6 @@ import { useT } from './i18n';
 import { Library } from './panels/Library';
 import { DocTabs } from './components/DocTabs';
 import { anyDirty } from './docTabs';
-import { PhotoLibrary } from './photoLibrary/PhotoLibrary';
 import { PagesPanel } from './panels/PagesPanel';
 import { SlicesPanel } from './panels/SlicesPanel';
 import { Studio } from './panels/Studio';
@@ -25,6 +24,11 @@ import { DEFAULT_PANELS, PANEL_LIMITS, panels, startSplitter, usePanels } from '
 import { ui, useEditor, useUi } from './store';
 import { applyAccent } from './accentColor';
 import { applyUiScale } from './uiScale';
+
+// La photothèque ne se charge qu'à son ouverture.
+const PhotoLibrary = lazy(() =>
+  import('./photoLibrary/PhotoLibrary').then((m) => ({ default: m.PhotoLibrary })),
+);
 
 /*
  * Appli de bureau : sur Mac, les menus vont dans la barre du haut de l'écran (nativeMenu.ts) ;
@@ -150,7 +154,11 @@ export function App() {
         <Studio />
         <ColorWindow />
         <BrushEditor />
-        {photoLibrary && <PhotoLibrary />}
+        {photoLibrary && (
+          <Suspense fallback={null}>
+            <PhotoLibrary />
+          </Suspense>
+        )}
       </main>
       <StatusBar />
       <Dialogs />

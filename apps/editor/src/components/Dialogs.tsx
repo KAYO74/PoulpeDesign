@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ComponentType } from 'react';
 import { useUi } from '../store';
 // Chaque fenêtre a son module (dossier dialogs/). Les cinq premières, seules à charger des modules
 // pas encore chargés à ce stade (langue de départ, brouillons, filtres, modèles, panneaux), restent
@@ -8,34 +9,51 @@ import { FilterDialog } from './dialogs/FilterDialog';
 import { LiveFilterDialog } from './dialogs/LiveFilterDialog';
 import { PathEntryDialog } from './dialogs/PathEntryDialog';
 import { LayerCountDialog } from './dialogs/LayerCountDialog';
-import { CompsDialog } from './dialogs/CompsDialog';
-import { PhotoExportDialog } from './dialogs/PhotoExportDialog';
-import { RawDialog } from './dialogs/RawDialog';
-import { ContentFillDialog } from './dialogs/ContentFillDialog';
-import { BlendRangesDialog } from './dialogs/BlendRangesDialog';
-import { MeshWarpDialog } from './dialogs/MeshWarpDialog';
 import { NewDialog } from './dialogs/NewDialog';
-import { WorkspaceDialog } from './dialogs/WorkspaceDialog';
-import { AboutDialog } from './dialogs/AboutDialog';
-import { BatchDialog } from './dialogs/BatchDialog';
-import { CanvasSizeDialog } from './dialogs/CanvasSizeDialog';
-import { DocumentDialog } from './dialogs/DocumentDialog';
-import { ExportDialog } from './dialogs/ExportDialog';
-import { ImageSizeDialog } from './dialogs/ImageSizeDialog';
-import { OffsetDialog } from './dialogs/OffsetDialog';
-import { ResizeDialog } from './dialogs/ResizeDialog';
-import { SelectionModifyDialog } from './dialogs/SelectionModifyDialog';
-import { ShortcutsDialog } from './ShortcutsDialog';
 import { UpdateDialog } from './UpdateDialog';
 import { TourDialog } from './TourDialog';
 import { WhatsNewDialog } from './WhatsNewDialog';
-import { PreferencesDialog } from './PreferencesDialog';
-import { AiAssistantDialog, AiImageDialog } from './dialogs/AiDialogs';
-import { HelpDialog } from './HelpDialog';
-import { ExtensionParamsDialog, ExtensionsDialog } from '../extensions/ExtensionsDialog';
-import { VectorizeDialog } from '../smart/VectorizeDialog';
-import { SaveTemplateDialog } from './dialogs/SaveTemplateDialog';
 import { CommandPalette } from './dialogs/CommandPalette';
+
+/**
+ * Les grosses fenêtres se chargent à la première ouverture (un morceau de code à part) : le
+ * démarrage de l'éditeur n'embarque que celles dont il a besoin tout de suite.
+ */
+function lazyDialog<M extends Record<string, unknown>>(load: () => Promise<M>, name: keyof M & string) {
+  return lazy(() => load().then((m) => ({ default: m[name] as ComponentType })));
+}
+
+const CompsDialog = lazyDialog(() => import('./dialogs/CompsDialog'), 'CompsDialog');
+const PhotoExportDialog = lazyDialog(() => import('./dialogs/PhotoExportDialog'), 'PhotoExportDialog');
+const RawDialog = lazyDialog(() => import('./dialogs/RawDialog'), 'RawDialog');
+const ContentFillDialog = lazyDialog(() => import('./dialogs/ContentFillDialog'), 'ContentFillDialog');
+const BlendRangesDialog = lazyDialog(() => import('./dialogs/BlendRangesDialog'), 'BlendRangesDialog');
+const MeshWarpDialog = lazyDialog(() => import('./dialogs/MeshWarpDialog'), 'MeshWarpDialog');
+const WorkspaceDialog = lazyDialog(() => import('./dialogs/WorkspaceDialog'), 'WorkspaceDialog');
+const AboutDialog = lazyDialog(() => import('./dialogs/AboutDialog'), 'AboutDialog');
+const BatchDialog = lazyDialog(() => import('./dialogs/BatchDialog'), 'BatchDialog');
+const CanvasSizeDialog = lazyDialog(() => import('./dialogs/CanvasSizeDialog'), 'CanvasSizeDialog');
+const DocumentDialog = lazyDialog(() => import('./dialogs/DocumentDialog'), 'DocumentDialog');
+const ExportDialog = lazyDialog(() => import('./dialogs/ExportDialog'), 'ExportDialog');
+const ImageSizeDialog = lazyDialog(() => import('./dialogs/ImageSizeDialog'), 'ImageSizeDialog');
+const OffsetDialog = lazyDialog(() => import('./dialogs/OffsetDialog'), 'OffsetDialog');
+const ResizeDialog = lazyDialog(() => import('./dialogs/ResizeDialog'), 'ResizeDialog');
+const SelectionModifyDialog = lazyDialog(
+  () => import('./dialogs/SelectionModifyDialog'),
+  'SelectionModifyDialog',
+);
+const ShortcutsDialog = lazyDialog(() => import('./ShortcutsDialog'), 'ShortcutsDialog');
+const PreferencesDialog = lazyDialog(() => import('./PreferencesDialog'), 'PreferencesDialog');
+const AiAssistantDialog = lazyDialog(() => import('./dialogs/AiDialogs'), 'AiAssistantDialog');
+const AiImageDialog = lazyDialog(() => import('./dialogs/AiDialogs'), 'AiImageDialog');
+const HelpDialog = lazyDialog(() => import('./HelpDialog'), 'HelpDialog');
+const ExtensionParamsDialog = lazyDialog(
+  () => import('../extensions/ExtensionsDialog'),
+  'ExtensionParamsDialog',
+);
+const ExtensionsDialog = lazyDialog(() => import('../extensions/ExtensionsDialog'), 'ExtensionsDialog');
+const VectorizeDialog = lazyDialog(() => import('../smart/VectorizeDialog'), 'VectorizeDialog');
+const SaveTemplateDialog = lazyDialog(() => import('./dialogs/SaveTemplateDialog'), 'SaveTemplateDialog');
 
 // Cadre commun des fenêtres : les autres modules de l'éditeur continuent de l'importer d'ici.
 export { Modal } from './dialogs/Modal';
@@ -43,7 +61,9 @@ export { Modal } from './dialogs/Modal';
 export function Dialogs() {
   return (
     <>
-      <MainDialog />
+      <Suspense fallback={null}>
+        <MainDialog />
+      </Suspense>
       <UpdateDialog />
       <WhatsNewDialog />
       <TourDialog />
