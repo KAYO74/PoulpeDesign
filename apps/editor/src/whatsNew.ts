@@ -123,5 +123,8 @@ export function startWhatsNew(): void {
   const seen = ui.get().settings.lastSeenVersion;
   if (seen === __APP_VERSION__) return;
   setSettings({ lastSeenVersion: __APP_VERSION__ });
+  // Tout premier lancement : la visite guidée (pas dans un navigateur piloté par les tests).
+  if (seen === null && ui.get().settings.showWelcome && !navigator.webdriver)
+    setTimeout(() => ui.set({ tourOpen: true }), 1200);
   if (seen !== null && RELEASES.some((r) => r.version === __APP_VERSION__)) setTimeout(openWhatsNew, 2500);
 }
