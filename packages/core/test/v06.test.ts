@@ -143,6 +143,21 @@ describe('fluidité et correcteur', () => {
     expect(px(p, 10, 2)).toEqual([0, 0, 0, 255]);
   });
 
+  it('le masque de gel protège les pixels gelés', () => {
+    const p = solid(30, 30, [255, 255, 255, 255]);
+    for (let y = 0; y < 30; y++) for (let x = 10; x < 12; x++) p.data.set([0, 0, 0, 255], (y * 30 + x) * 4);
+    // Moitié haute gelée : la bande n'y bouge pas, elle bouge en bas.
+    const freeze = new Uint8Array(30 * 30);
+    freeze.fill(255, 0, 15 * 30);
+    for (let k = 0; k < 4; k++) {
+      liquifyDab(p, 11 + k, 12, 8, 'push', 1, 1, 0, freeze);
+      liquifyDab(p, 11 + k, 19, 8, 'push', 1, 1, 0, freeze);
+    }
+    expect(px(p, 10, 12)).toEqual([0, 0, 0, 255]);
+    expect(px(p, 14, 12)).toEqual([255, 255, 255, 255]);
+    expect(px(p, 14, 19)[0]).toBeLessThan(128);
+  });
+
   it('gonfler et pincer gardent le centre et les zones éloignées', () => {
     const p = solid(20, 20, [10, 20, 30, 255]);
     liquifyDab(p, 10, 10, 6, 'bloat', 1);

@@ -489,6 +489,13 @@ export class BrushEngine {
       return;
     }
     this.stroke = null;
+    const liquifyMode = ui.get().liquifyMode;
+    if (s.tool === 'liquify' && (liquifyMode === 'freeze' || liquifyMode === 'thaw')) {
+      // Masque de gel : aucun pixel n'a changé, rien à enregistrer.
+      setLiveBitmap(s.assetId, null);
+      this.c.requestDraw();
+      return;
+    }
     const end = s.toPx.inverse().transformPoint(new DOMPoint(s.last.x, s.last.y));
     this.lastStrokePoint = { nodeId: s.nodeId, p: { x: end.x, y: end.y } };
     if (s.redirect) {

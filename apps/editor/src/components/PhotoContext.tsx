@@ -2,6 +2,7 @@ import { PaintChip } from '../panels/ColorPopover';
 import { findNode, type LiquifyMode } from '@poulpe/core';
 import { getController } from './Viewport';
 import { useT } from '../i18n';
+import { thawAll } from '../photo/liquifyFreeze';
 import { isPhotoTool } from '../photo/photoTools';
 import {
   brushSettings,
@@ -148,11 +149,13 @@ function BrushFields({ tool }: { tool: ToolId }) {
   );
 }
 
-const LIQUIFY: { id: LiquifyMode; icon: IconName }[] = [
+const LIQUIFY: { id: LiquifyMode | 'freeze' | 'thaw'; icon: IconName }[] = [
   { id: 'push', icon: 'liquify' },
   { id: 'twirl', icon: 'rotateRight' },
   { id: 'bloat', icon: 'modeAdd' },
   { id: 'pinch', icon: 'modeIntersect' },
+  { id: 'freeze', icon: 'lock' },
+  { id: 'thaw', icon: 'unlock' },
 ];
 
 function LiquifyModes() {
@@ -173,6 +176,18 @@ function LiquifyModes() {
           <Icon name={m.icon} size={14} />
         </button>
       ))}
+      <button
+        className="ib small"
+        title={t('liquify.thawAll')}
+        aria-label={t('liquify.thawAll')}
+        data-testid="liquify-thaw-all"
+        onClick={() => {
+          thawAll();
+          ui.set({ liquifyMode: 'push' });
+        }}
+      >
+        <Icon name="close" size={14} />
+      </button>
     </span>
   );
 }

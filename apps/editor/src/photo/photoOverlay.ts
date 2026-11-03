@@ -3,6 +3,8 @@ import { brushOptions } from '../tools/brushes/state';
 import { brushSettings, isBrushTool, ui } from '../store';
 import { photoHooks } from './photoHooks';
 import type { PhotoTools } from './photoTools';
+import { freezeMask } from './liquifyFreeze';
+import { selectedImage } from './pixels';
 import { selectionOutline } from './selection';
 
 /*
@@ -23,6 +25,17 @@ export function drawPhotoOverlay(tools: PhotoTools, ctx: CanvasRenderingContext2
     const screen = new DOMMatrix([dpr * view.zoom, 0, 0, dpr * view.zoom, dpr * view.panX, dpr * view.panY]);
     ctx.setTransform(screen.multiply(s.toPx.inverse()));
     ctx.drawImage(s.tint, 0, 0);
+    ctx.restore();
+  }
+  // Masque de gel de la fluidité, en rouge sur le calque.
+  const frozenNode = ui.get().tool === 'liquify' ? selectedImage() : null;
+  const frozen = frozenNode ? freezeMask(frozenNode.id) : null;
+  if (frozen) {
+    ctx.save();
+    const dpr = ctx.getTransform().a;
+    const screen = new DOMMatrix([dpr * view.zoom, 0, 0, dpr * view.zoom, dpr * view.panX, dpr * view.panY]);
+    ctx.setTransform(screen.multiply(frozen.toPx.inverse()));
+    ctx.drawImage(frozen.overlay, 0, 0);
     ctx.restore();
   }
   // Fourmis de la sélection.

@@ -113,6 +113,7 @@ export type LiquifyMode = 'push' | 'twirl' | 'bloat' | 'pinch';
  * Une touche du pinceau de fluidité, sur place : les pixels du disque de rayon `radius` autour
  * de (cx, cy) sont déplacés selon `mode`. `dx`, `dy` : mouvement du pinceau depuis la touche
  * précédente (pour `push`). `strength` de 0 à 1 ; un `strength` négatif inverse le tourbillon.
+ * `freeze` (un octet par pixel de `px`, 255 = gelé) protège des pixels.
  */
 export function liquifyDab(
   px: Pixels,
@@ -123,6 +124,7 @@ export function liquifyDab(
   strength: number,
   dx = 0,
   dy = 0,
+  freeze?: Uint8Array,
 ): void {
   const { data, width: w, height: h } = px;
   const r = Math.max(1, radius);
@@ -151,7 +153,10 @@ export function liquifyDab(
         oy = y + 0.5 - cy;
       const d2 = ox * ox + oy * oy;
       if (d2 >= r2) continue;
-      const f = (1 - d2 / r2) ** 2 * Math.abs(strength);
+      // Masque de gel : les pixels gelés (255) ne bougent pas, les autres d'autant moins qu'ils le sont.
+      const thaw = freeze ? 1 - freeze[y * w + x] / 255 : 1;
+      if (thaw <= 0) continue;
+      const f = (1 - d2 / r2) ** 2 * Math.abs(strength) * thaw;
       let sxp: number, syp: number;
       if (mode === 'push') {
         sxp = x + 0.5 - dx * f;

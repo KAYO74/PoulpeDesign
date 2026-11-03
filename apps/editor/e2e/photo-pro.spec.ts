@@ -184,6 +184,28 @@ test('doigt et fluidité déplacent les pixels', async ({ page }) => {
   expect(pushed[2]).toBeGreaterThan(pushed[0]);
 });
 
+test('le masque de gel protège une zone de la fluidité', async ({ page }) => {
+  await openTestPhoto(page);
+  await selectBackground(page);
+  await page.getByTestId('tool-liquify').click();
+  await setBrushSize(page, 'liquify', 80);
+  const before = await pixel(page, 0, 200, 125);
+  // 5 : Geler. Le gel ne modifie aucun pixel et n'ajoute rien à l'historique.
+  await page.keyboard.press('5');
+  const steps = (await history(page)).length;
+  await drag(page, [200, 40], [200, 160], 20);
+  expect((await history(page)).length).toBe(steps);
+  // 1 : Pousser, sur la zone gelée : le carré rouge ne bouge pas.
+  await page.keyboard.press('1');
+  await drag(page, [200, 60], [200, 110], 20);
+  expect(await pixel(page, 0, 200, 125)).toEqual(before);
+  // Tout dégeler : le même geste pousse de nouveau le bleu dans le rouge.
+  await page.getByTestId('liquify-thaw-all').click();
+  await drag(page, [200, 60], [200, 110], 20);
+  const pushed = await pixel(page, 0, 200, 125);
+  expect(pushed[2]).toBeGreaterThan(pushed[0]);
+});
+
 test('redresse un calque et corrige la perspective', async ({ page }) => {
   await openTestPhoto(page);
   await selectBackground(page);
