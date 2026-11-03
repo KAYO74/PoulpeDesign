@@ -734,7 +734,7 @@ export const TOOL_KEYS: Record<string, ToolId[]> = {
   s: ['shapeBuilder'],
   o: ['contour'],
   w: ['strokeWidth'],
-  g: ['gradient'],
+  g: ['gradient', 'mesh'],
   y: ['transparency'],
   r: ['vectorFill'],
   t: ['text', 'frameText'],

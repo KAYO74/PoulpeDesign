@@ -12,6 +12,9 @@ export const fr: Record<string, string> = {
   'tip.contour.desc': 'Agrandissez ou rétrécissez une forme en décalant son tracé, modifiable ensuite.',
   'tip.contour.how':
     '**Glisser** vers la droite pour agrandir, vers la gauche pour rétrécir. **+Alt** garde l’original et pose le contour sur une copie.',
+  'tip.mesh.desc': 'Remplissez un objet d’un filet de points colorés dont les couleurs se fondent.',
+  'tip.mesh.how':
+    '**Cliquer** dans l’objet pour poser un point (une rangée et une colonne). **Glisser** un point pour le déplacer ; choisir sa couleur dans la barre de l’outil ou le panneau Couleur. **Suppr** retire le point choisi.',
   'tip.strokeWidth.desc': 'Faites varier l’épaisseur du trait où vous voulez le long du tracé.',
   'tip.strokeWidth.how':
     '**Glisser** depuis un point du trait pour y poser un point de largeur. **Glisser** un point le long du trait pour le déplacer, ou le bout de sa barre pour changer sa largeur. **Suppr** retire le point choisi.',
@@ -57,6 +60,14 @@ export const fr: Record<string, string> = {
   'history.transparency': 'Transparence',
   'history.contour': 'Contour',
   'history.strokeWidth': 'Largeur de trait',
+  'hint.mesh':
+    'clic dans l’objet pour poser un point ; glisser un point pour le déplacer, Suppr pour le retirer.',
+  'paint.meshColor': 'Couleur du point',
+  'paint.meshSize': '{c} × {r} cases',
+  'paint.meshRemove': 'Retirer le filet',
+  'paint.meshHint': 'Clic dans l’objet : nouveau point',
+  'history.mesh': 'Filet de dégradé',
+  'color.mesh': 'Filet',
 };
 
 export const en: Record<string, string> = {
@@ -70,6 +81,9 @@ export const en: Record<string, string> = {
   'tip.contour.desc': 'Grow or shrink a shape by offsetting its path, editable afterwards.',
   'tip.contour.how':
     '**Drag** right to grow, left to shrink. **+Alt** keeps the original and puts the contour on a copy.',
+  'tip.mesh.desc': 'Fill an object with a mesh of colored points whose colors blend together.',
+  'tip.mesh.how':
+    '**Click** inside the object to add a point (a row and a column). **Drag** a point to move it; pick its color in the tool bar or the Color panel. **Delete** removes the chosen point.',
   'tip.strokeWidth.desc': 'Vary the stroke width anywhere along the path.',
   'tip.strokeWidth.how':
     '**Drag** from a point of the stroke to add a width point there. **Drag** a point along the stroke to move it, or the end of its bar to change its width. **Delete** removes the selected point.',
@@ -113,4 +127,11 @@ export const en: Record<string, string> = {
   'history.transparency': 'Transparency',
   'history.contour': 'Contour',
   'history.strokeWidth': 'Stroke width',
+  'hint.mesh': 'click inside the object to add a point; drag a point to move it, Delete to remove it.',
+  'paint.meshColor': 'Point color',
+  'paint.meshSize': '{c} × {r} cells',
+  'paint.meshRemove': 'Remove mesh',
+  'paint.meshHint': 'Click inside the object: new point',
+  'history.mesh': 'Mesh fill',
+  'color.mesh': 'Mesh',
 };

@@ -26,7 +26,7 @@ export const DRAW_GROUPS: ToolId[][] = [
   ['pen', 'pencil', 'vectorBrush'],
   SHAPE_FAMILY,
   ['knife', 'scissors', 'corner', 'shapeBuilder', 'vectorCrop'],
-  ['vectorFill', 'gradient', 'transparency', 'contour', 'strokeWidth'],
+  ['vectorFill', 'gradient', 'mesh', 'transparency', 'contour', 'strokeWidth'],
   ['text', 'frameText', 'image'],
   ['eyedropper', 'stylePicker', 'hand', 'zoom'],
 ];
@@ -138,6 +138,7 @@ export const TOOL_CATALOG: { id: 'select' | 'vector' | 'pixel' | 'other'; tools:
       'contour',
       'strokeWidth',
       'gradient',
+      'mesh',
       'transparency',
       'pictureFrameRect',
       'pictureFrameEllipse',

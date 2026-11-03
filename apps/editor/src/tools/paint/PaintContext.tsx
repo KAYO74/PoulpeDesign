@@ -5,6 +5,7 @@ import {
   gradientKind,
   isGradient,
   isStyled,
+  meshAverage,
   newGradient,
   opaque,
   reverseStops,
@@ -26,6 +27,7 @@ import { pickPatternImage } from '../../vectorActions';
 import { closedShapesIn, selectedShapes, setContour } from './contourTool';
 import { frameOf, gradientTarget, styledIn, writePaint, type GradientMode } from './gradientTool';
 import { paintStore, type FillKind } from './state';
+import { meshOf, meshTarget } from './meshTool';
 import { widthPoints, widthTarget, withWidthPoints } from './widthTool';
 
 /* Barres contextuelles des outils Remplissage, Transparence, Contour et Largeur de trait. */
@@ -456,6 +458,61 @@ export function WidthContext() {
         {t('paint.widthReset')}
       </button>
       <span className="ctx-dim">{t('paint.widthHint')}</span>
+    </>
+  );
+}
+
+/** Outil Filet : couleur du point choisi, taille du filet, retrait du filet. */
+export function MeshContext() {
+  const t = useT();
+  useEditor();
+  const index = useStore(paintStore, (s) => s.meshPoint);
+  const n = meshTarget();
+  const m = meshOf(n);
+  const i = m && index !== null && index < m.colors.length ? index : null;
+  const setColor = (c: string) => {
+    if (!n || !m || i === null) return;
+    const colors = m.colors.map((x, k) => (k === i ? c : x));
+    editor.apply('history.mesh', (d) => {
+      const o = findNode(d, n.id)?.node;
+      if (o && isStyled(o) && o.fill.type === 'mesh') o.fill = { ...o.fill, colors };
+    });
+  };
+  return (
+    <>
+      <label className="field">
+        <span className="field-label">{t('paint.meshColor')}</span>
+        <input
+          type="color"
+          className="color-input"
+          data-testid="mesh-color"
+          disabled={i === null}
+          value={m && i !== null ? m.colors[i].slice(0, 7) : '#000000'}
+          onChange={(e) => setColor(e.target.value)}
+        />
+      </label>
+      {m && (
+        <span className="ctx-dim" data-testid="mesh-size">
+          {t('paint.meshSize', { c: m.cols, r: m.rows })}
+        </span>
+      )}
+      <button
+        className="btn small"
+        data-testid="mesh-remove"
+        disabled={!m}
+        onClick={() => {
+          if (!n || !m) return;
+          paintStore.set({ meshPoint: null });
+          const fill: Paint = { type: 'solid', color: meshAverage(m) };
+          editor.apply('history.mesh', (d) => {
+            const o = findNode(d, n.id)?.node;
+            if (o && isStyled(o)) o.fill = fill;
+          });
+        }}
+      >
+        {t('paint.meshRemove')}
+      </button>
+      <span className="ctx-dim">{t('paint.meshHint')}</span>
     </>
   );
 }

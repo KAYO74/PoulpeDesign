@@ -1,5 +1,6 @@
 import { alphaOf, formatColor, hslToRgb, isGradient, opaque, parseColor, rgbToHsl, withAlpha } from './color';
 import type { Artboard, Color, Paint, SceneNode } from './types';
+import { isValidMesh } from './mesh';
 import { isStyled } from './tree';
 
 /*
@@ -44,6 +45,8 @@ function mapPaint(p: Paint, f: Visitor): Paint {
         color: f(p.color),
         ...(p.background ? { background: f(p.background) } : {}),
       };
+    case 'mesh':
+      return isValidMesh(p) ? { ...p, colors: p.colors.map(f) } : p;
     default:
       return { ...p, stops: p.stops.map((s) => ({ ...s, color: f(s.color) })) };
   }
@@ -76,7 +79,9 @@ export function designColors(target: RecolorTarget): Color[] {
   const paint = (p: Paint) => {
     if (p.type === 'solid') collect(p.color);
     else if (isGradient(p)) p.stops.forEach((s) => collect(s.color));
-    else if (p.type === 'hatch') {
+    else if (p.type === 'mesh') {
+      if (isValidMesh(p)) p.colors.forEach(collect);
+    } else if (p.type === 'hatch') {
       collect(p.color);
       if (p.background) collect(p.background);
     }
