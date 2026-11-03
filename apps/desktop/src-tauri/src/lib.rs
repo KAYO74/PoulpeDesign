@@ -219,6 +219,7 @@ pub fn run() {
             engine::engine_info,
             engine::engine_configure,
             engine::engine_apply,
+            engine::engine_inpaint,
             ai::ai_key_set,
             ai::ai_key_has,
             ai::ai_key_delete,

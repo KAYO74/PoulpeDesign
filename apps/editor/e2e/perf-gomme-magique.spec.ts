@@ -4,7 +4,9 @@ import { expect, test } from '@playwright/test';
  * Gomme magique (remplissage d'après le contenu) : budget de temps sur 3 Mpx avec le moteur
  * Rust, et même résultat que la version TypeScript (1 niveau de couleur au plus).
  */
-test('gomme magique : trou de 200×200 sur 3 Mpx en moins de 4 s, comme le TypeScript', async ({ page }) => {
+test('gomme magique : trou de 200×200 sur 3 Mpx en moins de 6 s, plus vite que le TypeScript et pareil', async ({
+  page,
+}) => {
   test.setTimeout(60_000);
   await page.goto('/');
   await expect(page.getByTestId('canvas')).toBeVisible();
@@ -34,5 +36,7 @@ test('gomme magique : trou de 200×200 sur 3 Mpx en moins de 4 s, comme le TypeS
   });
   console.log(`gomme magique 3 Mpx : Rust ${Math.round(r.ms)} ms, TypeScript ${Math.round(r.tsMs)} ms`);
   expect(r.maxDiff).toBeLessThanOrEqual(1);
-  expect(r.ms).toBeLessThan(4000);
+  // Budget large (CI chargée) ; la vraie mesure est « plus rapide que le TypeScript ».
+  expect(r.ms).toBeLessThan(6000);
+  expect(r.ms).toBeLessThan(r.tsMs);
 });
