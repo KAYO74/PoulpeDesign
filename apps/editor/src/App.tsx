@@ -4,6 +4,7 @@ import { dropFiles, hasFiles } from './dropFiles';
 import { handleKeyDown, handleKeyUp, isMac } from './commands';
 import { ContextBar } from './components/ContextBar';
 import { Dialogs } from './components/Dialogs';
+import { LoadErrorBoundary } from './components/LoadErrorBoundary';
 import { MenuBar } from './components/MenuBar';
 import { StatusBar } from './components/StatusBar';
 import { ToolColumn } from './components/ToolColumn';
@@ -155,9 +156,11 @@ export function App() {
         <ColorWindow />
         <BrushEditor />
         {photoLibrary && (
-          <Suspense fallback={null}>
-            <PhotoLibrary />
-          </Suspense>
+          <LoadErrorBoundary onClose={() => ui.set({ photoLibrary: false })}>
+            <Suspense fallback={null}>
+              <PhotoLibrary />
+            </Suspense>
+          </LoadErrorBoundary>
         )}
       </main>
       <StatusBar />
