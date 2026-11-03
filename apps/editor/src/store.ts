@@ -155,7 +155,7 @@ export type Dialog =
 export type PrefsTab =
   'general' | 'performance' | 'display' | 'layers' | 'shortcuts' | 'ai' | 'advanced' | 'diagnostic';
 /** Rubriques de l'aide intégrée. */
-export type HelpTab = 'start' | 'faq' | 'performance';
+export type HelpTab = 'start' | 'faq' | 'performance' | 'switch';
 
 export interface Settings {
   theme: Theme;
