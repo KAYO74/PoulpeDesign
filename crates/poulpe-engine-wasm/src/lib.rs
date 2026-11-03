@@ -47,10 +47,10 @@ pub unsafe extern "C" fn apply(
     0
 }
 
-/// Version du moteur (1.3.0 → 10300).
+/// Version du moteur (1.4.0 → 10400).
 #[no_mangle]
 pub extern "C" fn version() -> u32 {
-    10300
+    10400
 }
 
 /// Floute les pixels RGBA sur place (flou gaussien approché, écart type `sigma` en pixels).
@@ -113,5 +113,27 @@ pub unsafe extern "C" fn inpaint(
     let d = std::slice::from_raw_parts_mut(px, len);
     let m = std::slice::from_raw_parts(hole, len / 4);
     poulpe_engine::inpaint::inpaint(d, w, h, m, patch, seed);
+    0
+}
+
+/// Épreuvage CMJN sur place (`lut` : `lut_len` nombres en 32 bits, table `grid`³ × 3).
+/// 0 = fait, 2 = tailles incohérentes.
+///
+/// # Safety
+/// `px` doit pointer sur `len` octets et `lut` sur `lut_len` × 4 octets, réservés par `alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn proof(
+    px: *mut u8,
+    len: usize,
+    lut: *const f32,
+    lut_len: usize,
+    grid: usize,
+) -> u32 {
+    if len % 4 != 0 || grid < 2 || lut_len != grid * grid * grid * 3 || (lut as usize) % 4 != 0 {
+        return 2;
+    }
+    let d = std::slice::from_raw_parts_mut(px, len);
+    let l = std::slice::from_raw_parts(lut, lut_len);
+    poulpe_engine::cmyk::soft_proof(d, l, grid);
     0
 }

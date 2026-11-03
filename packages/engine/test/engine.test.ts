@@ -9,6 +9,8 @@ import {
   healBlend,
   healBlendTs,
   inpaint,
+  softProofPixels,
+  softProofPixelsTs,
   lutFromFunction,
   setAdjustmentEngine,
   type Adjustment,
@@ -164,6 +166,18 @@ describe('moteur Rust (WebAssembly)', () => {
       for (let i = 0; i < rs.length; i++) maxDiff = Math.max(maxDiff, Math.abs(rs[i] - ts[i]));
       expect(maxDiff).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('épreuve CMJN identique au TypeScript', async () => {
+    await startEngine(wasm);
+    const src = image(120, 90).data;
+    const ts = new Uint8ClampedArray(src);
+    softProofPixelsTs(ts);
+    const rs = new Uint8ClampedArray(src);
+    const before = engineStats().calls;
+    softProofPixels(rs);
+    expect(engineStats().calls).toBe(before + 1);
+    expect(Buffer.from(rs).equals(Buffer.from(ts))).toBe(true);
   });
 
   it('un réglage incompris est fait en TypeScript', async () => {

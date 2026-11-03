@@ -1,3 +1,4 @@
+import { adjustmentEngine } from './adjust';
 import { formatColor, opaque, parseColor } from './color';
 import type { Color, PoulpeDocument } from './types';
 
@@ -280,9 +281,16 @@ function buildProof(): Float32Array {
 
 /**
  * Épreuvage à l'écran : remplace chaque pixel (RVBA, 8 bits) par la couleur qu'il aurait une fois
- * imprimé. Une table de 256 entrées par canal accélère les grandes images.
+ * imprimé. Calcul par le moteur Rust s'il est chargé, sinon en TypeScript (même résultat).
  */
 export function softProofPixels(data: Uint8ClampedArray): void {
+  proofLut ??= buildProof();
+  if (adjustmentEngine()?.proof?.(data, proofLut, GRID)) return;
+  softProofPixelsTs(data);
+}
+
+/** Épreuvage en TypeScript : la référence des tests du moteur Rust. */
+export function softProofPixelsTs(data: Uint8ClampedArray): void {
   proofLut ??= buildProof();
   const lut = proofLut;
   const out = new Float32Array(3);
