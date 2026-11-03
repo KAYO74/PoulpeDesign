@@ -19,6 +19,7 @@ export * from './pathActions';
 export * from './vector';
 export * from './effects';
 export * from './boolean';
+export * from './blend';
 export * from './regions';
 export * from './freehand';
 export * from './svgImport';

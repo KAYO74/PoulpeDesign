@@ -1,4 +1,11 @@
-import { COLOR_ADJUSTMENTS, LIVE_FILTERS, findNode, topLevelIds, type AdjustmentKind } from '@poulpe/core';
+import {
+  COLOR_ADJUSTMENTS,
+  LIVE_FILTERS,
+  canBlend,
+  findNode,
+  topLevelIds,
+  type AdjustmentKind,
+} from '@poulpe/core';
 import * as A from './actions';
 import type { NodeAction } from './canvas/pathTools';
 import { beginTextEdit, endTextEdit, isEditingText } from './canvas/textEdit';
@@ -378,6 +385,11 @@ export const COMMANDS = {
     label: 'layer.offset',
     run: () => ui.set({ dialog: 'offset' }),
     enabled: () => editor.selection.length > 0,
+  },
+  'object.blend': {
+    label: 'object.blend',
+    run: () => ui.set({ dialog: 'blend' }),
+    enabled: () => canBlend(editor.doc, editor.selection),
   },
   'geometry.unite': { label: 'geometry.unite', run: () => V.booleanOp('unite'), enabled: V.canBoolean },
   'geometry.subtract': {

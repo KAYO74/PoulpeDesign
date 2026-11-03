@@ -436,3 +436,27 @@ test('importe un SVG en objets modifiables', async ({ page }) => {
   expect(g.children.map((c: AnyNode) => c.type)).toEqual(['path', 'path']);
   expect(await history(page)).toEqual(['history.open', 'history.import']);
 });
+
+test('crée un dégradé de formes entre deux formes', async ({ page }) => {
+  const { drag } = await canvas(page);
+  await page.keyboard.press('u');
+  await drag([200, 200], [300, 300]);
+  await page.keyboard.press('e');
+  await drag([600, 300], [700, 450]);
+  await page.keyboard.press('Control+a');
+  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('menuitem', { name: 'Dégradé de formes…' }).click();
+  await page.getByTestId('blend-steps').fill('4');
+  await page.getByTestId('blend-steps').press('Enter');
+  await page.getByTestId('blend-go').click();
+  const list = await nodes(page);
+  expect(list).toHaveLength(1);
+  expect(list[0].type).toBe('group');
+  expect(list[0].children).toHaveLength(6);
+  // Les formes intermédiaires avancent de la première vers la seconde.
+  const xs = list[0].children.map((c: AnyNode) => c.x);
+  for (let i = 1; i < xs.length; i++) expect(xs[i]).toBeGreaterThan(xs[i - 1]);
+  expect((await history(page)).at(-1)).toBe('history.blend');
+  await page.keyboard.press('Control+z');
+  expect(await nodes(page)).toHaveLength(2);
+});
