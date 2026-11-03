@@ -8,6 +8,7 @@ import { FilterDialog } from './dialogs/FilterDialog';
 import { LiveFilterDialog } from './dialogs/LiveFilterDialog';
 import { PathEntryDialog } from './dialogs/PathEntryDialog';
 import { LayerCountDialog } from './dialogs/LayerCountDialog';
+import { CompsDialog } from './dialogs/CompsDialog';
 import { PhotoExportDialog } from './dialogs/PhotoExportDialog';
 import { RawDialog } from './dialogs/RawDialog';
 import { ContentFillDialog } from './dialogs/ContentFillDialog';
@@ -65,6 +66,7 @@ function MainDialog() {
   if (dialog === 'liveFilter') return <LiveFilterDialog />;
   if (dialog === 'raw') return <RawDialog />;
   if (dialog === 'photoExport') return <PhotoExportDialog />;
+  if (dialog === 'comps') return <CompsDialog />;
   if (dialog === 'pathEntry') return <PathEntryDialog />;
   if (dialog === 'layerCount') return <LayerCountDialog />;
   if (dialog === 'contentFill') return <ContentFillDialog />;
