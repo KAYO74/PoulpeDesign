@@ -379,8 +379,10 @@ export class PhotoTools {
       else this.cancelPerspective();
       return true;
     }
-    if (tool === 'liquify' && ['1', '2', '3', '4'].includes(e.key)) {
-      ui.set({ liquifyMode: (['push', 'twirl', 'bloat', 'pinch'] as const)[Number(e.key) - 1] });
+    if (tool === 'liquify' && ['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+      ui.set({
+        liquifyMode: (['push', 'twirl', 'bloat', 'pinch', 'freeze', 'thaw'] as const)[Number(e.key) - 1],
+      });
       return true;
     }
     return false;

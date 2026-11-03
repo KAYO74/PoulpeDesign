@@ -245,7 +245,8 @@ export interface UiState {
   /** Modification de sélection demandée (adoucir, agrandir, réduire). */
   selectionModify: 'feather' | 'grow' | 'shrink' | null;
   /** Fluidité : pousser, tourbillon, gonfler ou pincer. */
-  liquifyMode: import('@poulpe/core').LiquifyMode;
+  /** Mode de la fluidité ; « freeze » et « thaw » peignent le masque de gel. */
+  liquifyMode: import('@poulpe/core').LiquifyMode | 'freeze' | 'thaw';
   /** Redressement : agrandir le calque pour cacher les coins vides. */
   straightenFill: boolean;
   /** Calque dont on corrige la perspective (outil Perspective). */

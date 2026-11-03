@@ -1,4 +1,5 @@
 import { liquifyDab, similarDab } from '@poulpe/core';
+import { freezeRegion, paintFreeze } from './liquifyFreeze';
 import { ui } from '../store';
 import type { BrushEngine } from './brushEngine';
 import { makeCanvas } from './pixels';
@@ -56,6 +57,14 @@ export function dabLiquify(brush: BrushEngine, x: number, y: number) {
     dy = y - prev.y;
   s.prevDab = { x, y };
   const mode = ui.get().liquifyMode;
+  if (mode === 'freeze' || mode === 'thaw') {
+    // Masque de gel : Alt fait l'inverse.
+    const freeze = (mode === 'freeze') !== brush.altDown;
+    paintFreeze(s.nodeId, s.work.width, s.work.height, s.toPx, x, y, r, freeze, 1);
+    // Redessine l'aperçu rouge (les pixels ne changent pas).
+    brush.dirty = { x0: x - r, y0: y - r, x1: x + r, y1: y + r };
+    return;
+  }
   if (mode === 'push' && Math.hypot(dx, dy) < 0.01) return;
   const strength = Math.max(0.02, s.settings.opacity / 100);
   const m = Math.ceil(r + Math.hypot(dx, dy) + 2);
@@ -77,6 +86,7 @@ export function dabLiquify(brush: BrushEngine, x: number, y: number) {
     mode === 'twirl' && alt ? -strength : strength,
     dx,
     dy,
+    freezeRegion(s.nodeId, x0, y0, img.width, img.height),
   );
   wc.putImageData(img, x0, y0);
   brush.dirty = { x0, y0, x1, y1 };
