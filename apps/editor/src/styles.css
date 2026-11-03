@@ -4199,3 +4199,18 @@ h4.sub .link {
     display: none;
   }
 }
+
+/* Aide > Je viens de Photoshop / Illustrator */
+.switch-table {
+  border-collapse: collapse;
+  margin: 8px 0 12px;
+  font-size: 12px;
+}
+.switch-table th,
+.switch-table td {
+  padding: 3px 12px 3px 0;
+  text-align: left;
+}
+.switch-table tr.differs td:nth-child(3) {
+  font-weight: 600;
+}
