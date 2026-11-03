@@ -1,4 +1,23 @@
 import { findNode, nodeBounds, type Box, type PoulpeDocument } from '@poulpe/core';
+import { ui } from '../store';
+
+const SQRT3_2 = Math.sqrt(3) / 2;
+
+/**
+ * Point de la grille isométrique le plus proche. Les lignes verticales sont espacées de
+ * `step·√3/2` et les obliques (±30°) se croisent tous les `step/2` en hauteur, une colonne sur deux
+ * décalée d'un demi-cran.
+ */
+export function snapIso(p: { x: number; y: number }, step: number): { x: number; y: number } {
+  const a = step * SQRT3_2,
+    b = step / 2;
+  const i = Math.round(p.x / a);
+  let j = Math.round(p.y / b);
+  if ((i + j) % 2 !== 0) j += p.y / b > j ? 1 : -1;
+  return { x: i * a, y: j * b };
+}
+
+const isoOn = () => ui.get().settings.gridIso;
 
 /** Lignes de magnétisme : repères, bords et centres des plans de travail et des autres objets. */
 export interface SnapLines {
@@ -51,6 +70,13 @@ export function snapMove(
   grid: number | null,
 ): { dx: number; dy: number; guides: SnapGuide[] } {
   const guides: SnapGuide[] = [];
+  if (grid && isoOn()) {
+    // Grille isométrique : le coin haut-gauche va sur le point le plus proche, sauf repère plus près.
+    const raw = snapMove(box, dx, dy, lines, threshold, null);
+    if (raw.guides.length) return raw;
+    const q = snapIso({ x: box.x + dx, y: box.y + dy }, grid);
+    return { dx: q.x - box.x, dy: q.y - box.y, guides };
+  }
   const fx = [box.x + dx, box.x + dx + box.width / 2, box.x + dx + box.width];
   const fy = [box.y + dy, box.y + dy + box.height / 2, box.y + dy + box.height];
   let bestX: { delta: number; pos: number } | null = null;
@@ -85,6 +111,11 @@ export function snapPoint(
   const { xs, ys } = lines;
   let x = p.x,
     y = p.y;
+  if (grid && isoOn()) {
+    const cx = nearest(xs, p.x, threshold),
+      cy = nearest(ys, p.y, threshold);
+    if (cx === null && cy === null) return { ...snapIso(p, grid), guides };
+  }
   const cx = nearest(xs, p.x, threshold);
   if (cx !== null) {
     x = cx;

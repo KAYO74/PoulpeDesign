@@ -571,6 +571,13 @@ export const COMMANDS = {
     shortcut: "Mod+'",
     run: () => setSettings({ grid: !ui.get().settings.grid }),
   },
+  'view.gridIso': {
+    label: 'view.gridIso',
+    run: () => {
+      const iso = !ui.get().settings.gridIso;
+      setSettings({ gridIso: iso, ...(iso ? { grid: true } : {}) });
+    },
+  },
   'view.clearGuides': {
     label: 'cmd.clearGuides',
     enabled: () => !!(editor.doc.guides?.x.length || editor.doc.guides?.y.length),
