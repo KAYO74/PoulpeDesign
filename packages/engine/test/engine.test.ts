@@ -6,6 +6,8 @@ import {
   defaultAdjustment,
   encodeLut,
   gaussianBlurred,
+  healBlend,
+  healBlendTs,
   lutFromFunction,
   setAdjustmentEngine,
   type Adjustment,
@@ -129,6 +131,17 @@ describe('moteur Rust (WebAssembly)', () => {
     const ts = gaussianBlurred(src, 3.3);
     await startEngine(wasm);
     const rs = gaussianBlurred(src, 3.3);
+    expect(Buffer.from(rs).equals(Buffer.from(ts))).toBe(true);
+  });
+
+  it('correcteur identique au TypeScript', async () => {
+    await startEngine(wasm);
+    const dest = image(80, 50);
+    const src = { ...image(80, 50), data: image(80, 50).data.map((v, i) => (v * 7 + i) % 256) };
+    const ts = healBlendTs(dest, src, 4);
+    const before = engineStats().calls;
+    const rs = healBlend(dest, src, 4);
+    expect(engineStats().calls).toBe(before + 1);
     expect(Buffer.from(rs).equals(Buffer.from(ts))).toBe(true);
   });
 
