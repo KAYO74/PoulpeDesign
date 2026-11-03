@@ -6,6 +6,7 @@ import {
   HATCH_STYLES,
   isGradient,
   isStyled,
+  isValidMesh,
   lerpColor,
   newMesh,
   opaque,
@@ -103,7 +104,7 @@ function firstColor(p: Paint): string {
   if (p.type === 'solid') return p.color;
   if (isGradient(p)) return p.stops[0]?.color ?? '#000000';
   if (p.type === 'hatch') return p.color;
-  if (p.type === 'mesh') return p.colors[0] ?? '#2ba59a';
+  if (p.type === 'mesh') return isValidMesh(p) ? p.colors[0] : '#2ba59a';
   return '#2ba59a';
 }
 
@@ -157,7 +158,7 @@ export function ColorPanel() {
   const gradient = isGradient(paint) ? paint : null;
   const pattern = paint.type === 'pattern' ? paint : null;
   const hatch = paint.type === 'hatch' ? paint : null;
-  const mesh = paint.type === 'mesh' ? paint : null;
+  const mesh = paint.type === 'mesh' && isValidMesh(paint) ? paint : null;
   // Filet : le sélecteur règle la couleur du point choisi (outil Filet).
   const meshPoint = useStore(paintStore, (s) => s.meshPoint);
   const mi = mesh && meshPoint !== null && meshPoint < mesh.colors.length ? meshPoint : 0;

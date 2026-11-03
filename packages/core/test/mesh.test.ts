@@ -102,4 +102,19 @@ describe('filet de dégradé', () => {
     expect(svg).toContain('<pattern id="msh');
     expect(svg).toContain('href="data:image/png;base64,');
   });
+
+  it('un filet abîmé ne fait pas planter le rendu', () => {
+    const bad = (patch: (m: ReturnType<typeof newMesh>) => void) => {
+      const m = newMesh('#ff0000');
+      patch(m);
+      return () => rasterizeMesh(m, 8, 8);
+    };
+    expect(bad((m) => ((m.points as unknown[])[1] = null))).not.toThrow();
+    expect(bad((m) => ((m.points as unknown[])[2] = { x: 'a', y: 0 }))).not.toThrow();
+    expect(bad((m) => ((m.colors as unknown[])[0] = 12))).not.toThrow();
+    expect(bad((m) => ((m as { points: unknown }).points = 'x'))).not.toThrow();
+    expect(
+      rasterizeMesh({ ...newMesh('#ff0000'), colors: [null, 1, 2, 3] as never }, 4, 4).every((v) => v === 0),
+    ).toBe(true);
+  });
 });

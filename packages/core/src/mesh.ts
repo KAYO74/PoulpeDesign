@@ -42,8 +42,13 @@ export function isValidMesh(m: MeshPaint): boolean {
     m.rows >= 1 &&
     m.cols <= 64 &&
     m.rows <= 64 &&
-    m.points?.length === n &&
-    m.colors?.length === n
+    Array.isArray(m.points) &&
+    Array.isArray(m.colors) &&
+    m.points.length === n &&
+    m.colors.length === n &&
+    // Fichier abîmé ou piégé : chaque point a des coordonnées finies, chaque couleur est du texte.
+    m.points.every((p) => !!p && Number.isFinite(p.x) && Number.isFinite(p.y)) &&
+    m.colors.every((c) => typeof c === 'string')
   );
 }
 

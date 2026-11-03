@@ -2,6 +2,7 @@ import {
   findNode,
   isGradient,
   isStyled,
+  isValidMesh,
   localToWorld,
   meshIndex,
   newMesh,
@@ -30,7 +31,7 @@ const GRAB = 7;
 
 /** Filet de remplissage de l'objet, s'il en a un. */
 export function meshOf(n: SceneNode | null | undefined): MeshPaint | null {
-  return n && isStyled(n) && n.fill.type === 'mesh' ? n.fill : null;
+  return n && isStyled(n) && n.fill.type === 'mesh' && isValidMesh(n.fill) ? n.fill : null;
 }
 
 /** Objet dont l'outil montre le filet : le seul objet sélectionné, s'il est stylé. */
