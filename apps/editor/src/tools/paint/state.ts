@@ -13,6 +13,8 @@ export interface PaintToolState {
   stop: number;
   /** Point de largeur choisi (outil Largeur de trait). */
   widthPoint: number | null;
+  /** Point choisi du filet (outil Filet, panneau Couleur). */
+  meshPoint: number | null;
   /** Réglages des nouveaux contours (outil Contour). */
   contour: { radius: number; join: StrokeJoin; miterLimit: number };
 }
@@ -22,5 +24,6 @@ export const paintStore = new Store<PaintToolState>({
   transKind: 'linear',
   stop: 0,
   widthPoint: null,
+  meshPoint: null,
   contour: { radius: 10, join: 'round', miterLimit: 4 },
 });

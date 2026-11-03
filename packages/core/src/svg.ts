@@ -10,6 +10,7 @@ import {
 } from './paintGeometry';
 import { contourReach } from './contour';
 import { hatchTile } from './hatch';
+import { meshDataUrl } from './mesh';
 import { chainHead, flowText, hasFields, needsFlow, type PageFields, type TextFlow } from './flow';
 import { masterOf, pageFields } from './pages';
 import {
@@ -150,6 +151,17 @@ function paintAttr(attr: 'fill' | 'stroke', paint: Paint, w: number, h: number, 
         `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${n(tw)}" height="${n(th)}"` +
           (tr ? ` patternTransform="${tr}"` : '') +
           `><image width="${n(tw)}" height="${n(th)}" preserveAspectRatio="none" href="${asset.data}"/></pattern>`,
+      );
+      return `${attr}="url(#${id})"`;
+    }
+    case 'mesh': {
+      // Le SVG n'a pas de filet (SVG 2 n'est pas lu partout) : une image du filet, en motif.
+      const id = defs.id('msh');
+      const W = n(Math.max(1, w)),
+        H = n(Math.max(1, h));
+      defs.add(
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">` +
+          `<image width="${W}" height="${H}" preserveAspectRatio="none" href="${meshDataUrl(paint, w, h)}"/></pattern>`,
       );
       return `${attr}="url(#${id})"`;
     }

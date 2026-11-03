@@ -8,6 +8,7 @@ export const frTools = {
   'tool.transparency': 'Transparence',
   'tool.contour': 'Contour',
   'tool.strokeWidth': 'Largeur de trait',
+  'tool.mesh': 'Filet de dégradé',
   'tip.gradient.desc': 'Appliquez un dégradé au remplissage des objets sélectionnés.',
   'tip.gradient.how':
     "**Glisser** sur l'objet pour régler la direction du dégradé, **+Maj** par pas de 45°. **Cliquer** sur un objet pour le sélectionner.",
@@ -121,6 +122,7 @@ export const enTools: Record<MessageKeyTools, string> = {
   'tool.transparency': 'Transparency',
   'tool.contour': 'Contour',
   'tool.strokeWidth': 'Stroke Width',
+  'tool.mesh': 'Mesh Fill',
   'tip.gradient.desc': 'Apply a gradient to the fill of the selected objects.',
   'tip.gradient.how':
     '**Drag** on the object to set the gradient direction, **+Shift** in 45° steps. **Click** an object to select it.',

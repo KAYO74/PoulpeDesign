@@ -34,6 +34,7 @@ export type ToolId =
   | 'transparency'
   | 'contour'
   | 'strokeWidth'
+  | 'mesh'
   // Persona Photo
   | 'marqueeRect'
   | 'marqueeEllipse'

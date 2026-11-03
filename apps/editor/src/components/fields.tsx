@@ -102,6 +102,11 @@ export function paintPreview(p: Paint): string {
     case 'pattern':
       // L'image du motif n'est pas disponible ici : des hachures signalent un remplissage par motif.
       return 'repeating-linear-gradient(45deg, #8b8b92 0 3px, #d9d9de 3px 6px)';
+    case 'mesh': {
+      // Aperçu : les quatre coins du filet en dégradé croisé.
+      const at = (i: number, j: number) => rgbaToCss(p.colors[j * (p.cols + 1) + i] ?? '#000000');
+      return `linear-gradient(to bottom, ${at(0, 0)}, ${at(0, p.rows)}) left / 50% 100% no-repeat, linear-gradient(to bottom, ${at(p.cols, 0)}, ${at(p.cols, p.rows)}) right / 50% 100% no-repeat, var(--checker)`;
+    }
     case 'hatch': {
       const ink = rgbaToCss(p.color);
       const bg = p.background ? rgbaToCss(p.background) : 'transparent';
