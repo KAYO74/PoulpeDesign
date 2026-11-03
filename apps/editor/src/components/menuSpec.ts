@@ -237,6 +237,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('layer.convertToCurves'),
         cmd('layer.outlineStroke'),
         cmd('layer.offset'),
+        cmd('object.blend'),
         sep,
         cmd('layer.lock'),
         cmd('layer.hide'),

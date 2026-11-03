@@ -31,6 +31,14 @@ export const frV1210 = {
   'file.saveAsPsd': 'Enregistrer en PSD (Photoshop, Affinity)…',
   'psdSave.savedActive':
     'Enregistré : le PSD montre le plan de travail actif, Poulpe Design garde tout le document',
+  'object.blend': 'Dégradé de formes…',
+  'shapeBlend.title': 'Dégradé de formes',
+  'shapeBlend.hint':
+    'Crée des formes intermédiaires entre les deux formes choisies : forme, couleur, trait et opacité changent pas à pas.',
+  'shapeBlend.steps': 'Étapes',
+  'shapeBlend.go': 'Créer',
+  'shapeBlend.name': 'Dégradé de formes',
+  'history.blend': 'Dégradé de formes',
 } as const;
 
 export type MessageKeyV1210 = keyof typeof frV1210;
@@ -64,4 +72,12 @@ export const enV1210: Record<MessageKeyV1210, string> = {
   'history.compDelete': 'Comp deleted',
   'file.saveAsPsd': 'Save as PSD (Photoshop, Affinity)…',
   'psdSave.savedActive': 'Saved: the PSD shows the active artboard, Poulpe Design keeps the whole document',
+  'object.blend': 'Blend shapes…',
+  'shapeBlend.title': 'Blend shapes',
+  'shapeBlend.hint':
+    'Creates in-between shapes from the two selected shapes: outline, fill, stroke and opacity change step by step.',
+  'shapeBlend.steps': 'Steps',
+  'shapeBlend.go': 'Create',
+  'shapeBlend.name': 'Blend',
+  'history.blend': 'Blend shapes',
 };

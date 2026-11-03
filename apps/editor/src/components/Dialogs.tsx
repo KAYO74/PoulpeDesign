@@ -14,6 +14,7 @@ import { NewDialog } from './dialogs/NewDialog';
 import { UpdateDialog } from './UpdateDialog';
 import { TourDialog } from './TourDialog';
 import { WhatsNewDialog } from './WhatsNewDialog';
+import { BlendDialog } from './dialogs/BlendDialog';
 import { CommandPalette } from './dialogs/CommandPalette';
 
 /**
@@ -96,6 +97,7 @@ function MainDialog() {
   if (dialog === 'comps') return <CompsDialog />;
   if (dialog === 'pathEntry') return <PathEntryDialog />;
   if (dialog === 'layerCount') return <LayerCountDialog />;
+  if (dialog === 'blend') return <BlendDialog />;
   if (dialog === 'contentFill') return <ContentFillDialog />;
   if (dialog === 'blendRanges') return <BlendRangesDialog />;
   if (dialog === 'meshWarp') return <MeshWarpDialog />;
