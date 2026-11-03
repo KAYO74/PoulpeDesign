@@ -8,16 +8,20 @@ function rect(fill: string, stroke = '#000000'): SceneNode {
   return r;
 }
 
+type Colored = { fill: { color: string }; stroke: { paint: { color: string } } };
+const fillOf = (n: SceneNode) => (n as unknown as Colored).fill.color;
+const strokeOf = (n: SceneNode) => (n as unknown as Colored).stroke.paint.color;
+
 describe("recoloriser l'illustration", () => {
   it('remplace une couleur partout, en gardant la transparence', () => {
     const a = rect('#ff0000'),
       b = rect('#ff000080', '#ff0000');
     recolorDesign({ nodes: [a, b] }, { '#ff0000': '#00ff00' });
-    expect((a as any).fill.color).toBe('#00ff00');
-    expect((b as any).fill.color).toBe('#00ff0080');
-    expect((b as any).stroke.paint.color).toBe('#00ff00');
+    expect(fillOf(a)).toBe('#00ff00');
+    expect(fillOf(b)).toBe('#00ff0080');
+    expect(strokeOf(b)).toBe('#00ff00');
     // Le noir n'est pas dans la correspondance : il reste.
-    expect((a as any).stroke.paint.color).toBe('#000000');
+    expect(strokeOf(a)).toBe('#000000');
   });
 
   it('décale la teinte, la saturation et la luminosité', () => {
@@ -30,8 +34,8 @@ describe("recoloriser l'illustration", () => {
   it('applique correspondance et décalage ensemble', () => {
     const a = rect('#ff0000', '#0000ff');
     recolorDesign({ nodes: [a] }, { '#ff0000': '#0000ff' }, { hue: 120, saturation: 0, lightness: 0 });
-    expect((a as any).fill.color).toBe('#ff0000');
-    expect((a as any).stroke.paint.color).toBe('#ff0000');
+    expect(fillOf(a)).toBe('#ff0000');
+    expect(strokeOf(a)).toBe('#ff0000');
     expect(designColors({ nodes: [a] })).toEqual(['#ff0000']);
   });
 });
