@@ -217,21 +217,23 @@ export function Toolbar() {
       <CmdButton id="arrange.rotateLeft" icon="rotateLeft" />
       <CmdButton id="arrange.rotateRight" icon="rotateRight" />
       <span className="spacer" />
-      <CmdButton id="edit.undo" icon="undo" />
-      <CmdButton id="edit.redo" icon="redo" />
-      <span className="tsep" />
-      <button
-        className="ib"
-        title={t('view.toolsSide')}
-        aria-label={t('view.toolsSide')}
-        onClick={() => setSettings({ toolsSide: settings.toolsSide === 'right' ? 'left' : 'right' })}
-      >
-        <Icon name={settings.toolsSide === 'right' ? 'sideRight' : 'sideLeft'} />
-      </button>
-      <button className="btn primary" onClick={() => ui.set({ dialog: 'export' })}>
-        <Icon name="export" />
-        {t('file.export')}
-      </button>
+      <div className="toolbar-end">
+        <CmdButton id="edit.undo" icon="undo" />
+        <CmdButton id="edit.redo" icon="redo" />
+        <span className="tsep" />
+        <button
+          className="ib"
+          title={t('view.toolsSide')}
+          aria-label={t('view.toolsSide')}
+          onClick={() => setSettings({ toolsSide: settings.toolsSide === 'right' ? 'left' : 'right' })}
+        >
+          <Icon name={settings.toolsSide === 'right' ? 'sideRight' : 'sideLeft'} />
+        </button>
+        <button className="btn primary" onClick={() => ui.set({ dialog: 'export' })}>
+          <Icon name="export" />
+          {t('file.export')}
+        </button>
+      </div>
     </div>
   );
 }

@@ -310,6 +310,18 @@ svg.i {
   overflow-x: auto;
   scrollbar-width: none;
 }
+/* Annuler, Rétablir et Exporter restent visibles quand la barre déborde (fenêtre étroite). */
+.toolbar-end {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: sticky;
+  right: 0;
+  flex: none;
+  padding-left: 8px;
+  background: var(--panel);
+  box-shadow: -8px 0 8px -4px var(--panel);
+}
 .personas {
   display: flex;
   gap: 2px;
