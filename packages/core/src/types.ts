@@ -456,7 +456,7 @@ export interface TextPath {
 
 /** Déformation du texte : forme et courbure de -1 à 1 (le signe inverse le sens). */
 export interface TextWarp {
-  kind: 'arc' | 'wave';
+  kind: 'arc' | 'wave' | 'circle' | 'rise';
   bend: number;
 }
 
@@ -742,6 +742,23 @@ export interface PoulpeDocument {
   slices?: Slice[];
   /** Couches alpha (panneau Couches) : sélections enregistrées pour être rechargées plus tard. */
   channels?: AlphaChannel[];
+  /** Variantes de calques : états enregistrés (visibilité, opacité, position) à rappeler en un clic. */
+  comps?: LayerComp[];
+}
+
+/** État d'un calque dans une variante. */
+export interface LayerCompState {
+  visible: boolean;
+  opacity: number;
+  x: number;
+  y: number;
+}
+
+/** Variante de calques (« Layer Comp » de Photoshop) : un état de tous les objets du document. */
+export interface LayerComp {
+  id: string;
+  name: string;
+  states: Record<string, LayerCompState>;
 }
 
 /**

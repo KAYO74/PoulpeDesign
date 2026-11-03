@@ -18,6 +18,27 @@ export function warpPath(warp: TextWarp, width: number): { d: string; height: nu
       ? { d: `M0 ${r(h)} Q${r(w / 2)} ${r(h - 2 * s)} ${r(w)} ${r(h)}`, height: h }
       : { d: `M0 0 Q${r(w / 2)} ${r(2 * s)} ${r(w)} 0`, height: h };
   }
+  if (warp.kind === 'circle') {
+    // Cercle : courbure maximale, le texte fait presque le tour (un petit blanc en bas) ; moins de
+    // courbure, un plus grand cercle. Positif : le texte tourne autour, lu en haut ; négatif : à
+    // l'intérieur, lu en bas.
+    const R = (w * 1.1) / Math.max(0.1, Math.abs(bend)) / (2 * Math.PI);
+    const cx = w / 2;
+    return bend >= 0
+      ? {
+          d: `M${r(cx)} ${r(2 * R)} A${r(R)} ${r(R)} 0 1 1 ${r(cx)} 0 A${r(R)} ${r(R)} 0 1 1 ${r(cx)} ${r(2 * R)}`,
+          height: Math.max(1, 2 * R),
+        }
+      : {
+          d: `M${r(cx)} 0 A${r(R)} ${r(R)} 0 1 0 ${r(cx)} ${r(2 * R)} A${r(R)} ${r(R)} 0 1 0 ${r(cx)} 0`,
+          height: Math.max(1, 2 * R),
+        };
+  }
+  if (warp.kind === 'rise') {
+    // Montée : le texte suit une droite qui monte (positif) ou descend (négatif).
+    const h = Math.max(1, Math.abs(bend) * w * 0.5);
+    return bend >= 0 ? { d: `M0 ${r(h)} L${r(w)} 0`, height: h } : { d: `M0 0 L${r(w)} ${r(h)}`, height: h };
+  }
   // Vague : une crête puis un creux (ou l'inverse), d'amplitude proportionnelle à la largeur.
   const a = Math.abs(bend) * w * 0.12;
   const h = Math.max(1, 2 * a);

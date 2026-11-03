@@ -1,8 +1,10 @@
-import type { TextNode } from '@poulpe/core';
+import type { TextNode, TextWarp } from '@poulpe/core';
 import { Select } from '../../components/fields';
 import { useT } from '../../i18n';
 import { editor } from '../../store';
 import { setTextWarp } from '../../vectorActions';
+
+const KINDS: TextWarp['kind'][] = ['arc', 'wave', 'circle', 'rise'];
 
 /** Déformation du texte (arc, vague), comme le texte déformé d'Affinity. Absent sur un texte posé sur un tracé libre. */
 export function TextWarpControls({ node }: { node: TextNode }) {
@@ -20,9 +22,15 @@ export function TextWarpControls({ node }: { node: TextNode }) {
           { value: '', label: t('text.warpNone') },
           { value: 'arc', label: t('text.warpArc') },
           { value: 'wave', label: t('text.warpWave') },
+          { value: 'circle', label: t('text.warpCircle') },
+          { value: 'rise', label: t('text.warpRise') },
         ]}
         onChange={(k) =>
-          setTextWarp(k === 'arc' || k === 'wave' ? { kind: k, bend: warp?.bend ?? 0.5 } : null)
+          setTextWarp(
+            KINDS.includes(k as TextWarp['kind'])
+              ? { kind: k as TextWarp['kind'], bend: warp?.bend ?? 0.5 }
+              : null,
+          )
         }
       />
       {warp && (

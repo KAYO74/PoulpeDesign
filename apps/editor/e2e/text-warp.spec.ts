@@ -32,6 +32,16 @@ test('déforme un texte en arc, règle la courbure, le remet droit', async ({ pa
   expect(n.path.warp.bend).toBe(1);
   expect(n.height).toBeGreaterThan(arcHeight);
 
+  // Cercle et montée.
+  await choose(page.getByTestId('text-warp'), 'circle');
+  [n] = await texts(page);
+  expect(n.path.warp.kind).toBe('circle');
+  expect(n.path.d).toContain('A');
+  await page.screenshot({ path: 'test-results/texte-cercle.png' });
+  await choose(page.getByTestId('text-warp'), 'rise');
+  [n] = await texts(page);
+  expect(n.path.d).toContain('L');
+
   // Vague, puis retour au texte droit.
   await choose(page.getByTestId('text-warp'), 'wave');
   [n] = await texts(page);

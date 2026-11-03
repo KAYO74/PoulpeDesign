@@ -2,6 +2,7 @@ import { useT } from '../i18n';
 import { isDesktop } from '../io';
 import { toast, ui, useUi, type HelpTab } from '../store';
 import { Modal } from './Dialogs';
+import { HelpSwitch } from './HelpSwitch';
 
 const close = () => ui.set({ dialog: null });
 
@@ -15,7 +16,7 @@ const FAQ = [1, 2, 3, 4, 5, 6];
 export function HelpDialog() {
   const t = useT();
   const tab = useUi((s) => s.helpTab);
-  const tabs: HelpTab[] = ['start', 'faq', 'performance'];
+  const tabs: HelpTab[] = ['start', 'switch', 'faq', 'performance'];
   return (
     <Modal title={t('help.title')} onClose={close} wide>
       <div className="seg help-tabs" role="tablist">
@@ -40,6 +41,7 @@ export function HelpDialog() {
             ))}
           </ul>
         )}
+        {tab === 'switch' && <HelpSwitch />}
         {tab === 'faq' && (
           <dl className="faq">
             {FAQ.map((n) => (

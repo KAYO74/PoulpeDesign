@@ -5,6 +5,7 @@ export * from './color';
 export * from './ids';
 export * from './factory';
 export * from './tree';
+export * from './comps';
 export * from './text';
 export * from './textWarp';
 export * from './editor';

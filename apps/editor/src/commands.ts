@@ -253,6 +253,7 @@ export const COMMANDS = {
     run: () => void newPixelLayer(),
   },
   'layer.newPixelMany': { label: 'layer.newPixelMany', run: () => ui.set({ dialog: 'layerCount' }) },
+  'layer.comps': { label: 'layer.comps', run: () => ui.set({ dialog: 'comps' }) },
   'layer.addMask': { label: 'layer.addMask', run: () => P.addMask(), enabled: P.canAddMask },
   'layer.editMask': {
     label: 'layer.editMask',
