@@ -349,6 +349,8 @@ export interface AdjustmentEngine {
   blur(px: Pixels, sigma: number): boolean;
   /** Correcteur (voir `healBlend`) : null si le moteur ne peut pas le faire. */
   heal?(dest: Pixels, src: Pixels, sigma: number): Uint8ClampedArray | null;
+  /** Épreuvage CMJN sur place avec la table `grid`³ × 3 ; faux si le moteur ne sait pas. */
+  proof?(data: Uint8ClampedArray, lut: Float32Array, grid: number): boolean;
 }
 
 let engine: AdjustmentEngine | null = null;

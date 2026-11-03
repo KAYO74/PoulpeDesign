@@ -118,6 +118,37 @@ export async function nativeApply(px: Pixels, adj: Adjustment, opts: AdjustOptio
   }
 }
 
+/**
+ * Gomme magique avec le moteur natif (appli de bureau), sur place. Faux si ce n'est pas possible
+ * (navigateur, petite image, ancienne appli) : il faut alors calculer dans la page.
+ */
+export async function nativeInpaint(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  hole: Uint8Array,
+  seed: number,
+): Promise<boolean> {
+  if (!isDesktop() || native === false || width * height < NATIVE_MIN_PIXELS) return false;
+  const body = new Uint8Array(data.length + hole.length);
+  body.set(data);
+  body.set(hole, data.length);
+  try {
+    const out = await invoke<ArrayBuffer>('engine_inpaint', body, {
+      'x-width': String(width),
+      'x-height': String(height),
+      'x-seed': String(seed >>> 0),
+    });
+    if (out.byteLength !== data.length) return false;
+    data.set(new Uint8Array(out));
+    return true;
+  } catch (e) {
+    // Appli de bureau plus ancienne que la commande : on calcule dans la page.
+    console.warn('Gomme magique native indisponible :', e);
+    return false;
+  }
+}
+
 export interface RustEngineStatus {
   wasm: EngineStats;
   native: NativeEngineInfo | null;

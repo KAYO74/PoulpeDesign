@@ -23,6 +23,7 @@ interface Exports {
   apply(px: number, len: number, w: number, h: number, json: number, jsonLen: number): number;
   blur(px: number, len: number, w: number, h: number, sigma: number): number;
   heal?(dest: number, src: number, len: number, w: number, h: number, sigma: number): number;
+  proof?(px: number, len: number, lut: number, lutLen: number, grid: number): number;
   version(): number;
 }
 
@@ -181,6 +182,18 @@ export function engineHeal(dest: Pixels, src: Pixels, sigma: number): Uint8Clamp
   return ok ? out.data : null;
 }
 
+/** Épreuvage CMJN (sur place) avec le moteur Rust : faux si le moteur n'est pas là ou trop ancien. */
+export function engineProof(data: Uint8ClampedArray, lut: Float32Array, grid: number): boolean {
+  if (!wasm?.proof) return false;
+  const px = { data, width: data.length / 4, height: 1 };
+  return run(px, (ptr, len) => {
+    const l = reserve(aux, lut.byteLength);
+    if (l % 4) return 2;
+    new Float32Array(wasm!.memory.buffer, l, lut.length).set(lut);
+    return wasm!.proof!(ptr, len, l, lut.length, grid);
+  });
+}
+
 /**
  * Charge le moteur (le fichier `wasm/poulpe_engine.wasm`) et le branche sur les réglages
  * d'image. Renvoie faux si le navigateur ne peut pas le charger : le TypeScript reste utilisé.
@@ -192,7 +205,7 @@ export async function startEngine(source: BufferSource | Response | Promise<Resp
     const { instance } = await WebAssembly.instantiate(bytes, {});
     wasm = instance.exports as unknown as Exports;
     scratch.len = text.len = aux.len = 0;
-    setAdjustmentEngine({ apply: engineApply, blur: engineBlur, heal: engineHeal });
+    setAdjustmentEngine({ apply: engineApply, blur: engineBlur, heal: engineHeal, proof: engineProof });
     return true;
   } catch (e) {
     console.warn('Moteur Rust indisponible, calcul en TypeScript :', e);

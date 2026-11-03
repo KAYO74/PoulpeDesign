@@ -1,8 +1,10 @@
 import { inpaint } from '@poulpe/core';
+import { nativeInpaint } from '../engine';
 
 /*
- * Lance la gomme magique dans un Web Worker (l'interface reste fluide pendant le calcul), ou
- * directement si les workers ne sont pas disponibles.
+ * Lance la gomme magique : sur le moteur natif dans l'appli de bureau, sinon dans un Web Worker
+ * (l'interface reste fluide pendant le calcul), ou directement si les workers ne sont pas
+ * disponibles.
  */
 
 let worker: Worker | null = null;
@@ -18,7 +20,7 @@ function getWorker(): Worker | null {
   return worker;
 }
 
-export function inpaintAsync(
+export async function inpaintAsync(
   data: Uint8ClampedArray,
   width: number,
   height: number,
@@ -27,6 +29,22 @@ export function inpaintAsync(
   seed?: number,
   /** Forcer la version TypeScript (tests de comparaison). */
   ts = false,
+): Promise<Uint8ClampedArray> {
+  if (!ts && (await nativeInpaint(data, width, height, hole, seed ?? 1234567))) {
+    onProgress?.(1);
+    return data;
+  }
+  return inpaintInPage(data, width, height, hole, onProgress, seed, ts);
+}
+
+function inpaintInPage(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  hole: Uint8Array,
+  onProgress: ((f: number) => void) | undefined,
+  seed: number | undefined,
+  ts: boolean,
 ): Promise<Uint8ClampedArray> {
   const w = getWorker();
   if (!w) {

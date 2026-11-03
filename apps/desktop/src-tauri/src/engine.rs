@@ -129,6 +129,37 @@ pub async fn engine_apply(
     .map_err(|e| e.to_string())
 }
 
+/// Gomme magique (remplissage d'après le contenu). Corps : les pixels RGBA puis le masque du trou
+/// (un octet par pixel) ; en-têtes : `x-width`, `x-height` et `x-seed`. Renvoie les pixels.
+#[tauri::command]
+pub async fn engine_inpaint(
+    engine: tauri::State<'_, Engine>,
+    request: tauri::ipc::Request<'_>,
+) -> Result<tauri::ipc::Response, String> {
+    let tauri::ipc::InvokeBody::Raw(body) = request.body() else {
+        return Err("pixels attendus".into());
+    };
+    let w: usize = header(&request, "x-width")?.parse().map_err(|_| "largeur invalide")?;
+    let h: usize = header(&request, "x-height")?.parse().map_err(|_| "hauteur invalide")?;
+    let seed: u32 = header(&request, "x-seed")?.parse().map_err(|_| "graine invalide")?;
+    let n = w.checked_mul(h).ok_or("taille incorrecte")?;
+    if n.checked_mul(5) != Some(body.len()) {
+        return Err("taille des pixels incorrecte".into());
+    }
+    let (pixels, hole) = body.split_at(n * 4);
+    let (mut data, hole) = (pixels.to_vec(), hole.to_vec());
+    let engine = engine.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let t = std::time::Instant::now();
+        poulpe_engine::inpaint::inpaint(&mut data, w, h, &hole, 7, seed);
+        let ms = t.elapsed().as_secs_f64() * 1000.0;
+        engine.0.lock().unwrap().profiler.record("cpu:inpaint", ms);
+        tauri::ipc::Response::new(data)
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 /// Sépare le réglage (JSON) des pixels dans le corps de la demande.
 fn split_body(body: &[u8]) -> Option<(String, &[u8])> {
     let len = u32::from_le_bytes(body.get(..4)?.try_into().ok()?) as usize;
@@ -191,6 +222,56 @@ mod tests {
         .unwrap();
         let tauri::ipc::InvokeResponseBody::Raw(out) = res else { panic!("pixels attendus") };
         assert_eq!(out, vec![245, 235, 225, 255, 255, 255, 255, 0]);
+    }
+
+    /// La gomme magique telle que l'interface l'appelle : pixels puis masque du trou. Même
+    /// résultat que le moteur WebAssembly (même code, même graine), vérifié contre une image connue.
+    #[test]
+    fn gomme_magique_par_la_commande() {
+        let app = tauri::test::mock_builder()
+            .manage(Engine::new(GpuSettings { device: gpu::GpuChoice::Cpu, ..Default::default() }))
+            .invoke_handler(tauri::generate_handler![engine_inpaint])
+            .build(tauri::test::mock_context(tauri::test::noop_assets()))
+            .unwrap();
+        let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default()).build().unwrap();
+        let (w, h) = (40usize, 30usize);
+        let mut pixels: Vec<u8> = (0..w * h).flat_map(|i| [((i % w) * 6) as u8, 90, 160, 255]).collect();
+        let mut hole = vec![0u8; w * h];
+        for y in 12..18 {
+            for x in 16..22 {
+                hole[y * w + x] = 1;
+                pixels[(y * w + x) * 4 + 1] = 255;
+            }
+        }
+        let mut expected = pixels.clone();
+        poulpe_engine::inpaint::inpaint(&mut expected, w, h, &hole, 7, 1234567);
+        let mut body = pixels.clone();
+        body.extend_from_slice(&hole);
+        let call = |body: Vec<u8>| {
+            let mut headers = tauri::http::HeaderMap::new();
+            headers.insert("x-width", w.to_string().parse().unwrap());
+            headers.insert("x-height", h.to_string().parse().unwrap());
+            headers.insert("x-seed", "1234567".parse().unwrap());
+            tauri::test::get_ipc_response(
+                &webview,
+                tauri::webview::InvokeRequest {
+                    cmd: "engine_inpaint".into(),
+                    callback: tauri::ipc::CallbackFn(0),
+                    error: tauri::ipc::CallbackFn(1),
+                    url: "tauri://localhost".parse().unwrap(),
+                    body: tauri::ipc::InvokeBody::Raw(body),
+                    headers,
+                    invoke_key: tauri::test::INVOKE_KEY.to_string(),
+                },
+            )
+        };
+        let res = call(body.clone()).unwrap();
+        let tauri::ipc::InvokeResponseBody::Raw(out) = res else { panic!("pixels attendus") };
+        assert_eq!(out, expected);
+        // Le trou ne garde pas le vert ajouté ; le reste ne bouge pas.
+        assert_eq!(out[(14 * w + 18) * 4 + 1], 90);
+        assert_eq!(out[..4], pixels[..4]);
+        assert!(call(body[..body.len() - 1].to_vec()).is_err());
     }
 
     #[test]
