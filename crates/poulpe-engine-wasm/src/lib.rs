@@ -47,10 +47,10 @@ pub unsafe extern "C" fn apply(
     0
 }
 
-/// Version du moteur (1.2.0 → 10200).
+/// Version du moteur (1.3.0 → 10300).
 #[no_mangle]
 pub extern "C" fn version() -> u32 {
-    10200
+    10300
 }
 
 /// Floute les pixels RGBA sur place (flou gaussien approché, écart type `sigma` en pixels).
@@ -89,5 +89,29 @@ pub unsafe extern "C" fn heal(
     let s = std::slice::from_raw_parts(src, len);
     let out = poulpe_engine::retouch::heal_blend(d, s, w, h, sigma);
     d.copy_from_slice(&out);
+    0
+}
+
+/// Remplissage d'après le contenu sur place (`px` RGBA, `hole` un octet par pixel).
+/// 0 = fait, 2 = tailles incohérentes.
+///
+/// # Safety
+/// `px` doit pointer sur `len` octets et `hole` sur `len / 4` octets, réservés par `alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn inpaint(
+    px: *mut u8,
+    hole: *const u8,
+    len: usize,
+    w: usize,
+    h: usize,
+    patch: usize,
+    seed: u32,
+) -> u32 {
+    if w.checked_mul(h).and_then(|n| n.checked_mul(4)) != Some(len) {
+        return 2;
+    }
+    let d = std::slice::from_raw_parts_mut(px, len);
+    let m = std::slice::from_raw_parts(hole, len / 4);
+    poulpe_engine::inpaint::inpaint(d, w, h, m, patch, seed);
     0
 }

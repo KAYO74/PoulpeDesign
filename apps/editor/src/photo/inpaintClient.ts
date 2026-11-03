@@ -25,6 +25,8 @@ export function inpaintAsync(
   hole: Uint8Array,
   onProgress?: (f: number) => void,
   seed?: number,
+  /** Forcer la version TypeScript (tests de comparaison). */
+  ts = false,
 ): Promise<Uint8ClampedArray> {
   const w = getWorker();
   if (!w) {
@@ -49,6 +51,6 @@ export function inpaintAsync(
     };
     w.addEventListener('message', onMessage);
     w.addEventListener('error', onError);
-    w.postMessage({ id, data, width, height, hole, seed }, [data.buffer]);
+    w.postMessage({ id, data, width, height, hole, seed, ts }, [data.buffer]);
   });
 }
