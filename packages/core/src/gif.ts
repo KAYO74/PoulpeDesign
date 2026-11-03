@@ -128,78 +128,124 @@ function lzw(indices: Uint8Array, minCode: number, out: number[]): void {
   out.push(0);
 }
 
+/** Couleur d'un pixel posée sur du blanc, en clé 15 bits. */
+function keyAt(d: Uint8ClampedArray, i: number): number {
+  const a = d[i + 3] / 255,
+    b = 255 * (1 - a);
+  return key15(d[i] * a + b, d[i + 1] * a + b, d[i + 2] * a + b);
+}
+
 /**
- * GIF animé de toutes les images (même taille). Les pixels presque transparents deviennent
- * transparents (`transparent`), sinon ils sont posés sur du blanc.
+ * Écriture d'un GIF animé image par image, pour ne garder en mémoire que les images déjà
+ * compressées. La palette est commune à toutes les images : on la calcule d'abord avec
+ * `addToHistogram` sur chaque image (premier passage), puis on écrit les images (second passage).
  */
-export function encodeGif(frames: GifFrame[], w: number, h: number, transparent = false): Uint8Array {
-  const hist = new Uint32Array(32768);
-  for (const f of frames) {
-    const d = f.data;
+export class GifWriter {
+  private readonly hist = new Uint32Array(32768);
+  private palette: number[][] | null = null;
+  private lookup = new Uint8Array(32768);
+  private bits = 1;
+  private transIndex = -1;
+  private readonly chunks: Uint8Array[] = [];
+  private readonly idx: Uint8Array;
+
+  constructor(
+    readonly width: number,
+    readonly height: number,
+    /** Les pixels presque transparents restent transparents ; sinon ils sont posés sur du blanc. */
+    readonly transparent = false,
+  ) {
+    this.idx = new Uint8Array(width * height);
+  }
+
+  /** Premier passage : compte les couleurs d'une image. */
+  addToHistogram(d: Uint8ClampedArray): void {
     for (let i = 0; i < d.length; i += 4) {
-      if (transparent && d[i + 3] < 128) continue;
-      const a = d[i + 3] / 255;
-      hist[key15(d[i] * a + 255 * (1 - a), d[i + 1] * a + 255 * (1 - a), d[i + 2] * a + 255 * (1 - a))]++;
+      if (this.transparent && d[i + 3] < 128) continue;
+      this.hist[keyAt(d, i)]++;
     }
   }
-  const palette = medianCut(hist, transparent ? 255 : 256);
-  const transIndex = transparent ? palette.length : -1;
-  const colors = transparent ? [...palette, [0, 0, 0]] : palette;
-  let bits = 1;
-  while (1 << bits < colors.length) bits++;
-  // Couleur la plus proche de chaque case de l'histogramme, calculée une fois.
-  const lookup = new Uint8Array(32768);
-  for (let k = 0; k < 32768; k++) {
-    const r = ((k >> 10) & 31) * 8 + 4,
-      g = ((k >> 5) & 31) * 8 + 4,
-      b = (k & 31) * 8 + 4;
-    let best = 0,
-      bd = Infinity;
-    for (let i = 0; i < palette.length; i++) {
-      const p = palette[i];
-      const dd = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2;
-      if (dd < bd) {
-        bd = dd;
-        best = i;
+
+  /** Fixe la palette (une fois toutes les images comptées) et écrit l'en-tête. */
+  private start(): void {
+    const palette = medianCut(this.hist, this.transparent ? 255 : 256);
+    this.palette = palette;
+    this.transIndex = this.transparent ? palette.length : -1;
+    const colors = this.transparent ? [...palette, [0, 0, 0]] : palette;
+    while (1 << this.bits < colors.length) this.bits++;
+    // Couleur la plus proche de chaque case de l'histogramme, calculée une fois.
+    for (let k = 0; k < 32768; k++) {
+      const r = ((k >> 10) & 31) * 8 + 4,
+        g = ((k >> 5) & 31) * 8 + 4,
+        b = (k & 31) * 8 + 4;
+      let best = 0,
+        bd = Infinity;
+      for (let i = 0; i < palette.length; i++) {
+        const p = palette[i];
+        const dd = (p[0] - r) ** 2 + (p[1] - g) ** 2 + (p[2] - b) ** 2;
+        if (dd < bd) {
+          bd = dd;
+          best = i;
+        }
       }
+      this.lookup[k] = best;
     }
-    lookup[k] = best;
-  }
-  const out: number[] = [];
-  const u16 = (v: number) => out.push(v & 0xff, (v >> 8) & 0xff);
-  out.push(...[...'GIF89a'].map((c) => c.charCodeAt(0)));
-  u16(w);
-  u16(h);
-  out.push(0x80 | 0x70 | (bits - 1), 0, 0);
-  for (let i = 0; i < 1 << bits; i++) {
-    const c = colors[i] ?? [0, 0, 0];
-    out.push(c[0], c[1], c[2]);
-  }
-  // Boucle infinie (extension NETSCAPE2.0).
-  out.push(0x21, 0xff, 0x0b, ...[...'NETSCAPE2.0'].map((c) => c.charCodeAt(0)), 3, 1, 0, 0, 0);
-  const idx = new Uint8Array(w * h);
-  for (const f of frames) {
-    const d = f.data;
-    for (let p = 0, i = 0; p < idx.length; p++, i += 4) {
-      if (transparent && d[i + 3] < 128) idx[p] = transIndex;
-      else {
-        const a = d[i + 3] / 255;
-        idx[p] =
-          lookup[key15(d[i] * a + 255 * (1 - a), d[i + 1] * a + 255 * (1 - a), d[i + 2] * a + 255 * (1 - a))];
-      }
+    const out: number[] = [];
+    const u16 = (v: number) => out.push(v & 0xff, (v >> 8) & 0xff);
+    out.push(...[...'GIF89a'].map((c) => c.charCodeAt(0)));
+    u16(this.width);
+    u16(this.height);
+    out.push(0x80 | 0x70 | (this.bits - 1), 0, 0);
+    for (let i = 0; i < 1 << this.bits; i++) {
+      const c = colors[i] ?? [0, 0, 0];
+      out.push(c[0], c[1], c[2]);
     }
+    // Boucle infinie (extension NETSCAPE2.0).
+    out.push(0x21, 0xff, 0x0b, ...[...'NETSCAPE2.0'].map((c) => c.charCodeAt(0)), 3, 1, 0, 0, 0);
+    this.chunks.push(Uint8Array.from(out));
+  }
+
+  /** Second passage : écrit une image (durée en centièmes de seconde). */
+  addFrame(d: Uint8ClampedArray, delay: number): void {
+    if (!this.palette) this.start();
+    const idx = this.idx;
+    for (let p = 0, i = 0; p < idx.length; p++, i += 4)
+      idx[p] = this.transparent && d[i + 3] < 128 ? this.transIndex : this.lookup[keyAt(d, i)];
+    const out: number[] = [];
+    const u16 = (v: number) => out.push(v & 0xff, (v >> 8) & 0xff);
     // Contrôle graphique : durée, effacement de l'image précédente, transparence.
-    out.push(0x21, 0xf9, 4, (2 << 2) | (transparent ? 1 : 0));
-    u16(Math.max(2, Math.round(f.delay)));
-    out.push(transparent ? transIndex : 0, 0);
+    out.push(0x21, 0xf9, 4, (2 << 2) | (this.transparent ? 1 : 0));
+    u16(Math.max(2, Math.round(delay)));
+    out.push(this.transparent ? this.transIndex : 0, 0);
     out.push(0x2c);
     u16(0);
     u16(0);
-    u16(w);
-    u16(h);
+    u16(this.width);
+    u16(this.height);
     out.push(0);
-    lzw(idx, Math.max(2, bits), out);
+    lzw(idx, Math.max(2, this.bits), out);
+    this.chunks.push(Uint8Array.from(out));
   }
-  out.push(0x3b);
-  return Uint8Array.from(out);
+
+  /** Le GIF complet. */
+  finish(): Uint8Array {
+    if (!this.palette) this.start();
+    const total = this.chunks.reduce((n, c) => n + c.length, 0) + 1;
+    const gif = new Uint8Array(total);
+    let at = 0;
+    for (const c of this.chunks) {
+      gif.set(c, at);
+      at += c.length;
+    }
+    gif[at] = 0x3b;
+    return gif;
+  }
+}
+
+/** GIF animé de toutes les images (même taille), en une fois. */
+export function encodeGif(frames: GifFrame[], w: number, h: number, transparent = false): Uint8Array {
+  const gif = new GifWriter(w, h, transparent);
+  for (const f of frames) gif.addToHistogram(f.data);
+  for (const f of frames) gif.addFrame(f.data, f.delay);
+  return gif.finish();
 }

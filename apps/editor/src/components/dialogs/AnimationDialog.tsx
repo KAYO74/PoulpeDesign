@@ -3,14 +3,13 @@ import {
   animateArtboard,
   animationLength,
   defaultAnimation,
-  encodeGif,
   findArtboard,
   findNode,
+  GifWriter,
   topLevelIds,
   validAnimation,
   type AnimationKind,
   type Artboard,
-  type GifFrame,
   type PoulpeDocument,
 } from '@poulpe/core';
 import { ImageCache, drawArtboard } from '@poulpe/render';
@@ -57,8 +56,21 @@ function drawFrame(
   drawArtboard(ctx, at, frame, { images });
 }
 
-/** GIF animé du plan de travail, `size` pixels sur le plus grand côté. */
-async function artboardGif(doc: PoulpeDocument, ab: Artboard, size: number): Promise<Uint8Array> {
+/** Durée exportée au plus (secondes) : au-delà, le GIF serait énorme et long à créer. */
+export const MAX_GIF_SECONDS = 30;
+
+/**
+ * GIF animé du plan de travail, `size` pixels sur le plus grand côté. Deux passages : quelques
+ * images pour la palette, puis chaque image est compressée aussitôt dessinée (seules les images
+ * compressées restent en mémoire). `progress` reçoit l'avancement (0 à 1) ; `signal` annule.
+ */
+async function artboardGif(
+  doc: PoulpeDocument,
+  ab: Artboard,
+  size: number,
+  progress: (f: number) => void,
+  signal: AbortSignal,
+): Promise<Uint8Array | null> {
   await images.ready(doc);
   const k = Math.min(1, size / Math.max(ab.width, ab.height));
   const w = Math.max(1, Math.round(ab.width * k)),
@@ -67,19 +79,33 @@ async function artboardGif(doc: PoulpeDocument, ab: Artboard, size: number): Pro
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
-  const length = animationLength(ab);
+  const length = Math.min(MAX_GIF_SECONDS, animationLength(ab));
   const count = Math.max(1, Math.ceil(length * FPS));
-  const frames: GifFrame[] = [];
+  const gif = new GifWriter(w, h);
+  // Palette : au plus une trentaine d'images réparties sur toute l'animation.
+  const step = Math.max(1, Math.floor(count / 30));
+  const samples: number[] = [];
+  for (let i = 0; i <= count; i += step) samples.push(i);
+  if (samples[samples.length - 1] !== count) samples.push(count);
+  const total = samples.length + count + 1;
+  let done = 0;
+  const breathe = async () => {
+    progress(++done / total);
+    // Laisse respirer l'interface (barre de progression, bouton Annuler).
+    await new Promise((r) => setTimeout(r, 0));
+    return !signal.aborted;
+  };
+  for (const i of samples) {
+    drawFrame(ctx, doc, ab, i / FPS, k);
+    gif.addToHistogram(ctx.getImageData(0, 0, w, h).data);
+    if (!(await breathe())) return null;
+  }
   for (let i = 0; i <= count; i++) {
     drawFrame(ctx, doc, ab, i / FPS, k);
-    frames.push({
-      data: ctx.getImageData(0, 0, w, h).data,
-      delay: i === count ? 100 * HOLD : 100 / FPS,
-    });
-    // Laisse respirer l'interface entre deux images.
-    if (i % 5 === 4) await new Promise((r) => setTimeout(r, 0));
+    gif.addFrame(ctx.getImageData(0, 0, w, h).data, i === count ? 100 * HOLD : 100 / FPS);
+    if (!(await breathe())) return null;
   }
-  return encodeGif(frames, w, h);
+  return gif.finish();
 }
 
 export function AnimationDialog() {
@@ -93,6 +119,10 @@ export function AnimationDialog() {
   const [size, setSize] = useState<number>(480);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
+  const abort = useRef<AbortController | null>(null);
+  // Fenêtre fermée pendant l'export : on l'arrête.
+  useEffect(() => () => abort.current?.abort(), []);
   const [replay, setReplay] = useState(0);
   const preview = useRef<HTMLCanvasElement>(null);
 
@@ -138,15 +168,23 @@ export function AnimationDialog() {
 
   const exportGif = async () => {
     if (!ab) return;
+    const ctrl = new AbortController();
+    abort.current = ctrl;
     setBusy(true);
-    setStatus(t('anim.exporting'));
+    setDone(0);
+    setStatus('');
     try {
-      const bytes = await artboardGif(doc, ab, size);
+      const bytes = await artboardGif(doc, ab, size, setDone, ctrl.signal);
+      if (!bytes) {
+        setStatus(t('anim.cancelled'));
+        return;
+      }
       const name = await saveBytes(bytes, 'gif', ab.name || doc.name);
       setStatus(name ? t('anim.saved', { name }) : '');
     } catch (e) {
       setStatus(String(e));
     } finally {
+      abort.current = null;
       setBusy(false);
     }
   };
@@ -212,6 +250,15 @@ export function AnimationDialog() {
           {t('anim.play')}
         </button>
       </div>
+      {length > MAX_GIF_SECONDS && <p className="note">{t('anim.tooLong', { s: MAX_GIF_SECONDS })}</p>}
+      {busy && (
+        <div className="picker-row">
+          <progress max={1} value={done} data-testid="anim-progress" aria-label={t('anim.exporting')} />
+          <button className="btn small" data-testid="anim-cancel" onClick={() => abort.current?.abort()}>
+            {t('new.cancel')}
+          </button>
+        </div>
+      )}
       {status && (
         <p className="note" data-testid="anim-status">
           {status}
