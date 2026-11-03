@@ -10,6 +10,7 @@ pub mod adjust;
 pub mod blur;
 pub mod js;
 pub mod par;
+pub mod retouch;
 pub mod stats;
 pub mod tiles;
 

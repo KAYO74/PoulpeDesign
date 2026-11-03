@@ -347,9 +347,16 @@ export interface AdjustOptions {
 export interface AdjustmentEngine {
   apply(px: Pixels, adj: Adjustment, opts: AdjustOptions): boolean;
   blur(px: Pixels, sigma: number): boolean;
+  /** Correcteur (voir `healBlend`) : null si le moteur ne peut pas le faire. */
+  heal?(dest: Pixels, src: Pixels, sigma: number): Uint8ClampedArray | null;
 }
 
 let engine: AdjustmentEngine | null = null;
+
+/** Le moteur branché, s'il y en a un (pour les autres calculs lourds : correcteur…). */
+export function adjustmentEngine(): AdjustmentEngine | null {
+  return engine;
+}
 
 /** Branche (ou débranche, avec null) le moteur de calcul des réglages. */
 export function setAdjustmentEngine(e: AdjustmentEngine | null): void {

@@ -22,6 +22,7 @@ interface Exports {
   dealloc(ptr: number, len: number): void;
   apply(px: number, len: number, w: number, h: number, json: number, jsonLen: number): number;
   blur(px: number, len: number, w: number, h: number, sigma: number): number;
+  heal?(dest: number, src: number, len: number, w: number, h: number, sigma: number): number;
   version(): number;
 }
 
@@ -30,6 +31,7 @@ let wasm: Exports | null = null;
 /** Zone de travail réservée dans la mémoire du moteur, agrandie au besoin. */
 const scratch = { ptr: 0, len: 0 };
 const text = { ptr: 0, len: 0 };
+const aux = { ptr: 0, len: 0 };
 
 function reserve(zone: { ptr: number; len: number }, len: number): number {
   if (zone.len < len) {
@@ -167,6 +169,18 @@ export function engineBlur(px: Pixels, sigma: number): boolean {
   return run(px, (ptr, len) => wasm!.blur(ptr, len, px.width, px.height, sigma));
 }
 
+/** Correcteur avec le moteur Rust : null si le moteur n'est pas là ou trop ancien. */
+export function engineHeal(dest: Pixels, src: Pixels, sigma: number): Uint8ClampedArray | null {
+  if (!wasm?.heal || src.data.length !== dest.data.length) return null;
+  const out = { data: new Uint8ClampedArray(dest.data), width: dest.width, height: dest.height };
+  const ok = run(out, (ptr, len) => {
+    const s = reserve(aux, len);
+    new Uint8Array(wasm!.memory.buffer, s, len).set(src.data);
+    return wasm!.heal!(ptr, s, len, dest.width, dest.height, sigma);
+  });
+  return ok ? out.data : null;
+}
+
 /**
  * Charge le moteur (le fichier `wasm/poulpe_engine.wasm`) et le branche sur les réglages
  * d'image. Renvoie faux si le navigateur ne peut pas le charger : le TypeScript reste utilisé.
@@ -177,8 +191,8 @@ export async function startEngine(source: BufferSource | Response | Promise<Resp
     const bytes = res instanceof Response ? await res.arrayBuffer() : res;
     const { instance } = await WebAssembly.instantiate(bytes, {});
     wasm = instance.exports as unknown as Exports;
-    scratch.len = text.len = 0;
-    setAdjustmentEngine({ apply: engineApply, blur: engineBlur });
+    scratch.len = text.len = aux.len = 0;
+    setAdjustmentEngine({ apply: engineApply, blur: engineBlur, heal: engineHeal });
     return true;
   } catch (e) {
     console.warn('Moteur Rust indisponible, calcul en TypeScript :', e);

@@ -1,4 +1,4 @@
-import { gaussianBlurred, type Pixels } from './adjust';
+import { adjustmentEngine, gaussianBlurred, type Pixels } from './adjust';
 import type { Vec } from './geometry';
 
 /*
@@ -182,6 +182,13 @@ export function liquifyDab(
  * taille ; l'opacité est celle de `dest`.
  */
 export function healBlend(dest: Pixels, src: Pixels, sigma: number): Uint8ClampedArray {
+  const fast = adjustmentEngine()?.heal?.(dest, src, sigma);
+  if (fast) return fast;
+  return healBlendTs(dest, src, sigma);
+}
+
+/** Calcul TypeScript d'origine du correcteur (référence du moteur Rust, et solution de repli). */
+export function healBlendTs(dest: Pixels, src: Pixels, sigma: number): Uint8ClampedArray {
   const bd = gaussianBlurred(dest, sigma);
   const bs = gaussianBlurred(src, sigma);
   const out = new Uint8ClampedArray(dest.data.length);

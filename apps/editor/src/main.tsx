@@ -22,7 +22,7 @@ import * as frames from './tools/frames/actions';
 import * as textFlow from './tools/textFlow/actions';
 import * as prefs from './preferences';
 import * as linked from './photo/linkedImages';
-import { artboardToSvg } from '@poulpe/core';
+import { artboardToSvg, healBlend, healBlendTs } from '@poulpe/core';
 import { getPerformanceSettings, renderStats, setPerformanceSettings } from './perf';
 import { editor, ui } from './store';
 import './styles.css';
@@ -77,7 +77,8 @@ if (isDesktop()) {
   layout,
   frames,
   textFlow,
-  core: { artboardToSvg },
+  // Calculs lourds, pour les budgets de temps des tests (moteur Rust s'il est chargé, sinon TS).
+  core: { artboardToSvg, healBlend, healBlendTs },
   controller: getController,
   perf: { setPerformanceSettings, getPerformanceSettings, renderStats },
   engine: { start: startRustEngine },

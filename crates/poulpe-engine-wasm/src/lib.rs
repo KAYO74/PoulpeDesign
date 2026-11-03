@@ -47,10 +47,10 @@ pub unsafe extern "C" fn apply(
     0
 }
 
-/// Version du moteur (1.1.1 → 10101).
+/// Version du moteur (1.2.0 → 10200).
 #[no_mangle]
 pub extern "C" fn version() -> u32 {
-    10101
+    10200
 }
 
 /// Floute les pixels RGBA sur place (flou gaussien approché, écart type `sigma` en pixels).
@@ -65,5 +65,29 @@ pub unsafe extern "C" fn blur(px: *mut u8, len: usize, w: usize, h: usize, sigma
     let data = std::slice::from_raw_parts_mut(px, len);
     let out = poulpe_engine::blur::gaussian_blurred(data, w, h, sigma);
     data.copy_from_slice(&out);
+    0
+}
+
+/// Correcteur : écrit dans `dest` la texture de `src` avec la lumière de `dest` (voir
+/// `poulpe_engine::retouch::heal_blend`).
+///
+/// # Safety
+/// Les deux zones doivent avoir été réservées par `alloc` avec au moins `len` octets.
+#[no_mangle]
+pub unsafe extern "C" fn heal(
+    dest: *mut u8,
+    src: *const u8,
+    len: usize,
+    w: usize,
+    h: usize,
+    sigma: f64,
+) -> u32 {
+    if w.checked_mul(h).and_then(|n| n.checked_mul(4)) != Some(len) {
+        return 2;
+    }
+    let d = std::slice::from_raw_parts_mut(dest, len);
+    let s = std::slice::from_raw_parts(src, len);
+    let out = poulpe_engine::retouch::heal_blend(d, s, w, h, sigma);
+    d.copy_from_slice(&out);
     0
 }
