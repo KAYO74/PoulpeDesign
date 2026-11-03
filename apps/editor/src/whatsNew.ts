@@ -13,6 +13,23 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.7.0',
+    fr: [
+      'Ouvrir ou enregistrer en tapant un chemin de fichier (appli de bureau).',
+      'Créer plusieurs calques de pixels d’un coup.',
+      'La recherche Ctrl+K affiche la touche de chaque outil.',
+      'Import PSD : plus de calques de réglage reconnus, et un avertissement pour ceux qui sont ignorés.',
+      'Photothèque vide plus claire.',
+    ],
+    en: [
+      'Open or save by typing a file path (desktop app).',
+      'Create several pixel layers at once.',
+      'Ctrl+K search shows the key of each tool.',
+      'PSD import: more adjustment layers recognised, and a warning for the ones that are skipped.',
+      'Clearer empty photo library.',
+    ],
+  },
+  {
     version: '1.6.0',
     fr: [
       'Choix de police : recherche, filtres (avec ou sans empattement, écriture, gras…) et noms écrits dans leur police.',
