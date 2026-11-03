@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ComponentType } from 'react';
-import { useUi } from '../store';
+import { ui, useUi } from '../store';
+import { LoadErrorBoundary } from './LoadErrorBoundary';
 // Chaque fenêtre a son module (dossier dialogs/). Les cinq premières, seules à charger des modules
 // pas encore chargés à ce stade (langue de départ, brouillons, filtres, modèles, panneaux), restent
 // dans cet ordre : c'est celui dans lequel ces modules s'évaluent au démarrage.
@@ -59,11 +60,15 @@ const SaveTemplateDialog = lazyDialog(() => import('./dialogs/SaveTemplateDialog
 export { Modal } from './dialogs/Modal';
 
 export function Dialogs() {
+  const dialog = useUi((s) => s.dialog);
   return (
     <>
-      <Suspense fallback={null}>
-        <MainDialog />
-      </Suspense>
+      {/* Une clé par fenêtre : changer de fenêtre efface un éventuel message d'erreur. */}
+      <LoadErrorBoundary key={dialog ?? 'none'} onClose={() => ui.set({ dialog: null })}>
+        <Suspense fallback={null}>
+          <MainDialog />
+        </Suspense>
+      </LoadErrorBoundary>
       <UpdateDialog />
       <WhatsNewDialog />
       <TourDialog />

@@ -1,5 +1,6 @@
 /*
  * Visite guidée de 2 minutes : au premier lancement, puis dans Aide > Visite guidée.
+ * Et le message quand une fenêtre chargée à la demande ne vient pas (loaderr.*).
  */
 
 export const frTour = {
@@ -29,6 +30,11 @@ export const frTour = {
   'tour.s6.title': 'Enregistrer et exporter',
   'tour.s6.text':
     'Ctrl+S enregistre votre projet (.poulpe), le bouton Exporter en haut à droite crée PNG, JPEG, SVG, PDF ou PSD. Revoyez cette visite à tout moment dans le menu Aide.',
+  'loaderr.title': 'Fenêtre indisponible',
+  'loaderr.text':
+    'Cette fenêtre n’a pas pu se charger. L’appli vient peut-être d’être mise à jour : rechargez la page pour continuer. Votre travail n’est pas perdu tant que la page reste ouverte.',
+  'loaderr.reload': 'Recharger la page',
+  'loaderr.close': 'Fermer',
 } as const;
 
 export const enTour: Record<keyof typeof frTour, string> = {
@@ -58,6 +64,11 @@ export const enTour: Record<keyof typeof frTour, string> = {
   'tour.s6.title': 'Save and export',
   'tour.s6.text':
     'Ctrl+S saves your project (.poulpe), the Export button at the top right creates PNG, JPEG, SVG, PDF or PSD. Replay this tour anytime from the Help menu.',
+  'loaderr.title': 'Window unavailable',
+  'loaderr.text':
+    'This window could not be loaded. The app may have just been updated: reload the page to continue. Your work is not lost while the page stays open.',
+  'loaderr.reload': 'Reload the page',
+  'loaderr.close': 'Close',
 };
 
 export type MessageKeyTour = keyof typeof frTour;
