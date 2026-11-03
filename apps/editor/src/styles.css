@@ -4166,6 +4166,7 @@ h4.sub .link {
 
 /* Champ de recherche visible dans la barre du haut : ouvre « Que voulez-vous faire ? » (Ctrl+K). */
 .search-pill {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -4196,6 +4197,19 @@ h4.sub .link {
 }
 @media (max-width: 1000px) {
   .search-pill kbd {
+    display: none;
+  }
+}
+
+/* Fenêtre étroite : le titre (déjà dans l'onglet du document) cède la place aux menus et à la recherche. */
+@media (max-width: 1100px) {
+  .wtitle {
+    visibility: hidden;
+  }
+}
+/* Trop étroit pour le champ de recherche : Ctrl+K et Aide › Que voulez-vous faire ? restent là. */
+@media (max-width: 1060px) {
+  .search-pill {
     display: none;
   }
 }
