@@ -23,6 +23,7 @@ import * as textFlow from './tools/textFlow/actions';
 import * as prefs from './preferences';
 import * as linked from './photo/linkedImages';
 import { inpaintAsync } from './photo/inpaintClient';
+import { traceAsync } from './smart/vectorize';
 import { artboardToSvg, healBlend, healBlendTs, softProofPixels, softProofPixelsTs } from '@poulpe/core';
 import { getPerformanceSettings, renderStats, setPerformanceSettings } from './perf';
 import { editor, ui } from './store';
@@ -79,7 +80,15 @@ if (isDesktop()) {
   frames,
   textFlow,
   // Calculs lourds, pour les budgets de temps des tests (moteur Rust s'il est chargé, sinon TS).
-  core: { artboardToSvg, healBlend, healBlendTs, inpaintAsync, softProofPixels, softProofPixelsTs },
+  core: {
+    artboardToSvg,
+    healBlend,
+    healBlendTs,
+    inpaintAsync,
+    softProofPixels,
+    softProofPixelsTs,
+    traceAsync,
+  },
   controller: getController,
   perf: { setPerformanceSettings, getPerformanceSettings, renderStats },
   engine: { start: startRustEngine },

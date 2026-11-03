@@ -15,6 +15,7 @@ pub mod par;
 pub mod retouch;
 pub mod stats;
 pub mod tiles;
+pub mod trace;
 
 #[cfg(feature = "gpu")]
 pub mod gpu;
