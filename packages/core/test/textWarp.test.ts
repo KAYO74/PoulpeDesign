@@ -23,4 +23,14 @@ describe('déformation du texte', () => {
     expect(parseSvgPath(w.d).length).toBe(3);
     expect(w.height).toBeCloseTo(96);
   });
+
+  it('cercle : le tour fait un peu plus que le texte ; montée : une droite', async () => {
+    const { measurePath } = await import('../src');
+    const c = warpPath({ kind: 'circle', bend: 1 }, 314.16);
+    expect(c.height).toBeCloseTo(110, 0);
+    expect(measurePath(parseSvgPath(c.d)).length).toBeCloseTo(345.6, -1);
+    expect(warpPath({ kind: 'circle', bend: 0.5 }, 314.16).height).toBeCloseTo(220, 0);
+    const r = warpPath({ kind: 'rise', bend: 1 }, 200);
+    expect(r.d).toBe('M0 100 L200 0');
+  });
 });
