@@ -268,6 +268,29 @@ function drawGrid(ctl: CanvasController, ab: Artboard) {
   ctx.strokeStyle = 'rgba(77,163,255,0.25)';
   ctx.lineWidth = 1 / z;
   ctx.beginPath();
+  if (ui.get().settings.gridIso) {
+    // Verticales tous les step·√3/2, obliques à ±30° (pente 1/√3) qui passent par les points.
+    const a = (step * Math.sqrt(3)) / 2;
+    const k = 1 / Math.sqrt(3);
+    for (let x = Math.ceil(ab.x / a) * a; x <= ab.x + ab.width; x += a) {
+      ctx.moveTo(x, ab.y);
+      ctx.lineTo(x, ab.y + ab.height);
+    }
+    // Droites y = ±k·x + c avec c multiple de step : on couvre toute la hauteur du plan.
+    const x0 = ab.x,
+      x1 = ab.x + ab.width;
+    const span = ab.height + ab.width * k;
+    for (const s of [k, -k]) {
+      const cMin = Math.floor((ab.y - Math.max(s * x0, s * x1)) / step) * step;
+      for (let c = cMin; c <= cMin + span + step; c += step) {
+        ctx.moveTo(x0, s * x0 + c);
+        ctx.lineTo(x1, s * x1 + c);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
   for (let x = Math.ceil(ab.x / step) * step; x <= ab.x + ab.width; x += step) {
     ctx.moveTo(x, ab.y);
     ctx.lineTo(x, ab.y + ab.height);

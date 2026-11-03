@@ -171,6 +171,8 @@ export interface Settings {
   studioSide: Side;
   rulers: boolean;
   grid: boolean;
+  /** Grille carrée, ou isométrique (lignes à 30°, comme la grille isométrique d'Illustrator). */
+  gridIso: boolean;
   snapping: boolean;
   /** Panneau Bibliothèque (modèles, éléments, styles) ouvert. */
   library: boolean;
@@ -289,6 +291,7 @@ function loadSettings(): Settings {
     studioSide: 'right',
     rulers: true,
     grid: false,
+    gridIso: false,
     snapping: true,
     library: true,
     showWelcome: true,

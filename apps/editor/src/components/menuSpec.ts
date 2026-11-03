@@ -403,6 +403,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('view.rulers', settings.rulers),
         cmd('view.clearGuides'),
         cmd('view.grid', settings.grid),
+        cmd('view.gridIso', settings.grid && settings.gridIso),
         cmd('view.softProof', softProof),
         cmd('view.snapping', settings.snapping),
         sep,
