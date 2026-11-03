@@ -18,6 +18,8 @@ import {
 } from '@poulpe/core';
 import { engineApplyAny, engineHandles, engineStats, startEngine, stopEngine } from '../src/index';
 import { engineInpaint, startInpaintEngine } from '../src/inpaint';
+import { engineLabel, startTraceEngine } from '../src/trace';
+import { quantize, setTraceLabeler } from '@poulpe/core/src/trace';
 
 /*
  * Le moteur Rust doit donner exactement les mêmes pixels que le code TypeScript d'origine, pour
@@ -178,6 +180,24 @@ describe('moteur Rust (WebAssembly)', () => {
     softProofPixels(rs);
     expect(engineStats().calls).toBe(before + 1);
     expect(Buffer.from(rs).equals(Buffer.from(ts))).toBe(true);
+  });
+
+  it('vectorisation : couleurs identiques au TypeScript', async () => {
+    expect(await startTraceEngine(wasm)).toBe(true);
+    const img = image(140, 100);
+    for (const opts of [
+      { mode: 'color', colors: 12, ignoreWhite: false },
+      { mode: 'color', colors: 5, ignoreWhite: true },
+      { mode: 'gray', colors: 4, ignoreWhite: false },
+    ] as const) {
+      setTraceLabeler(null);
+      const ts = quantize(img, opts as never);
+      setTraceLabeler(engineLabel);
+      const rs = quantize(img, opts as never);
+      setTraceLabeler(null);
+      expect(Buffer.from(rs.labels.buffer).equals(Buffer.from(ts.labels.buffer))).toBe(true);
+      expect(rs.palette).toEqual(ts.palette);
+    }
   });
 
   it('un réglage incompris est fait en TypeScript', async () => {

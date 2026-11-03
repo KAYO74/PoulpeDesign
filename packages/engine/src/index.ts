@@ -224,4 +224,5 @@ export function engineActive(): boolean {
   return !!wasm;
 }
 export * from './inpaint';
+export * from './trace';
 export * from './raw';

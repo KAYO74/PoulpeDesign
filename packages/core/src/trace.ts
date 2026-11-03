@@ -88,6 +88,21 @@ const hex2 = (v: number) =>
 const toHex = (r: number, g: number, b: number) => `#${hex2(r)}${hex2(g)}${hex2(b)}`;
 const luma = (r: number, g: number, b: number) => 0.299 * r + 0.587 * g + 0.114 * b;
 
+/** Étiquetage confié au moteur Rust (worker de vectorisation) : étiquettes et totaux des groupes. */
+export type TraceLabeler = (
+  data: Uint8ClampedArray,
+  centers: number[],
+  dim: number,
+  ignoreWhite: boolean,
+) => { labels: Int32Array; sums: Float64Array } | null;
+
+let labeler: TraceLabeler | null = null;
+
+/** Branche (ou débranche, avec null) le moteur Rust sur la vectorisation. */
+export function setTraceLabeler(f: TraceLabeler | null): void {
+  labeler = f;
+}
+
 /**
  * Réduit l'image à quelques couleurs : renvoie une étiquette par pixel (-1 = transparent ou ignoré)
  * et la palette (r, g, b à la suite).
@@ -115,9 +130,12 @@ export function quantize(img: Pixels, opts: TraceOptions): { labels: Int32Array;
   const gray = opts.mode === 'gray';
   const dim = gray ? 1 : 3;
   // Échantillon des pixels pris en compte.
-  const keep: number[] = [];
-  for (let i = 0; i < n; i++) if (data[i * 4 + 3] >= 128 && !(opts.ignoreWhite && isWhite(i))) keep.push(i);
-  if (!keep.length) return { labels, palette: [] };
+  const keepAll = new Int32Array(n);
+  let kept = 0;
+  for (let i = 0; i < n; i++)
+    if (data[i * 4 + 3] >= 128 && !(opts.ignoreWhite && isWhite(i))) keepAll[kept++] = i;
+  if (!kept) return { labels, palette: [] };
+  const keep = keepAll.subarray(0, kept);
   const value = (i: number, out: number[]) => {
     const r = data[i * 4],
       g = data[i * 4 + 1],
@@ -205,7 +223,18 @@ export function quantize(img: Pixels, opts: TraceOptions): { labels: Int32Array;
     }
     if (moved < 0.5) break;
   }
-  // Étiquetage de tous les pixels, et couleur moyenne réelle de chaque groupe.
+  // Étiquetage de tous les pixels, et couleur moyenne réelle de chaque groupe : par le moteur
+  // Rust s'il est branché (même résultat), sinon ici.
+  const fast = labeler?.(data, centers, dim, !!opts.ignoreWhite);
+  if (fast) {
+    const palette: number[] = [];
+    for (let j = 0; j < kk; j++) {
+      const c = Math.max(1, fast.sums[j * 4]);
+      if (gray) palette.push(centers[j], centers[j], centers[j]);
+      else palette.push(fast.sums[j * 4 + 1] / c, fast.sums[j * 4 + 2] / c, fast.sums[j * 4 + 3] / c);
+    }
+    return { labels: fast.labels, palette };
+  }
   sums.fill(0);
   counts.fill(0);
   const rgb = new Float64Array(kk * 3);

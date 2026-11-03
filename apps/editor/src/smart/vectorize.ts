@@ -19,7 +19,14 @@ import { WorkerClient } from './workers';
  * un groupe de tracés, une couleur par tracé, posé au-dessus de l'image.
  */
 
-type TraceRequest = { data: Uint8ClampedArray; width: number; height: number; options: TraceOptions };
+type TraceRequest = {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  options: TraceOptions;
+  /** Forcer la version TypeScript (tests de comparaison). */
+  ts?: boolean;
+};
 
 const client = new WorkerClient<TraceRequest, { result: TraceResult }>(
   () => new Worker(new URL('./trace.worker.ts', import.meta.url), { type: 'module' }),
@@ -50,10 +57,11 @@ export async function traceAsync(
   px: ImageData,
   options: TraceOptions,
   onProgress?: (f: number) => void,
+  ts = false,
 ): Promise<TraceResult> {
   const data = new Uint8ClampedArray(px.data);
   const { result } = await client.run(
-    { data, width: px.width, height: px.height, options },
+    { data, width: px.width, height: px.height, options, ts },
     (r) => !!r.result,
     [data.buffer],
     onProgress,

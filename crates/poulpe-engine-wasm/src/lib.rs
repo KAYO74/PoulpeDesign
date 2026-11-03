@@ -47,10 +47,10 @@ pub unsafe extern "C" fn apply(
     0
 }
 
-/// Version du moteur (1.4.0 → 10400).
+/// Version du moteur (1.5.0 → 10500).
 #[no_mangle]
 pub extern "C" fn version() -> u32 {
-    10400
+    10500
 }
 
 /// Floute les pixels RGBA sur place (flou gaussien approché, écart type `sigma` en pixels).
@@ -135,5 +135,43 @@ pub unsafe extern "C" fn proof(
     let d = std::slice::from_raw_parts_mut(px, len);
     let l = std::slice::from_raw_parts(lut, lut_len);
     poulpe_engine::cmyk::soft_proof(d, l, grid);
+    0
+}
+
+/// Vectorisation : étiquette chaque pixel avec le centre le plus proche (`centers` : `n_centers`
+/// nombres, `dim` par centre), écrit les étiquettes dans `labels` (`len / 4` entiers) et les
+/// totaux des groupes dans `sums` (4 nombres par centre). 0 = fait, 2 = tailles incohérentes.
+///
+/// # Safety
+/// Les zones doivent avoir été réservées par `alloc` avec les tailles indiquées.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn label(
+    px: *const u8,
+    len: usize,
+    centers: *const f64,
+    n_centers: usize,
+    dim: usize,
+    ignore_white: u32,
+    labels: *mut i32,
+    sums: *mut f64,
+) -> u32 {
+    if len % 4 != 0
+        || !(dim == 1 || dim == 3)
+        || n_centers % dim != 0
+        || (centers as usize) % 8 != 0
+        || (labels as usize) % 4 != 0
+        || (sums as usize) % 8 != 0
+    {
+        return 2;
+    }
+    let d = std::slice::from_raw_parts(px, len);
+    let c = std::slice::from_raw_parts(centers, n_centers);
+    let l = std::slice::from_raw_parts_mut(labels, len / 4);
+    let out = poulpe_engine::trace::label(d, c, dim, ignore_white != 0, l);
+    let s = std::slice::from_raw_parts_mut(sums, out.len() * 4);
+    for (j, g) in out.iter().enumerate() {
+        s[j * 4..j * 4 + 4].copy_from_slice(g);
+    }
     0
 }
