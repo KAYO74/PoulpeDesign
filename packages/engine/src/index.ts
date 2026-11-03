@@ -210,4 +210,5 @@ export function stopEngine(): void {
 export function engineActive(): boolean {
   return !!wasm;
 }
+export * from './inpaint';
 export * from './raw';

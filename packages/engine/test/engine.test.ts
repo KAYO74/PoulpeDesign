@@ -8,12 +8,14 @@ import {
   gaussianBlurred,
   healBlend,
   healBlendTs,
+  inpaint,
   lutFromFunction,
   setAdjustmentEngine,
   type Adjustment,
   type AdjustOptions,
 } from '@poulpe/core';
 import { engineApplyAny, engineHandles, engineStats, startEngine, stopEngine } from '../src/index';
+import { engineInpaint, startInpaintEngine } from '../src/inpaint';
 
 /*
  * Le moteur Rust doit donner exactement les mêmes pixels que le code TypeScript d'origine, pour
@@ -143,6 +145,25 @@ describe('moteur Rust (WebAssembly)', () => {
     const rs = healBlend(dest, src, 4);
     expect(engineStats().calls).toBe(before + 1);
     expect(Buffer.from(rs).equals(Buffer.from(ts))).toBe(true);
+  });
+
+  it('gomme magique identique au TypeScript (1 niveau de couleur au plus)', async () => {
+    expect(await startInpaintEngine(wasm)).toBe(true);
+    for (const [w, h, x0, y0, s] of [
+      [90, 70, 30, 25, 18],
+      [160, 120, 60, 40, 40],
+    ]) {
+      const src = image(w, h);
+      const hole = new Uint8Array(w * h);
+      for (let y = y0; y < y0 + s; y++) for (let x = x0; x < x0 + s; x++) hole[y * w + x] = 1;
+      const ts = new Uint8ClampedArray(src.data);
+      inpaint({ data: ts, width: w, height: h }, hole, { seed: 42 });
+      const rs = new Uint8ClampedArray(src.data);
+      expect(engineInpaint(rs, w, h, hole, { seed: 42 })).toBe(true);
+      let maxDiff = 0;
+      for (let i = 0; i < rs.length; i++) maxDiff = Math.max(maxDiff, Math.abs(rs[i] - ts[i]));
+      expect(maxDiff).toBeLessThanOrEqual(1);
+    }
   });
 
   it('un réglage incompris est fait en TypeScript', async () => {
