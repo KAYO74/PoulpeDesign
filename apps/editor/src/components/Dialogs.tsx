@@ -16,6 +16,7 @@ import { TourDialog } from './TourDialog';
 import { WhatsNewDialog } from './WhatsNewDialog';
 import { BlendDialog } from './dialogs/BlendDialog';
 import { CommandPalette } from './dialogs/CommandPalette';
+import { RecolorDialog } from './dialogs/RecolorDialog';
 
 /**
  * Les grosses fenêtres se chargent à la première ouverture (un morceau de code à part) : le
@@ -98,6 +99,7 @@ function MainDialog() {
   if (dialog === 'pathEntry') return <PathEntryDialog />;
   if (dialog === 'layerCount') return <LayerCountDialog />;
   if (dialog === 'blend') return <BlendDialog />;
+  if (dialog === 'recolor') return <RecolorDialog />;
   if (dialog === 'contentFill') return <ContentFillDialog />;
   if (dialog === 'blendRanges') return <BlendRangesDialog />;
   if (dialog === 'meshWarp') return <MeshWarpDialog />;

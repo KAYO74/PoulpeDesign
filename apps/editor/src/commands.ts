@@ -391,6 +391,7 @@ export const COMMANDS = {
     run: () => ui.set({ dialog: 'blend' }),
     enabled: () => canBlend(editor.doc, editor.selection),
   },
+  'object.recolor': { label: 'object.recolor', run: () => ui.set({ dialog: 'recolor' }) },
   'geometry.unite': { label: 'geometry.unite', run: () => V.booleanOp('unite'), enabled: V.canBoolean },
   'geometry.subtract': {
     label: 'geometry.subtract',
