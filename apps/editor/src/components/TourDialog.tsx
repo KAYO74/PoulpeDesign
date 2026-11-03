@@ -36,6 +36,14 @@ function Tour() {
         </div>
         <h3>{t(`tour.s${step.n}.title` as MessageKey)}</h3>
         <p>{t(`tour.s${step.n}.text` as MessageKey)}</p>
+        {step.n === 5 && (
+          <button
+            data-testid="tour-switch"
+            onClick={() => ui.set({ tourOpen: false, dialog: 'help', helpTab: 'switch' })}
+          >
+            {t('tour.s5.link')}
+          </button>
+        )}
         <div className="tour-dots" role="presentation">
           {STEPS.map((s, i) => (
             <span key={s.n} className={i === at ? 'on' : undefined} />

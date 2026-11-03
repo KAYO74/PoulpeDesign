@@ -24,7 +24,8 @@ export const frTour = {
     'Le « + » à côté du nom du document ouvre un nouvel onglet : chaque projet garde son contenu. Ouvrir un fichier n’efface plus ce que vous faisiez.',
   'tour.s5.title': 'Vos réflexes d’avant',
   'tour.s5.text':
-    'Venez-vous de Photoshop ou d’Illustrator ? Choisissez leurs touches d’outils dans Aide > Raccourcis clavier. Tous les raccourcis se changent d’un clic.',
+    'Venez-vous de Photoshop ou d’Illustrator ? Une page montre où trouver chaque outil, et leurs touches d’outils se choisissent dans Aide > Raccourcis clavier.',
+  'tour.s5.link': 'Ouvrir « Je viens de Photoshop / Illustrator »',
   'tour.s6.title': 'Enregistrer et exporter',
   'tour.s6.text':
     'Ctrl+S enregistre votre projet (.poulpe), le bouton Exporter en haut à droite crée PNG, JPEG, SVG, PDF ou PSD. Revoyez cette visite à tout moment dans le menu Aide.',
@@ -52,7 +53,8 @@ export const enTour: Record<keyof typeof frTour, string> = {
     'The “+” next to the document name opens a new tab: each project keeps its content. Opening a file no longer wipes what you were doing.',
   'tour.s5.title': 'Your old habits',
   'tour.s5.text':
-    'Coming from Photoshop or Illustrator? Pick their tool keys in Help > Keyboard shortcuts. Every shortcut can be changed with a click.',
+    'Coming from Photoshop or Illustrator? One page shows where to find each tool, and their tool keys can be picked in Help > Keyboard shortcuts.',
+  'tour.s5.link': 'Open “Coming from Photoshop / Illustrator”',
   'tour.s6.title': 'Save and export',
   'tour.s6.text':
     'Ctrl+S saves your project (.poulpe), the Export button at the top right creates PNG, JPEG, SVG, PDF or PSD. Replay this tour anytime from the Help menu.',

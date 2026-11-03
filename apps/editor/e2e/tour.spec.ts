@@ -30,3 +30,12 @@ test('on peut passer la visite à tout moment', async ({ page }) => {
   await page.getByTestId('tour-skip').click();
   await expect(page.getByTestId('tour')).toBeHidden();
 });
+
+test('l’étape « vos réflexes » ouvre la page Photoshop / Illustrator', async ({ page }) => {
+  await page.getByRole('button', { name: 'Aide' }).click();
+  await page.getByRole('menuitem', { name: 'Visite guidée' }).click();
+  for (let i = 0; i < 4; i++) await page.getByTestId('tour-next').click();
+  await page.getByTestId('tour-switch').click();
+  await expect(page.getByTestId('tour')).toBeHidden();
+  await expect(page.getByTestId('help-switch')).toBeVisible();
+});
