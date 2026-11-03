@@ -456,7 +456,7 @@ export interface TextPath {
 
 /** Déformation du texte : forme et courbure de -1 à 1 (le signe inverse le sens). */
 export interface TextWarp {
-  kind: 'arc' | 'wave';
+  kind: 'arc' | 'wave' | 'circle' | 'rise';
   bend: number;
 }
 
