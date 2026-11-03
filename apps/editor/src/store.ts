@@ -266,6 +266,8 @@ export interface UiState {
   updateOpen: boolean;
   /** Fenêtre des nouveautés ouverte. */
   whatsNewOpen: boolean;
+  /** Visite guidée ouverte. */
+  tourOpen: boolean;
   toast: string | null;
   cursor: { x: number; y: number } | null;
   /** Panneau glissé au-dessus de sa zone d'ancrage (surbrillance du point de chute). */
@@ -377,6 +379,7 @@ export const ui = new Store<UiState>({
   photoLibrary: false,
   updateOpen: false,
   whatsNewOpen: false,
+  tourOpen: false,
   toast: null,
   cursor: null,
   panelDock: null,

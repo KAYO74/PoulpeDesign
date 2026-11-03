@@ -630,6 +630,7 @@ export const COMMANDS = {
     run: () => ui.set({ dialog: 'palette' }),
   },
   'help.about': { label: 'help.about', run: () => ui.set({ dialog: 'about' }) },
+  'help.tour': { label: 'help.tour', run: () => ui.set({ tourOpen: true }) },
   'help.whatsNew': { label: 'help.whatsNew', run: () => ui.set({ whatsNewOpen: true }) },
   'help.checkUpdates': {
     label: 'help.checkUpdates',

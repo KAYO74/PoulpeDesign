@@ -27,6 +27,7 @@ import { ResizeDialog } from './dialogs/ResizeDialog';
 import { SelectionModifyDialog } from './dialogs/SelectionModifyDialog';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { UpdateDialog } from './UpdateDialog';
+import { TourDialog } from './TourDialog';
 import { WhatsNewDialog } from './WhatsNewDialog';
 import { PreferencesDialog } from './PreferencesDialog';
 import { AiAssistantDialog, AiImageDialog } from './dialogs/AiDialogs';
@@ -45,6 +46,7 @@ export function Dialogs() {
       <MainDialog />
       <UpdateDialog />
       <WhatsNewDialog />
+      <TourDialog />
     </>
   );
 }

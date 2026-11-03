@@ -4228,3 +4228,51 @@ h4.sub .link {
     display: none;
   }
 }
+
+/* ——— Visite guidée ——— */
+.tour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 6px 12px 0;
+  min-height: 210px;
+}
+.tour-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.tour h3 {
+  margin: 6px 0 0;
+  font-size: 16px;
+}
+.tour p {
+  margin: 0;
+  max-width: 420px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.tour-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 10px;
+}
+.tour-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-2);
+}
+.tour-dots span.on {
+  background: var(--accent);
+}
+.tour-count {
+  font-size: 11px;
+}
