@@ -74,6 +74,15 @@ export type Paint =
 
 export type HatchStyle = 'lines' | 'cross' | 'dots';
 
+export type AnimationKind = 'fade' | 'rise' | 'slide' | 'zoom' | 'pop' | 'spin';
+
+/** Animation d'entrée d'un objet : délai et durée en secondes. */
+export interface NodeAnimation {
+  kind: AnimationKind;
+  delay: number;
+  duration: number;
+}
+
 /** Peintures faites de couleurs échelonnées (dégradés). */
 export type GradientPaint = Extract<Paint, { stops: GradientStop[] }>;
 
@@ -221,6 +230,8 @@ interface NodeBase {
   mask?: LayerMask;
   /** Dégradé de transparence de tout l'objet (outil Transparence). */
   transparency?: Transparency;
+  /** Animation d'entrée (lecture et export GIF seulement ; voir `animation.ts`). Absent : aucune. */
+  animation?: NodeAnimation;
   /** Habillage : l'objet repousse le texte des cadres de texte placés dessous. Absent : aucun. */
   wrap?: TextWrap;
   /**

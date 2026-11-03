@@ -25,6 +25,7 @@ function lazyDialog<M extends Record<string, unknown>>(load: () => Promise<M>, n
   return lazy(() => load().then((m) => ({ default: m[name] as ComponentType })));
 }
 
+const AnimationDialog = lazyDialog(() => import('./dialogs/AnimationDialog'), 'AnimationDialog');
 const CompsDialog = lazyDialog(() => import('./dialogs/CompsDialog'), 'CompsDialog');
 const PhotoExportDialog = lazyDialog(() => import('./dialogs/PhotoExportDialog'), 'PhotoExportDialog');
 const RawDialog = lazyDialog(() => import('./dialogs/RawDialog'), 'RawDialog');
@@ -88,6 +89,7 @@ function MainDialog() {
   if (dialog === 'language') return <LanguageDialog />;
   if (dialog === 'resize') return <ResizeDialog />;
   if (dialog === 'offset') return <OffsetDialog />;
+  if (dialog === 'animation') return <AnimationDialog />;
   if (dialog === 'document') return <DocumentDialog />;
   if (dialog === 'batch') return <BatchDialog />;
   if (dialog === 'filter') return <FilterDialog />;
