@@ -128,6 +128,7 @@ export type Dialog =
   | 'offset'
   | 'animation'
   | 'fusion'
+  | 'panorama'
   | 'filter'
   | 'liveFilter'
   | 'raw'
