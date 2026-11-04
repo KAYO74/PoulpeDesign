@@ -127,6 +127,7 @@ export type Dialog =
   | 'resize'
   | 'offset'
   | 'animation'
+  | 'fusion'
   | 'filter'
   | 'liveFilter'
   | 'raw'
