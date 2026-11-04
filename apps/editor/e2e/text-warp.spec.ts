@@ -42,6 +42,13 @@ test('déforme un texte en arc, règle la courbure, le remet droit', async ({ pa
   [n] = await texts(page);
   expect(n.path.d).toContain('L');
 
+  // Drapeau : deux ondulations complètes.
+  await choose(page.getByTestId('text-warp'), 'flag');
+  [n] = await texts(page);
+  expect(n.path.warp.kind).toBe('flag');
+  expect(n.path.d.match(/Q/g)).toHaveLength(4);
+  await page.screenshot({ path: 'test-results/texte-drapeau.png' });
+
   // Vague, puis retour au texte droit.
   await choose(page.getByTestId('text-warp'), 'wave');
   [n] = await texts(page);

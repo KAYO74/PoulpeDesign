@@ -33,4 +33,16 @@ describe('déformation du texte', () => {
     const r = warpPath({ kind: 'rise', bend: 1 }, 200);
     expect(r.d).toBe('M0 100 L200 0');
   });
+
+  it('drapeau : deux ondulations complètes, de la même largeur que le texte', () => {
+    const f = warpPath({ kind: 'flag', bend: 1 }, 400);
+    expect(f.d.match(/Q/g)?.length).toBe(4);
+    const cmds = parseSvgPath(f.d);
+    expect(cmds.length).toBe(5);
+    expect(f.d.endsWith('400 28')).toBe(true);
+    expect(f.height).toBeCloseTo(56);
+    // Courbure inversée : les crêtes passent de l'autre côté.
+    expect(warpPath({ kind: 'flag', bend: -1 }, 400).d).not.toBe(f.d);
+    expect(warpPath({ kind: 'flag', bend: 0 }, 400).height).toBe(1);
+  });
 });
