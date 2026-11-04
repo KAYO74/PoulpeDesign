@@ -9,6 +9,7 @@ export const frPanorama = {
   'panorama.hint':
     'Choisissez des photos prises à la suite, qui se recouvrent en partie (au moins un tiers). Elles sont assemblées de gauche à droite, puis de haut en bas.',
   'panorama.exposure': 'Égaliser la luminosité entre les photos',
+  'panorama.perspective': 'Corriger la perspective (photos prises en tournant l’appareil)',
   'panorama.run': 'Assembler',
   'panorama.working': 'Assemblage…',
   'panorama.cancelled': 'Assemblage annulé.',
@@ -27,6 +28,7 @@ export const enPanorama: Record<MessageKeyPanorama, string> = {
   'panorama.hint':
     'Pick photos taken in a row that overlap in part (at least a third). They are stitched left to right, then top to bottom.',
   'panorama.exposure': 'Even out brightness between photos',
+  'panorama.perspective': 'Correct perspective (photos taken by turning the camera)',
   'panorama.run': 'Stitch',
   'panorama.working': 'Stitching…',
   'panorama.cancelled': 'Stitching cancelled.',

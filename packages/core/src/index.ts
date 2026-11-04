@@ -57,3 +57,4 @@ export * from './moveTools';
 export * from './brushTools';
 export * from './fusion';
 export * from './panorama';
+export * from './homography';

@@ -41,7 +41,7 @@ describe('panorama', () => {
 
   it('assemble trois vues en une image de la taille de la scène', () => {
     const views = [crop(full, 0, 0, 130, 120), crop(full, 85, 0, 130, 120), crop(full, 170, 0, 130, 120)];
-    const out = stitchPanorama(views)!;
+    const out = stitchPanorama(views, { perspective: false })!;
     expect(out.offsets).toEqual([
       { x: 0, y: 0 },
       { x: 85, y: 0 },
@@ -85,5 +85,80 @@ describe('panorama', () => {
   it('annulation', () => {
     const views = [crop(full, 0, 0, 180, 120), crop(full, 120, 0, 180, 120)];
     expect(stitchPanorama(views, { progress: () => true })).toBeNull();
+  });
+});
+
+describe('panorama avec perspective', () => {
+  // Scène de rectangles et de disques, vue à travers trois homographies qui se recouvrent.
+  const SW = 900,
+    SH = 300;
+  const sc = new Float32Array(SW * SH).fill(0.5);
+  let seed = 11;
+  const rnd = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0), seed / 4294967296);
+  for (let n = 0; n < 260; n++) {
+    const cx = rnd() * SW,
+      cy = rnd() * SH,
+      r = 6 + rnd() * 20,
+      v = rnd(),
+      disc = rnd() < 0.5;
+    for (let y = Math.max(0, Math.floor(cy - r)); y < Math.min(SH, cy + r); y++)
+      for (let x = Math.max(0, Math.floor(cx - r)); x < Math.min(SW, cx + r); x++)
+        if (!disc || Math.hypot(x - cx, y - cy) < r) sc[y * SW + x] = v;
+  }
+  const at = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x > SW - 1 || y > SH - 1) return 0.5;
+    const x0 = Math.floor(x),
+      y0 = Math.floor(y),
+      x1 = Math.min(SW - 1, x0 + 1),
+      y1 = Math.min(SH - 1, y0 + 1),
+      fx = x - x0,
+      fy = y - y0;
+    return (
+      sc[y0 * SW + x0] * (1 - fx) * (1 - fy) +
+      sc[y0 * SW + x1] * fx * (1 - fy) +
+      sc[y1 * SW + x0] * (1 - fx) * fy +
+      sc[y1 * SW + x1] * fx * fy
+    );
+  };
+  const view = (H: number[]): Pixels => {
+    const w = 320,
+      h = 300;
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const d = H[6] * x + H[7] * y + H[8];
+        const g = at((H[0] * x + H[1] * y + H[2]) / d, (H[3] * x + H[4] * y + H[5]) / d) * 255;
+        data.set([g, g, g, 255], (y * w + x) * 4);
+      }
+    return { data, width: w, height: h };
+  };
+  const left = view([0.99, 0.02, 100, -0.02, 1, 5, 0.00005, 0, 1]);
+  const mid = view([1, 0, 300, 0, 1, 0, 0, 0, 1]);
+  const right = view([1.01, -0.02, 500, 0.02, 1, -5, -0.00005, 0, 1]);
+
+  it('recale trois vues inclinées sur la scène', () => {
+    const out = stitchPanorama([left, mid, right])!;
+    expect(out.ref).toBe(1);
+    // La vue du milieu sert de repère : le pixel (X, Y) du panorama est le pixel (X + ox, Y + oy) de
+    // la vue du milieu, soit le point (X + ox + 300, Y + oy) de la scène.
+    let err = 0,
+      n = 0;
+    for (let Y = 30; Y < out.height - 30; Y++)
+      for (let X = 0; X < out.width; X++) {
+        if (out.data[(Y * out.width + X) * 4 + 3] < 255) continue;
+        const sx = X + out.origin.x + 300,
+          sy = Y + out.origin.y;
+        if (sx < 20 || sx > SW - 20) continue;
+        err += Math.abs(out.data[(Y * out.width + X) * 4] - at(sx, sy) * 255);
+        n++;
+      }
+    expect(n).toBeGreaterThan(out.width * 100);
+    expect(err / n).toBeLessThan(10);
+  });
+
+  it('sans perspective, retombe sur une simple translation', () => {
+    const out = stitchPanorama([mid, view([1, 0, 480, 0, 1, 0, 0, 0, 1])], { perspective: false })!;
+    expect(out.offsets[1]).toEqual({ x: 180, y: 0 });
+    expect(out.width).toBe(500);
   });
 });
