@@ -61,7 +61,8 @@ export type FileKind =
   | 'extension'
   | 'prefs'
   | 'template'
-  | 'brushes';
+  | 'brushes'
+  | 'gif';
 const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   poulpe: { ext: POULPE_EXTENSION, mime: 'application/x-poulpe', label: 'Poulpe Design' },
   png: { ext: 'png', mime: 'image/png', label: 'PNG' },
@@ -75,6 +76,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
   prefs: { ext: 'poulpeprefs', mime: 'application/json', label: 'Préférences Poulpe Design' },
   template: { ext: 'poulpemodele', mime: 'application/x-poulpe', label: 'Modèle Poulpe Design' },
   brushes: { ext: 'poulpebrushes', mime: 'application/json', label: 'Pinceaux Poulpe Design' },
+  gif: { ext: 'gif', mime: 'image/gif', label: 'GIF' },
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */

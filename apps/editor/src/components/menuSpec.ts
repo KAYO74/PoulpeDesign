@@ -219,6 +219,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('layer.group'),
         cmd('layer.ungroup'),
         cmd('layer.clip'),
+        cmd('object.animate'),
         sep,
         sub(t('menu.geometry'), [
           cmd('geometry.unite'),
