@@ -28,6 +28,7 @@ function lazyDialog<M extends Record<string, unknown>>(load: () => Promise<M>, n
 
 const AnimationDialog = lazyDialog(() => import('./dialogs/AnimationDialog'), 'AnimationDialog');
 const FusionDialog = lazyDialog(() => import('./dialogs/FusionDialog'), 'FusionDialog');
+const PanoramaDialog = lazyDialog(() => import('./dialogs/PanoramaDialog'), 'PanoramaDialog');
 const CompsDialog = lazyDialog(() => import('./dialogs/CompsDialog'), 'CompsDialog');
 const PhotoExportDialog = lazyDialog(() => import('./dialogs/PhotoExportDialog'), 'PhotoExportDialog');
 const RawDialog = lazyDialog(() => import('./dialogs/RawDialog'), 'RawDialog');
@@ -93,6 +94,7 @@ function MainDialog() {
   if (dialog === 'offset') return <OffsetDialog />;
   if (dialog === 'animation') return <AnimationDialog />;
   if (dialog === 'fusion') return <FusionDialog />;
+  if (dialog === 'panorama') return <PanoramaDialog />;
   if (dialog === 'document') return <DocumentDialog />;
   if (dialog === 'batch') return <BatchDialog />;
   if (dialog === 'filter') return <FilterDialog />;

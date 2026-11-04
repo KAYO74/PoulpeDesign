@@ -83,6 +83,7 @@ export async function fuseSelected(
   const nodes = chosen().filter((n) => n.type === 'image');
   if (nodes.length < 2) return false;
   const topId = nodes[nodes.length - 1].id;
+  await images().ready(editor.doc);
   const src = render(nodes);
   if (!src) return false;
   const worker = new Worker(new URL('./fusion.worker.ts', import.meta.url), { type: 'module' });
