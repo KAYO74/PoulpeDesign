@@ -4,7 +4,7 @@ import { useT } from '../../i18n';
 import { editor } from '../../store';
 import { setTextWarp } from '../../vectorActions';
 
-const KINDS: TextWarp['kind'][] = ['arc', 'wave', 'circle', 'rise'];
+const KINDS: TextWarp['kind'][] = ['arc', 'wave', 'circle', 'rise', 'flag'];
 
 /** Déformation du texte (arc, vague), comme le texte déformé d'Affinity. Absent sur un texte posé sur un tracé libre. */
 export function TextWarpControls({ node }: { node: TextNode }) {
@@ -24,6 +24,7 @@ export function TextWarpControls({ node }: { node: TextNode }) {
           { value: 'wave', label: t('text.warpWave') },
           { value: 'circle', label: t('text.warpCircle') },
           { value: 'rise', label: t('text.warpRise') },
+          { value: 'flag', label: t('text.warpFlag') },
         ]}
         onChange={(k) =>
           setTextWarp(

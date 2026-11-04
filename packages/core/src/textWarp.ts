@@ -39,6 +39,19 @@ export function warpPath(warp: TextWarp, width: number): { d: string; height: nu
     const h = Math.max(1, Math.abs(bend) * w * 0.5);
     return bend >= 0 ? { d: `M0 ${r(h)} L${r(w)} 0`, height: h } : { d: `M0 0 L${r(w)} ${r(h)}`, height: h };
   }
+  if (warp.kind === 'flag') {
+    // Drapeau : deux ondulations complètes, plus serrées que la vague, comme un drapeau au vent.
+    const a = Math.abs(bend) * w * 0.07;
+    const h = Math.max(1, 2 * a);
+    const mid = h / 2;
+    const up = bend >= 0 ? -1 : 1;
+    let d = `M0 ${r(mid)}`;
+    for (let i = 0; i < 4; i++) {
+      const sign = i % 2 === 0 ? up : -up;
+      d += ` Q${r(((2 * i + 1) * w) / 8)} ${r(mid + sign * 2 * a)} ${r(((i + 1) * w) / 4)} ${r(mid)}`;
+    }
+    return { d, height: h };
+  }
   // Vague : une crête puis un creux (ou l'inverse), d'amplitude proportionnelle à la largeur.
   const a = Math.abs(bend) * w * 0.12;
   const h = Math.max(1, 2 * a);

@@ -45,6 +45,8 @@ import { images, newPixelLayer, selectedImage } from './photo/pixels';
 import { openPhoto } from './photo/persona';
 import { canCutout, removeBackground, selectSubject } from './smart/cutout';
 import { canVectorize } from './smart/vectorize';
+import { canFuse } from './smart/fusion';
+import { canPanorama } from './smart/panorama';
 import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
@@ -303,6 +305,12 @@ export const COMMANDS = {
     label: 'image.vectorize',
     run: () => ui.set({ dialog: 'vectorize' }),
     enabled: canVectorize,
+  },
+  'image.fuse': { label: 'image.fuse', run: () => ui.set({ dialog: 'fusion' }), enabled: canFuse },
+  'image.panorama': {
+    label: 'image.panorama',
+    run: () => ui.set({ dialog: 'panorama' }),
+    enabled: canPanorama,
   },
   'image.removeBackground': {
     label: 'image.removeBackground',

@@ -17,6 +17,8 @@ import { enWhatsNew, frWhatsNew, type MessageKeyWhatsNew } from './i18n-whatsnew
 import { enDocTabs, frDocTabs, type MessageKeyDocTabs } from './i18n-doctabs';
 import { enTips, frTips, type MessageKeyTips } from './i18n-tips';
 import { enAnim, frAnim, type MessageKeyAnim } from './i18n-anim';
+import { enFusion, frFusion, type MessageKeyFusion } from './i18n-fusion';
+import { enPanorama, frPanorama, type MessageKeyPanorama } from './i18n-panorama';
 import { enDrop, frDrop, type MessageKeyDrop } from './i18n-drop';
 import { enKeyPresets, frKeyPresets, type MessageKeyKeyPresets } from './i18n-keypresets';
 import { enPalette, frPalette, type MessageKeyPalette } from './i18n-palette';
@@ -475,6 +477,7 @@ const fr = {
   'text.warpWave': 'Vague',
   'text.warpCircle': 'Cercle',
   'text.warpRise': 'Montée',
+  'text.warpFlag': 'Drapeau',
   'text.warpBend': 'Courbure',
   'history.import': 'Import SVG',
   'layer.convertToCurves': 'Convertir en courbes',
@@ -1008,7 +1011,9 @@ export type MessageKey =
   | MessageKeyPhotoLib
   | MessageKeyAi
   | MessageKeyLiveFilters
-  | MessageKeyAnim;
+  | MessageKeyAnim
+  | MessageKeyFusion
+  | MessageKeyPanorama;
 
 const en: Record<
   Exclude<
@@ -1041,6 +1046,8 @@ const en: Record<
     | MessageKeyAi
     | MessageKeyLiveFilters
     | MessageKeyAnim
+    | MessageKeyFusion
+    | MessageKeyPanorama
   >,
   string
 > = {
@@ -1479,6 +1486,7 @@ const en: Record<
   'text.warpWave': 'Wave',
   'text.warpCircle': 'Circle',
   'text.warpRise': 'Rise',
+  'text.warpFlag': 'Flag',
   'text.warpBend': 'Bend',
   'history.import': 'SVG import',
   'layer.convertToCurves': 'Convert to Curves',
@@ -2006,6 +2014,8 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frAi,
     ...frLiveFilters,
     ...frAnim,
+    ...frFusion,
+    ...frPanorama,
     ...fr_shapes,
     ...fr_paint,
     ...fr_paths,
@@ -2043,6 +2053,8 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enAi,
     ...enLiveFilters,
     ...enAnim,
+    ...enFusion,
+    ...enPanorama,
     ...fr_shapes,
     ...en_shapes,
     ...fr_paint,
