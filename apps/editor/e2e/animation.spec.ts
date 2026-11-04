@@ -43,3 +43,26 @@ test('anime un objet et exporte le plan de travail en GIF', async ({ page }) => 
   await choose(page.getByTestId('anim-kind'), 'none');
   await expect.poll(anim).toBeUndefined();
 });
+
+test("l'export GIF montre son avancement et s'annule", async ({ page }) => {
+  const box = (await page.getByTestId('canvas').boundingBox())!;
+  await page.keyboard.press('u');
+  await page.mouse.move(box.x + 300, box.y + 200);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 500, box.y + 400, { steps: 8 });
+  await page.mouse.up();
+  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('menuitem', { name: 'Animation…' }).click();
+  await choose(page.getByTestId('anim-kind'), 'fade');
+  const duration = page.getByTestId('anim-duration');
+  await duration.fill('45');
+  await duration.press('Enter');
+  // Au-delà de 30 s, le GIF est coupé : la fenêtre le dit.
+  await expect(page.getByText('Le GIF s’arrête à 30 s')).toBeVisible();
+  await choose(page.getByTestId('anim-size'), '1080');
+  await page.getByTestId('anim-export').click();
+  await expect(page.getByTestId('anim-progress')).toBeVisible();
+  await page.getByTestId('anim-cancel').click();
+  await expect(page.getByTestId('anim-status')).toHaveText('Export annulé.');
+  await expect(page.getByTestId('anim-export')).toBeEnabled();
+});

@@ -25,6 +25,8 @@ export const frAnim = {
   'anim.saved': 'GIF enregistré : {name}',
   'anim.empty': 'Aucun objet n’est animé sur ce plan de travail.',
   'history.animation': 'Animation',
+  'anim.cancelled': 'Export annulé.',
+  'anim.tooLong': 'Le GIF s’arrête à {s} s (au-delà, il serait trop lourd).',
 };
 
 export type MessageKeyAnim = keyof typeof frAnim;
@@ -51,4 +53,6 @@ export const enAnim: Record<MessageKeyAnim, string> = {
   'anim.saved': 'GIF saved: {name}',
   'anim.empty': 'No object is animated on this artboard.',
   'history.animation': 'Animation',
+  'anim.cancelled': 'Export cancelled.',
+  'anim.tooLong': 'The GIF stops at {s} s (longer would be too heavy).',
 };
