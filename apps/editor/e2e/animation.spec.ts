@@ -51,7 +51,7 @@ test("l'export GIF montre son avancement et s'annule", async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(box.x + 500, box.y + 400, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Animation…' }).click();
   await choose(page.getByTestId('anim-kind'), 'fade');
   const duration = page.getByTestId('anim-duration');
