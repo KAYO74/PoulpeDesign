@@ -371,7 +371,7 @@ test('convertit une forme en courbes et décale son contour', async ({ page }) =
   await page.keyboard.press('Control+Enter');
   let list = await nodes(page);
   expect(list[0].type).toBe('path');
-  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Décalage du tracé…' }).click();
   await page.getByTestId('offset-distance').fill('20');
   await page.getByTestId('offset-go').click();
@@ -444,7 +444,7 @@ test('crée un dégradé de formes entre deux formes', async ({ page }) => {
   await page.keyboard.press('e');
   await drag([600, 300], [700, 450]);
   await page.keyboard.press('Control+a');
-  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Dégradé de formes…' }).click();
   await page.getByTestId('blend-steps').fill('4');
   await page.getByTestId('blend-steps').press('Enter');
@@ -476,7 +476,7 @@ test("recolorise l'illustration avec aperçu, et Annuler rend le design intact",
   const before = await fills();
   await page.keyboard.press('Control+a');
   const open = async () => {
-    await page.getByRole('button', { name: 'Calque' }).click();
+    await page.getByRole('button', { name: 'Calque', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Recoloriser l’illustration…' }).click();
   };
   await open();

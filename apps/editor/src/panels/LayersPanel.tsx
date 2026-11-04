@@ -711,14 +711,6 @@ export function LayersPanel() {
           <>
             <button
               className="ib small"
-              title={t('layer.newPixel')}
-              aria-label={t('layer.newPixel')}
-              onClick={() => runCommand('layer.newPixel')}
-            >
-              <Icon name="pixelLayer" size={14} />
-            </button>
-            <button
-              className="ib small"
               title={t('layer.addMask')}
               aria-label={t('layer.addMask')}
               disabled={!COMMANDS['layer.addMask'].enabled()}
@@ -740,6 +732,15 @@ export function LayersPanel() {
           <Icon name="folder" size={14} />
         </button>
         <span className="spacer" />
+        <button
+          className="ib small"
+          title={t('layer.newPixel')}
+          aria-label={t('layer.newPixel')}
+          data-testid="layers-add"
+          onClick={() => runCommand('layer.newPixel')}
+        >
+          <Icon name="plus" size={14} />
+        </button>
         <button
           className="ib small"
           title={t('edit.delete')}
