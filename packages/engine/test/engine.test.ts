@@ -19,6 +19,8 @@ import {
 import { engineApplyAny, engineHandles, engineStats, startEngine, stopEngine } from '../src/index';
 import { engineInpaint, startInpaintEngine } from '../src/inpaint';
 import { engineLabel, startTraceEngine } from '../src/trace';
+import { engineFuse, startFusionEngine } from '../src/fusion';
+import { fuseImages } from '@poulpe/core/src/fusion';
 import { quantize, setTraceLabeler } from '@poulpe/core/src/trace';
 
 /*
@@ -198,6 +200,58 @@ describe('moteur Rust (WebAssembly)', () => {
       expect(Buffer.from(rs.labels.buffer).equals(Buffer.from(ts.labels.buffer))).toBe(true);
       expect(rs.palette).toEqual(ts.palette);
     }
+  });
+
+  it('fusion : mêmes pixels que le TypeScript (à un niveau près)', async () => {
+    expect(await startFusionEngine(wasm)).toBe(true);
+    const base = image(97, 61);
+    // Trois « prises » : plus sombre, normale, plus claire.
+    const shots = [0.45, 1, 1.6].map((g) => ({
+      width: base.width,
+      height: base.height,
+      data: base.data.map((v, i) => (i % 4 === 3 ? v : v * g)),
+    }));
+    for (const opts of [
+      { mode: 'exposure' as const },
+      { mode: 'exposure' as const, contrast: 0.5, saturation: 1.5, exposure: 2 },
+      { mode: 'focus' as const },
+    ]) {
+      const ts = fuseImages(shots, opts)!;
+      const rs = engineFuse(shots, opts)!;
+      expect(rs).toBeTruthy();
+      let worst = 0;
+      for (let i = 0; i < ts.data.length; i++) worst = Math.max(worst, Math.abs(ts.data[i] - rs.data[i]));
+      expect(worst).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('fusion : plus rapide que le TypeScript', async () => {
+    await startFusionEngine(wasm);
+    const base = image(900, 700);
+    const shots = [0.5, 1, 1.5].map((g) => ({
+      width: base.width,
+      height: base.height,
+      data: base.data.map((v, i) => (i % 4 === 3 ? v : v * g)),
+    }));
+    const opts = { mode: 'exposure' as const };
+    engineFuse(shots, opts);
+    let t = performance.now();
+    fuseImages(shots, opts);
+    const ts = performance.now() - t;
+    t = performance.now();
+    engineFuse(shots, opts);
+    const rs = performance.now() - t;
+    console.log(`fusion 3 × 0,6 Mpx : Rust ${Math.round(rs)} ms, TypeScript ${Math.round(ts)} ms`);
+    expect(rs).toBeLessThan(ts);
+  }, 60_000);
+
+  it('fusion : annulation, tailles différentes', async () => {
+    await startFusionEngine(wasm);
+    const a = image(40, 30);
+    expect(engineFuse([a, a], { mode: 'focus', progress: () => true })).toBeNull();
+    expect(engineFuse([a, image(41, 30)], { mode: 'focus' })).toBeUndefined();
+    // Le moteur reste utilisable après une annulation.
+    expect(engineFuse([a, a], { mode: 'focus' })).toBeTruthy();
   });
 
   it('un réglage incompris est fait en TypeScript', async () => {

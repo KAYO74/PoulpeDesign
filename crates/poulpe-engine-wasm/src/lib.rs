@@ -175,3 +175,110 @@ pub unsafe extern "C" fn label(
     }
     0
 }
+
+// ————— Fusion d'images (exposition, mise au point) —————
+// État de la fusion en cours, gardé entre les appels pour que l'interface suive l'avancement.
+thread_local! {
+    static FUSION: std::cell::RefCell<Option<poulpe_engine::fusion::Fusion>> =
+        const { std::cell::RefCell::new(None) };
+    static FUSION_SIZE: std::cell::Cell<(usize, usize)> = const { std::cell::Cell::new((0, 0)) };
+}
+
+/// Commence une fusion de `w` × `h` pixels. `focus` = 1 pour la mise au point. 0 = fait, 2 = tailles
+/// incohérentes.
+#[no_mangle]
+pub extern "C" fn fusion_begin(w: usize, h: usize, focus: u32, wc: f32, ws: f32, we: f32) -> u32 {
+    if w == 0 || h == 0 || w.checked_mul(h).and_then(|n| n.checked_mul(4)).is_none() {
+        return 2;
+    }
+    FUSION_SIZE.with(|s| s.set((w, h)));
+    FUSION.with(|f| {
+        *f.borrow_mut() = Some(poulpe_engine::fusion::Fusion::new(
+            w,
+            h,
+            focus != 0,
+            wc,
+            ws,
+            we,
+        ))
+    });
+    0
+}
+
+/// Première passe : carte de poids d'une image. 0 = fait, 2 = tailles incohérentes ou pas de fusion.
+///
+/// # Safety
+/// `px` doit pointer sur `len` octets réservés par `alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn fusion_weight(px: *const u8, len: usize) -> u32 {
+    let (w, h) = FUSION_SIZE.with(|s| s.get());
+    if len != w * h * 4 {
+        return 2;
+    }
+    let d = std::slice::from_raw_parts(px, len);
+    FUSION.with(|f| match f.borrow_mut().as_mut() {
+        Some(fu) => {
+            fu.add_weight(d);
+            0
+        }
+        None => 2,
+    })
+}
+
+/// Fin de la première passe : les poids de chaque pixel sont ramenés à une somme de 1.
+#[no_mangle]
+pub extern "C" fn fusion_normalize() -> u32 {
+    FUSION.with(|f| match f.borrow_mut().as_mut() {
+        Some(fu) => {
+            fu.normalize();
+            0
+        }
+        None => 2,
+    })
+}
+
+/// Seconde passe : mélange l'image `k` (les mêmes pixels, dans le même ordre qu'à la première passe).
+///
+/// # Safety
+/// `px` doit pointer sur `len` octets réservés par `alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn fusion_blend(k: usize, px: *const u8, len: usize) -> u32 {
+    let (w, h) = FUSION_SIZE.with(|s| s.get());
+    if len != w * h * 4 {
+        return 2;
+    }
+    let d = std::slice::from_raw_parts(px, len);
+    FUSION.with(|f| match f.borrow_mut().as_mut() {
+        Some(fu) if fu.has_weight(k) => {
+            fu.blend(k, d);
+            0
+        }
+        _ => 2,
+    })
+}
+
+/// Écrit l'image fusionnée (RGBA, `len` octets) et termine la fusion.
+///
+/// # Safety
+/// `out` doit pointer sur `len` octets réservés par `alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn fusion_finish(out: *mut u8, len: usize) -> u32 {
+    let (w, h) = FUSION_SIZE.with(|s| s.get());
+    if len != w * h * 4 {
+        return 2;
+    }
+    let o = std::slice::from_raw_parts_mut(out, len);
+    match FUSION.with(|f| f.borrow_mut().take()) {
+        Some(fu) => {
+            fu.finish(o);
+            0
+        }
+        None => 2,
+    }
+}
+
+/// Abandonne la fusion en cours (annulation) et libère sa mémoire.
+#[no_mangle]
+pub extern "C" fn fusion_reset() {
+    FUSION.with(|f| *f.borrow_mut() = None);
+}
