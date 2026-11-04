@@ -13,6 +13,23 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.9.0',
+    fr: [
+      'Fusion d’expositions (HDR) et mise au point, 3 à 6 fois plus rapides grâce à Rust.',
+      'Panorama : assemblez des photos qui se recouvrent.',
+      'Animation simple et export GIF animé.',
+      'Panneau de droite en 3 compartiments et un petit + pour ajouter un calque.',
+      'Texte déformé : forme Drapeau.',
+    ],
+    en: [
+      'Exposure merge (HDR) and focus stacking, 3 to 6 times faster thanks to Rust.',
+      'Panorama: stitch overlapping photos.',
+      'Simple animation and animated GIF export.',
+      'Right panel in 3 sections and a small + to add a layer.',
+      'Warped text: Flag shape.',
+    ],
+  },
+  {
     version: '1.8.0',
     fr: [
       'Visite guidée de 2 minutes et aide « Je viens de Photoshop / Illustrator » (touches comparées).',
