@@ -76,8 +76,10 @@ describe('panorama', () => {
       }
       return { data: d, width: 60, height: 60 };
     };
-    expect(() => stitchPanorama([noise(1), noise(2)])).toThrow();
-    expect(() => stitchPanorama([noise(1)])).toThrow();
+    expect(() => stitchPanorama([noise(1), noise(2)])).toThrow(
+      expect.objectContaining({ code: 'noOverlap', index: 1 }),
+    );
+    expect(() => stitchPanorama([noise(1)])).toThrow(expect.objectContaining({ code: 'tooFew' }));
   });
 
   it('annulation', () => {

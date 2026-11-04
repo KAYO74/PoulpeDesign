@@ -84,10 +84,17 @@ export async function stitchSelected(
           progress?: number;
           result?: (Pixels & { offsets: { x: number; y: number }[] }) | null;
           error?: string;
+          code?: string;
+          index?: number;
         }>,
       ) => {
-        if (e.data.error) reject(new Error(e.data.error));
-        else if ('result' in e.data) resolve(e.data.result ?? null);
+        if (e.data.error) {
+          const { code, index = 0 } = e.data;
+          if (code === 'noOverlap') reject(new Error(t('panorama.noOverlap', { a: index, b: index + 1 })));
+          else if (code === 'tooLarge') reject(new Error(t('panorama.tooLarge')));
+          else if (code === 'tooFew') reject(new Error(t('panorama.tooFew')));
+          else reject(new Error(e.data.error));
+        } else if ('result' in e.data) resolve(e.data.result ?? null);
         else if (e.data.progress !== undefined) onProgress(e.data.progress);
       };
       worker.onerror = (e) => reject(new Error(e.message));

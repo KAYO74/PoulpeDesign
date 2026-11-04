@@ -18,6 +18,17 @@ export interface PanoramaOptions {
   progress?: (fraction: number) => boolean | void;
 }
 
+/** Erreur d'assemblage ; `code` permet à l'interface de la traduire. */
+export class PanoramaError extends Error {
+  constructor(
+    readonly code: 'tooFew' | 'noOverlap' | 'tooLarge',
+    /** Numéro (à partir de 1) de la première des deux images concernées. */
+    readonly index = 0,
+  ) {
+    super(`panorama : ${code} ${index}`);
+  }
+}
+
 export interface PanoramaResult extends Pixels {
   /** Position de chaque image dans le panorama, en pixels. */
   offsets: { x: number; y: number }[];
@@ -156,7 +167,7 @@ function feather(x: number, y: number, w: number, h: number): number {
  * `progress` demande d'annuler. Lève une erreur si deux images consécutives ne se recouvrent pas.
  */
 export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): PanoramaResult | null {
-  if (images.length < 2) throw new Error('panorama : au moins deux images');
+  if (images.length < 2) throw new PanoramaError('tooFew');
   const total = images.length * 2;
   let step = 0;
   const tick = (): boolean => !(opts.progress?.(++step / total) === true);
@@ -164,7 +175,7 @@ export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): Pa
   const pos: { x: number; y: number }[] = [{ x: 0, y: 0 }];
   for (let i = 1; i < images.length; i++) {
     const r = alignPair(images[i - 1], images[i]);
-    if (r.score < 0.3) throw new Error(`panorama : les images ${i} et ${i + 1} ne se recouvrent pas assez`);
+    if (r.score < 0.3) throw new PanoramaError('noOverlap', i);
     pos.push({ x: pos[i - 1].x + r.dx, y: pos[i - 1].y + r.dy });
     if (!tick()) return null;
   }
@@ -173,7 +184,7 @@ export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): Pa
   const offsets = pos.map((p) => ({ x: p.x - minX, y: p.y - minY }));
   const W = Math.max(...images.map((im, i) => offsets[i].x + im.width)),
     H = Math.max(...images.map((im, i) => offsets[i].y + im.height));
-  if (W * H > 120_000_000) throw new Error('panorama : résultat trop grand');
+  if (W * H > 120_000_000) throw new PanoramaError('tooLarge');
   // 2 : gains de luminosité, d'une image à la suivante, sur leur zone commune.
   const gains = new Array<number>(images.length).fill(1);
   if (opts.exposure !== false)

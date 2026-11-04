@@ -13,6 +13,9 @@ export const frPanorama = {
   'panorama.working': 'Assemblage…',
   'panorama.cancelled': 'Assemblage annulé.',
   'panorama.name': 'Panorama',
+  'panorama.noOverlap': 'Les photos {a} et {b} ne se recouvrent pas assez.',
+  'panorama.tooLarge': 'Le panorama serait trop grand.',
+  'panorama.tooFew': 'Choisissez au moins deux photos.',
 };
 
 export type MessageKeyPanorama = keyof typeof frPanorama;
@@ -28,4 +31,7 @@ export const enPanorama: Record<MessageKeyPanorama, string> = {
   'panorama.working': 'Stitching…',
   'panorama.cancelled': 'Stitching cancelled.',
   'panorama.name': 'Panorama',
+  'panorama.noOverlap': 'Photos {a} and {b} do not overlap enough.',
+  'panorama.tooLarge': 'The panorama would be too large.',
+  'panorama.tooFew': 'Pick at least two photos.',
 };
