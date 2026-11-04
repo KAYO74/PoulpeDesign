@@ -78,6 +78,7 @@ export const PRESET_KEYS: Record<
       o: ['contour'],
       w: ['strokeWidth'],
       g: ['gradient'],
+      u: ['mesh'],
       y: ['transparency'],
       t: ['text', 'frameText'],
       i: ['eyedropper', 'stylePicker'],

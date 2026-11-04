@@ -3,6 +3,7 @@ import {
   isElliptical,
   linearPoints,
   radialFrame,
+  rasterizeMesh,
   rgbaToCss,
   sampleStops,
   type Paint,
@@ -78,7 +79,41 @@ export function canvasPaint(
     }
     case 'hatch':
       return hatchPattern(ctx, paint);
+    case 'mesh':
+      return meshPattern(ctx, paint, w, h);
   }
+}
+
+type MeshPaint = Extract<Paint, { type: 'mesh' }>;
+
+/** Images des filets, gardées tant que le filet et la résolution ne changent pas. */
+const meshCache = new WeakMap<MeshPaint, { key: string; canvas: AnyCanvas }>();
+
+/**
+ * Filet de dégradé : son image est peinte à la résolution de l'écran (au plus 1024 pixels de côté),
+ * puis posée sur la boîte de l'objet.
+ */
+function meshPattern(ctx: Ctx, paint: MeshPaint, w: number, h: number): CanvasPattern | null {
+  if (w <= 0 || h <= 0) return null;
+  const t = ctx.getTransform();
+  const scale = Math.sqrt(Math.abs(t.a * t.d - t.b * t.c)) || 1;
+  const k = Math.min(scale, 1024 / Math.max(w, h));
+  const W = Math.max(2, Math.ceil(w * k)),
+    H = Math.max(2, Math.ceil(h * k));
+  const key = `${W}|${H}`;
+  let hit = Object.isFrozen(paint) ? meshCache.get(paint) : undefined;
+  if (!hit || hit.key !== key) {
+    const tile = makeCanvas(W, H);
+    const img = tile.ctx.createImageData(W, H);
+    img.data.set(rasterizeMesh(paint, W, H));
+    tile.ctx.putImageData(img, 0, 0);
+    hit = { key, canvas: tile.canvas };
+    if (Object.isFrozen(paint)) meshCache.set(paint, hit);
+  }
+  const pat = ctx.createPattern(hit.canvas as CanvasImageSource, 'no-repeat');
+  if (!pat) return null;
+  pat.setTransform(new DOMMatrix().scale(w / W, h / H));
+  return pat;
 }
 
 /**

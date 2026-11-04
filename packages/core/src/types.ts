@@ -70,7 +70,12 @@ export type Paint =
       spacing: number;
       width: number;
       angle: number;
-    };
+    }
+  /**
+   * Filet de dégradé : (cols + 1) × (rows + 1) points rangée par rangée, en fractions de la boîte,
+   * chacun avec sa couleur ; les couleurs se fondent entre les points (voir `mesh.ts`).
+   */
+  | { type: 'mesh'; cols: number; rows: number; points: { x: number; y: number }[]; colors: Color[] };
 
 export type HatchStyle = 'lines' | 'cross' | 'dots';
 

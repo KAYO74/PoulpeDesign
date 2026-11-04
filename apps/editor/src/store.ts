@@ -34,6 +34,7 @@ export type ToolId =
   | 'transparency'
   | 'contour'
   | 'strokeWidth'
+  | 'mesh'
   // Persona Photo
   | 'marqueeRect'
   | 'marqueeEllipse'
@@ -134,6 +135,7 @@ export type Dialog =
   | 'pathEntry'
   | 'layerCount'
   | 'blend'
+  | 'recolor'
   | 'contentFill'
   | 'blendRanges'
   | 'meshWarp'
