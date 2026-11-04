@@ -10,23 +10,37 @@ import { ui } from '../store';
  */
 
 /**
- * Fenêtres déplaçables : la colonne d'outils, les deux groupes du Studio, et chaque panneau
+ * Fenêtres déplaçables : la colonne d'outils, les trois groupes du Studio, et chaque panneau
  * (Calques, Pinceau, Historique…) détaché seul de son groupe (`tab:<onglet>`).
  */
 export type PanelId =
-  'tools' | 'studio-top' | 'studio-bottom' | 'color-picker' | 'brush-editor' | `tab:${string}`;
+  | 'tools'
+  | 'studio-top'
+  | 'studio-bottom'
+  | 'studio-base'
+  | 'color-picker'
+  | 'brush-editor'
+  | `tab:${string}`;
 
 /** Fenêtre d'un panneau détaché seul de son groupe. */
 export const tabPanel = (tab: string): PanelId => `tab:${tab}`;
 
-/** Les deux groupes d'onglets du Studio. */
-export type StudioGroupId = 'studio-top' | 'studio-bottom';
+/**
+ * Les trois compartiments du Studio, de haut en bas : `studio-top` (Couleur…), `studio-bottom`
+ * (Calques, Canaux… : le deuxième, le nom date du temps où il n'y en avait que deux) et
+ * `studio-base` (Historique).
+ */
+export type StudioGroupId = 'studio-top' | 'studio-bottom' | 'studio-base';
 
 /** Panneaux de chaque groupe du Studio, dans l'ordre. */
 export interface StudioTabs {
   top: string[];
   bottom: string[];
+  base: string[];
 }
+
+/** Rangement enregistré : celui d'avant le troisième compartiment n'a pas de `base`. */
+export type StoredTabs = Omit<StudioTabs, 'base'> & { base?: string[] };
 
 export interface PanelFrame {
   x: number;
@@ -42,12 +56,14 @@ export interface PanelLayout {
   libraryW: number;
   /** Hauteur du premier groupe du Studio ancré (null : automatique). */
   topH: number | null;
+  /** Hauteur du troisième groupe du Studio ancré, l'Historique (null : hauteur d'origine). */
+  baseH: number | null;
   /** Fenêtres flottantes, par panneau. */
   floating: Partial<Record<PanelId, PanelFrame>>;
   /** Ordre d'empilement des fenêtres flottantes (la dernière au premier plan). */
   order: PanelId[];
   /** Panneaux rangés par l'utilisateur, par type de Persona (absent : groupes d'origine). */
-  tabs: Partial<Record<'draw' | 'photo', StudioTabs>>;
+  tabs: Partial<Record<'draw' | 'photo', StoredTabs>>;
 }
 
 export const PANEL_LIMITS = {
@@ -63,6 +79,7 @@ export const DEFAULT_PANELS: PanelLayout = {
   studioW: 320,
   libraryW: 300,
   topH: null,
+  baseH: null,
   floating: {},
   order: [],
   tabs: {},
@@ -336,16 +353,17 @@ export function startPanelResize(e: React.PointerEvent, id: PanelId, edge: Edge)
  */
 export function startSplitter(
   e: React.PointerEvent,
-  key: 'studioW' | 'libraryW' | 'topH',
+  key: 'studioW' | 'libraryW' | 'topH' | 'baseH',
   dir: 1 | -1,
   bounds: [number, number],
   current: number,
 ): void {
   if (e.button !== 0) return;
   e.preventDefault();
-  const axis = key === 'topH' ? 'clientY' : 'clientX';
+  const vertical = key === 'topH' || key === 'baseH';
+  const axis = vertical ? 'clientY' : 'clientX';
   const s0 = e[axis];
-  document.body.classList.add(key === 'topH' ? 'panel-resizing-v' : 'panel-resizing-h');
+  document.body.classList.add(vertical ? 'panel-resizing-v' : 'panel-resizing-h');
   const move = (ev: PointerEvent) => {
     panels.set({ [key]: Math.round(clamp(current + (ev[axis] - s0) * dir, ...bounds)) }, false);
   };

@@ -38,6 +38,11 @@ interface Tab {
   render: () => React.ReactNode;
 }
 
+/** Hauteur d'origine de l'Historique, tant que l'utilisateur ne l'a pas réglée. */
+const BASE_H = 150;
+/** Place minimale gardée aux Calques (le compartiment souple), même quand on règle les autres. */
+const FLEX_MIN = 220;
+
 /** Onglet actif et état replié de chaque groupe, conservés quand il passe d'ancré à flottant. */
 const groupState = new Map<string, { active: string | null; open: boolean }>();
 
@@ -62,7 +67,9 @@ function StudioGroup({
   initial = 0,
   floating,
   home,
-  style,
+  grow,
+  basis,
+  shrink = 1,
 }: {
   id: PanelId;
   stateKey: string;
@@ -71,7 +78,12 @@ function StudioGroup({
   floating?: boolean;
   /** Panneau détaché seul : le groupe où il retourne quand on l'ancre. */
   home?: PanelId;
-  style?: React.CSSProperties;
+  /** Le compartiment qui prend la place restante (les autres ont une hauteur propre). */
+  grow?: boolean;
+  /** Hauteur voulue (px) d'un compartiment ancré à hauteur réglable ; null : celle du contenu. */
+  basis?: number | null;
+  /** Part de la place manquante que ce compartiment cède (0 : aucune, il garde sa hauteur). */
+  shrink?: number;
 }) {
   const t = useT();
   const side = useUi((s) => s.settings.studioSide);
@@ -120,6 +132,22 @@ function StudioGroup({
     const x = side === 'left' ? r.right + 24 : r.left - r.width - 24;
     floatPanel(id, { x, y: r.top + 20, w: r.width, h: Math.max(r.height, 240) });
   };
+  // Ancré : le compartiment « souple » garde la place restante ; les autres ont la hauteur réglée
+  // avec leur séparateur, et se réduisent à leur barre d'onglets quand on les replie.
+  const style: React.CSSProperties | undefined = floating
+    ? undefined
+    : grow
+      ? { flex: '1 1 0', minHeight: open ? FLEX_MIN : 0 }
+      : !open
+        ? { flex: 'none' }
+        : basis != null
+          ? {
+              flex: `0 ${shrink} ${basis}px`,
+              minHeight: 64,
+              // Réglé à la main : il garde sa hauteur, sans empêcher les autres d'avoir la leur.
+              maxHeight: `calc(100% - ${FLEX_MIN + 64}px)`,
+            }
+          : { flex: `0 ${shrink} auto` };
   const section = (
     <section
       ref={ref}
@@ -166,40 +194,43 @@ function StudioGroup({
             {t(tab.label)}
           </button>
         ))}
-        <span className="spacer" />
-        {floating && (
+        {/* Toujours visibles à droite, même quand les onglets défilent. */}
+        <span className="studio-actions">
+          {floating && (
+            <button
+              className="ib small"
+              data-no-drag
+              title={t('panel.dock')}
+              aria-label={t('panel.dock')}
+              data-testid={`dock-${id}`}
+              onClick={() => dockPanel(id)}
+            >
+              <Icon name={side === 'left' ? 'sideLeft' : 'sideRight'} size={12} />
+            </button>
+          )}
           <button
             className="ib small"
             data-no-drag
-            title={t('panel.dock')}
-            aria-label={t('panel.dock')}
-            data-testid={`dock-${id}`}
-            onClick={() => dockPanel(id)}
+            data-testid={`collapse-${id}`}
+            aria-expanded={open}
+            aria-label={open ? '−' : '+'}
+            onClick={() => setOpen(!open)}
           >
-            <Icon name={side === 'left' ? 'sideLeft' : 'sideRight'} size={12} />
+            <Icon name={open ? 'chevronDown' : 'chevron'} size={12} />
           </button>
-        )}
-        <button
-          className="ib small"
-          data-no-drag
-          aria-expanded={open}
-          aria-label={open ? '−' : '+'}
-          onClick={() => setOpen(!open)}
-        >
-          <Icon name={open ? 'chevronDown' : 'chevron'} size={12} />
-        </button>
-        {home && (
-          <button
-            className="ib small"
-            data-no-drag
-            title={t('panel.close')}
-            aria-label={t('panel.close')}
-            data-testid={`close-${id}`}
-            onClick={() => hideTab(kind, tabs[0].id)}
-          >
-            <Icon name="close" size={12} />
-          </button>
-        )}
+          {home && (
+            <button
+              className="ib small"
+              data-no-drag
+              title={t('panel.close')}
+              aria-label={t('panel.close')}
+              data-testid={`close-${id}`}
+              onClick={() => hideTab(kind, tabs[0].id)}
+            >
+              <Icon name="close" size={12} />
+            </button>
+          )}
+        </span>
       </header>
       {open && (
         <div className="studio-content" role="tabpanel">
@@ -245,7 +276,7 @@ const TABS: Record<string, Tab> = Object.fromEntries(
 /** Onglets du Studio d'une Persona, dans l'ordre (pour la boîte « Espace de travail »). */
 export function studioTabsFor(persona: Persona): { id: string; label: MessageKey }[] {
   const def = defaultTabs(tabsKind(persona));
-  return [...def.top, ...def.bottom].map((id) => TABS[id]);
+  return [...def.top, ...def.bottom, ...def.base].map((id) => TABS[id]);
 }
 
 /** Tous les onglets du Studio, toutes Personas confondues (espaces de travail mixtes). */
@@ -296,6 +327,11 @@ function useGroups(): {
       stateKey: photo ? 'layers' : 'layers-draw',
       tabs: pick(cur.bottom, 'studio-bottom'),
     },
+    {
+      id: 'studio-base',
+      stateKey: 'history',
+      tabs: pick(cur.base, 'studio-base'),
+    },
   ];
   return {
     groups: groups.filter((g) => g.tabs.length > 0),
@@ -312,16 +348,54 @@ export function Studio() {
   const floating = usePanels((s) => s.floating);
   const width = usePanels((s) => s.studioW);
   const topH = usePanels((s) => s.topH);
+  const baseH = usePanels((s) => s.baseH);
   const asideRef = useRef<HTMLElement>(null);
   const docked = groups.filter((g) => !floating[g.id]);
   const loose = groups.filter((g) => floating[g.id]);
-  const both = docked.length === 2;
+  // Les Calques (compartiment du milieu) prennent la place restante ; sinon le dernier compartiment.
+  const flexId = docked.some((g) => g.id === 'studio-bottom') ? 'studio-bottom' : docked.at(-1)?.id;
   /** Groupe vidé de ses panneaux : une place où en déposer un. */
   const emptyGroup = (g: PanelId) => (
     <div key={g} className="studio-empty" data-group={g} data-testid={`empty-${g}`}>
       {t('panel.dropHere')}
     </div>
   );
+  /** Séparateur entre deux compartiments : il règle celui des deux qui n'est pas « souple ». */
+  const splitter = (i: number) => {
+    const above = docked[i - 1];
+    const below = docked[i];
+    const sized = below.id === flexId ? above : below;
+    const key = sized.id === 'studio-base' ? 'baseH' : 'topH';
+    const dir = sized === above ? 1 : -1;
+    return (
+      <div
+        key={`split-${sized.id}`}
+        className="split-v"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t('panel.resize')}
+        data-testid={sized.id === 'studio-base' ? 'studio-split-base' : 'studio-split'}
+        onPointerDown={(e) => {
+          const aside = asideRef.current!;
+          const height = (id: PanelId) =>
+            aside.querySelector(`[data-group="${id}"]`)?.getBoundingClientRect().height ?? 0;
+          // L'autre compartiment à hauteur propre cède jusqu'à son minimum, sauf s'il a été réglé à la main.
+          const other = docked.find((g) => g.id !== flexId && g.id !== sized.id);
+          const otherSet = other?.id === 'studio-top' ? topH !== null : baseH !== null;
+          const keep = other ? (otherSet ? height(other.id) : 64) : 0;
+          const total = aside.getBoundingClientRect().height;
+          startSplitter(
+            e,
+            key,
+            dir,
+            [PANEL_LIMITS.minH, Math.max(PANEL_LIMITS.minH, total - FLEX_MIN - keep)],
+            height(sized.id),
+          );
+        }}
+        onDoubleClick={() => panels.set({ [key]: null })}
+      />
+    );
+  };
   return (
     <>
       {docked.length > 0 && (
@@ -334,43 +408,17 @@ export function Studio() {
         >
           {empty.includes('studio-top') && emptyGroup('studio-top')}
           {docked.map((g, i) => [
-            i === 1 && (
-              <div
-                key="split"
-                className="split-v"
-                role="separator"
-                aria-orientation="horizontal"
-                aria-label={t('panel.resize')}
-                data-testid="studio-split"
-                onPointerDown={(e) => {
-                  const top = asideRef
-                    .current!.querySelector('.studio-group')!
-                    .getBoundingClientRect().height;
-                  const total = asideRef.current!.getBoundingClientRect().height;
-                  startSplitter(
-                    e,
-                    'topH',
-                    1,
-                    [PANEL_LIMITS.minH, Math.max(PANEL_LIMITS.minH, total - 120)],
-                    top,
-                  );
-                }}
-                onDoubleClick={() => panels.set({ topH: null })}
-              />
-            ),
+            i > 0 && splitter(i),
             <StudioGroup
               key={g.stateKey}
               {...g}
-              style={
-                i === 0 && both && topH !== null
-                  ? { flex: `0 0 ${topH}px` }
-                  : i === docked.length - 1
-                    ? { flex: '1 1 0' }
-                    : undefined
-              }
+              grow={g.id === flexId}
+              basis={g.id === 'studio-top' ? topH : g.id === 'studio-base' ? (baseH ?? BASE_H) : null}
+              shrink={(g.id === 'studio-top' ? topH : g.id === 'studio-base' ? baseH : null) !== null ? 0 : 1}
             />,
           ])}
           {empty.includes('studio-bottom') && emptyGroup('studio-bottom')}
+          {empty.includes('studio-base') && emptyGroup('studio-base')}
           <div
             className={`split-h ${side === 'right' ? 'at-left' : 'at-right'}`}
             role="separator"

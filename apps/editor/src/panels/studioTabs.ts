@@ -1,7 +1,14 @@
 import type { MessageKey } from '../i18n';
 import type { Persona } from '../store';
 import { activeWorkspace } from '../workspaces';
-import { clampFrame, panels, tabPanel, type StudioGroupId, type StudioTabs } from './panelLayout';
+import {
+  clampFrame,
+  panels,
+  tabPanel,
+  type StoredTabs,
+  type StudioGroupId,
+  type StudioTabs,
+} from './panelLayout';
 
 /*
  * Panneaux du Studio (Couleur, Calques, Historique…) et leur place, comme dans Photoshop et
@@ -26,16 +33,19 @@ export const STUDIO_TABS: { id: string; label: MessageKey }[] = [
 
 const TOP_DRAW = ['color', 'stroke', 'effects', 'transform', 'character'];
 const TOP_PHOTO = ['color', 'brush', 'adjustment', 'histogram', 'effects'];
-const BOTTOM = ['layers', 'history'];
-const BOTTOM_PHOTO = ['layers', 'channels', 'history'];
-const BOTTOM_DRAW = [...BOTTOM, 'macros'];
+const BOTTOM_PHOTO = ['layers', 'channels'];
+const BOTTOM_DRAW = ['layers', 'macros'];
+/** Le troisième compartiment, tout en bas : l'Historique, toujours sous les Calques. */
+const BASE = ['history'];
 
 export type TabsKind = 'draw' | 'photo';
 export const tabsKind = (persona: Persona): TabsKind => (persona === 'photo' ? 'photo' : 'draw');
 
 /** Groupes d'origine d'une Persona. */
 export function defaultTabs(kind: TabsKind): StudioTabs {
-  return kind === 'photo' ? { top: TOP_PHOTO, bottom: BOTTOM_PHOTO } : { top: TOP_DRAW, bottom: BOTTOM_DRAW };
+  return kind === 'photo'
+    ? { top: TOP_PHOTO, bottom: BOTTOM_PHOTO, base: BASE }
+    : { top: TOP_DRAW, bottom: BOTTOM_DRAW, base: BASE };
 }
 
 /** Groupe où un panneau va par défaut (celui de la Persona, sinon celui de l'autre Persona). */
@@ -43,9 +53,10 @@ function homeGroup(kind: TabsKind, tab: string): StudioGroupId {
   const own = defaultTabs(kind);
   if (own.top.includes(tab)) return 'studio-top';
   if (own.bottom.includes(tab)) return 'studio-bottom';
-  return defaultTabs(kind === 'photo' ? 'draw' : 'photo').bottom.includes(tab)
-    ? 'studio-bottom'
-    : 'studio-top';
+  if (own.base.includes(tab)) return 'studio-base';
+  const other = defaultTabs(kind === 'photo' ? 'draw' : 'photo');
+  if (other.bottom.includes(tab)) return 'studio-bottom';
+  return other.base.includes(tab) ? 'studio-base' : 'studio-top';
 }
 
 /**
@@ -54,25 +65,41 @@ function homeGroup(kind: TabsKind, tab: string): StudioGroupId {
  */
 export function currentTabs(kind: TabsKind): StudioTabs {
   const custom = panels.get().tabs[kind];
-  if (custom) return custom;
+  if (custom) return withBase(custom);
   const def = defaultTabs(kind);
   const allowed = activeWorkspace()?.tabs ?? null;
   if (!allowed) return def;
   return {
     top: def.top.filter((id) => allowed.includes(id)),
     bottom: def.bottom.filter((id) => allowed.includes(id)),
+    base: def.base.filter((id) => allowed.includes(id)),
+  };
+}
+
+/** Un rangement enregistré avant le troisième compartiment : l'Historique en sort, vers le bas. */
+function withBase(t: StoredTabs): StudioTabs {
+  if (t.base) return t as StudioTabs;
+  return {
+    top: t.top,
+    bottom: t.bottom.filter((id) => id !== 'history'),
+    base: t.bottom.includes('history') ? ['history'] : [],
   };
 }
 
 export function isTabShown(kind: TabsKind, tab: string): boolean {
   const cur = currentTabs(kind);
-  return cur.top.includes(tab) || cur.bottom.includes(tab);
+  return cur.top.includes(tab) || cur.bottom.includes(tab) || cur.base.includes(tab);
 }
 
-const key = (group: StudioGroupId) => (group === 'studio-top' ? 'top' : 'bottom');
+const key = (group: StudioGroupId): keyof StudioTabs =>
+  group === 'studio-top' ? 'top' : group === 'studio-base' ? 'base' : 'bottom';
 
 function without(cur: StudioTabs, tab: string): StudioTabs {
-  return { top: cur.top.filter((id) => id !== tab), bottom: cur.bottom.filter((id) => id !== tab) };
+  return {
+    top: cur.top.filter((id) => id !== tab),
+    bottom: cur.bottom.filter((id) => id !== tab),
+    base: cur.base.filter((id) => id !== tab),
+  };
 }
 
 function store(

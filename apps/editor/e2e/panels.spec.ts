@@ -43,8 +43,8 @@ test('détache le groupe Calques, le déplace, le redimensionne et le ré-ancre'
   expect(box.y).toBeLessThan(320);
 
   // Les onglets restent utilisables dans la fenêtre flottante.
-  await win.getByTestId('tab-history').click();
-  await expect(win.getByTestId('tab-history')).toHaveAttribute('aria-selected', 'true');
+  await win.getByTestId('tab-macros').click();
+  await expect(win.getByTestId('tab-macros')).toHaveAttribute('aria-selected', 'true');
 
   // Redimensionner par le coin inférieur droit.
   const before = box;
@@ -95,7 +95,7 @@ test('redimensionne le Studio ancré et réinitialise les panneaux', async ({ pa
   await drag(page, [x, y], [x - 80, y]);
   expect((await studio.boundingBox())!.width).toBeCloseTo(w0 + 80, -1);
 
-  // Séparateur entre les deux groupes ancrés.
+  // Séparateur entre le premier et le deuxième groupe ancrés.
   const top = page.getByTestId('studio-studio-top');
   const h0 = (await top.boundingBox())!.height;
   const [sx, sy] = await center(page, 'studio-split');
@@ -285,11 +285,12 @@ test('un clic sur un onglet change toujours de panneau', async ({ page }) => {
 
 test('range un panneau dans un autre groupe ou à une autre place, comme Photoshop', async ({ page }) => {
   const top = page.getByTestId('studio-studio-top');
-  const bottom = page.getByTestId('studio-studio-bottom');
+  // Historique : le troisième compartiment, tout en bas.
+  const base = page.getByTestId('studio-studio-base');
   // Historique, glissé sur l'onglet Couleur du groupe du haut, s'y range devant lui.
   await drag(page, await center(page, 'tab-history'), await leftOf(page, 'tab-color'));
   await expect(top.getByTestId('tab-history')).toBeVisible();
-  await expect(bottom.getByTestId('tab-history')).toHaveCount(0);
+  await expect(base.getByTestId('tab-history')).toHaveCount(0);
   const tabs = top.locator('[role="tab"]');
   await expect(tabs.first()).toHaveAttribute('data-tab', 'history');
 
@@ -302,7 +303,7 @@ test('range un panneau dans un autre groupe ou à une autre place, comme Photosh
   await expect(top.getByTestId('tab-history')).toBeVisible();
   await page.getByRole('button', { name: 'Fenêtre' }).click();
   await page.getByRole('menuitem', { name: 'Réinitialiser les panneaux' }).click();
-  await expect(bottom.getByTestId('tab-history')).toBeVisible();
+  await expect(base.getByTestId('tab-history')).toBeVisible();
   await expect(tabs.first()).toHaveAttribute('data-tab', 'color');
 });
 
