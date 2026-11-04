@@ -134,6 +134,7 @@ export type Dialog =
   | 'pathEntry'
   | 'layerCount'
   | 'blend'
+  | 'recolor'
   | 'contentFill'
   | 'blendRanges'
   | 'meshWarp'

@@ -460,3 +460,39 @@ test('crée un dégradé de formes entre deux formes', async ({ page }) => {
   await page.keyboard.press('Control+z');
   expect(await nodes(page)).toHaveLength(2);
 });
+
+test("recolorise l'illustration avec aperçu, et Annuler rend le design intact", async ({ page }) => {
+  const { drag } = await canvas(page);
+  await page.keyboard.press('u');
+  await drag([200, 200], [300, 300]);
+  await page.keyboard.press('e');
+  await drag([400, 300], [500, 400]);
+  await page.evaluate(() =>
+    (window as any).poulpe.editor.apply('history.fill', (d: any) => {
+      d.artboards[0].children[1].fill = { type: 'solid', color: '#3366cc' };
+    }),
+  );
+  const fills = async () => (await nodes(page)).map((n) => n.fill.color);
+  const before = await fills();
+  await page.keyboard.press('Control+a');
+  const open = async () => {
+    await page.getByRole('button', { name: 'Calque' }).click();
+    await page.getByRole('menuitem', { name: 'Recoloriser l’illustration…' }).click();
+  };
+  await open();
+  await expect(page.getByTestId('recolor-list').locator('.picker-row')).toHaveCount(2);
+  // Teinte décalée : l'aperçu change le design tout de suite ; Annuler le rend intact.
+  await page.getByTestId('recolor-hue').fill('120');
+  await expect.poll(fills).not.toEqual(before);
+  await page.getByRole('dialog').getByRole('button', { name: 'Annuler', exact: true }).click();
+  expect(await fills()).toEqual(before);
+  // Une couleur remplacée, puis Appliquer : une seule étape d'historique.
+  await open();
+  await page.getByTestId('recolor-color-0').fill('#ff0000');
+  await page.getByTestId('recolor-go').click();
+  const after = await fills();
+  expect(after).toContain('#ff0000');
+  expect((await history(page)).at(-1)).toBe('history.recolor');
+  await page.keyboard.press('Control+z');
+  expect(await fills()).toEqual(before);
+});

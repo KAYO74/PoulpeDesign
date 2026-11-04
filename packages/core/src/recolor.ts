@@ -1,4 +1,4 @@
-import { alphaOf, isGradient, opaque, parseColor, withAlpha } from './color';
+import { alphaOf, formatColor, hslToRgb, isGradient, opaque, parseColor, rgbToHsl, withAlpha } from './color';
 import type { Artboard, Color, Paint, SceneNode } from './types';
 import { isValidMesh } from './mesh';
 import { isStyled } from './tree';
@@ -145,6 +145,54 @@ export function applyPalette(target: RecolorTarget, palette: Color[], variant = 
     if (!to) return c;
     const a = alphaOf(c);
     return a < 1 ? withAlpha(to, a) : opaque(to);
+  };
+  if (target.artboard) target.artboard.background = mapPaint(target.artboard.background, f);
+  target.nodes.forEach((n) => mapNode(n, f));
+}
+
+/*
+ * Recoloriser l'illustration (comme dans Illustrator) : chaque couleur du design est remplacée
+ * par celle choisie, puis teinte, saturation et luminosité se décalent ensemble. La transparence
+ * de chaque couleur est gardée.
+ */
+
+/** Décalages de toutes les couleurs : teinte en degrés, saturation et luminosité de -100 à 100. */
+export interface RecolorShift {
+  hue: number;
+  saturation: number;
+  lightness: number;
+}
+
+export const NO_SHIFT: RecolorShift = { hue: 0, saturation: 0, lightness: 0 };
+
+/** Couleur opaque décalée en teinte, saturation et luminosité. */
+export function shiftColor(c: Color, shift: RecolorShift): Color {
+  if (!shift.hue && !shift.saturation && !shift.lightness) return opaque(c);
+  const rgb = parseColor(c);
+  const { h, s, l } = rgbToHsl(rgb);
+  const k = (v: number, d: number) => {
+    const f = Math.max(-1, Math.min(1, d / 100));
+    return Math.max(0, Math.min(1, f >= 0 ? v + (1 - v) * f : v * (1 + f)));
+  };
+  const out = hslToRgb((((h + shift.hue) % 360) + 360) % 360, k(s, shift.saturation), k(l, shift.lightness));
+  return formatColor({ ...out, a: 1 });
+}
+
+/**
+ * Remplace les couleurs du design (clé : couleur opaque en minuscules, comme `designColors`) et
+ * applique le décalage. Modifie en place : à appeler sur un brouillon.
+ */
+export function recolorDesign(
+  target: RecolorTarget,
+  mapping: Record<string, Color>,
+  shift: RecolorShift = NO_SHIFT,
+): void {
+  const f: Visitor = (c) => {
+    const key = opaque(c).toLowerCase();
+    const to = shiftColor(mapping[key] ?? key, shift);
+    if (to.toLowerCase() === key) return c;
+    const a = alphaOf(c);
+    return a < 1 ? withAlpha(to, a) : to;
   };
   if (target.artboard) target.artboard.background = mapPaint(target.artboard.background, f);
   target.nodes.forEach((n) => mapNode(n, f));
