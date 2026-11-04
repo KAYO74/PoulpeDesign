@@ -16,6 +16,7 @@ import { enTour, frTour, type MessageKeyTour } from './i18n-tour';
 import { enWhatsNew, frWhatsNew, type MessageKeyWhatsNew } from './i18n-whatsnew';
 import { enDocTabs, frDocTabs, type MessageKeyDocTabs } from './i18n-doctabs';
 import { enTips, frTips, type MessageKeyTips } from './i18n-tips';
+import { enAnim, frAnim, type MessageKeyAnim } from './i18n-anim';
 import { enDrop, frDrop, type MessageKeyDrop } from './i18n-drop';
 import { enKeyPresets, frKeyPresets, type MessageKeyKeyPresets } from './i18n-keypresets';
 import { enPalette, frPalette, type MessageKeyPalette } from './i18n-palette';
@@ -1006,7 +1007,8 @@ export type MessageKey =
   | MessageKeyPalette
   | MessageKeyPhotoLib
   | MessageKeyAi
-  | MessageKeyLiveFilters;
+  | MessageKeyLiveFilters
+  | MessageKeyAnim;
 
 const en: Record<
   Exclude<
@@ -1038,6 +1040,7 @@ const en: Record<
     | MessageKeyPhotoLib
     | MessageKeyAi
     | MessageKeyLiveFilters
+    | MessageKeyAnim
   >,
   string
 > = {
@@ -2002,6 +2005,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frPhotoLib,
     ...frAi,
     ...frLiveFilters,
+    ...frAnim,
     ...fr_shapes,
     ...fr_paint,
     ...fr_paths,
@@ -2038,6 +2042,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enPhotoLib,
     ...enAi,
     ...enLiveFilters,
+    ...enAnim,
     ...fr_shapes,
     ...en_shapes,
     ...fr_paint,
