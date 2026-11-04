@@ -828,12 +828,25 @@ svg.i {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 6px 0;
+  padding: 4px 0 0 6px;
   border-bottom: 1px solid var(--line);
   flex: none;
   /* Beaucoup d'onglets (Persona Photo) : ils défilent au lieu d'être coupés. */
   overflow-x: auto;
   scrollbar-width: thin;
+}
+.studio-actions {
+  /* Les boutons de droite (replier, ancrer, fermer) restent en vue quand les onglets défilent. */
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  margin-left: auto;
+  padding: 0 6px 0 6px;
+  position: sticky;
+  right: 0;
+  background: var(--panel);
+  box-shadow: -8px 0 6px -2px var(--panel);
 }
 .studio-tab {
   flex: none;
@@ -1993,6 +2006,14 @@ kbd {
   border-top: 1px solid var(--line);
   padding-top: 4px;
   margin-top: 4px;
+}
+/* Le compartiment Calques est parfois bas : la barre « + / poubelle » reste toujours en vue. */
+.layers-panel .layer-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: var(--panel);
+  padding-bottom: 6px;
 }
 .adjust-panel {
   display: flex;
