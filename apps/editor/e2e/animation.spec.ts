@@ -19,7 +19,7 @@ test('anime un objet et exporte le plan de travail en GIF', async ({ page }) => 
   await page.mouse.down();
   await page.mouse.move(box.x + 500, box.y + 400, { steps: 8 });
   await page.mouse.up();
-  await page.getByRole('button', { name: 'Calque' }).click();
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Animation…' }).click();
   await expect(page.getByTestId('anim-export')).toBeDisabled();
   await choose(page.getByTestId('anim-kind'), 'pop');
