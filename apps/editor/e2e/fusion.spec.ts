@@ -28,7 +28,11 @@ async function twoShots(page: import('@playwright/test').Page) {
     editor.apply('test', (d: any) => {
       const first = d.artboards[0].children[0];
       d.assets.light = { id: 'light', mime: 'image/png', width: 120, height: 90, data: shot(200) };
-      d.artboards[0].children.push({ ...JSON.parse(JSON.stringify(first)), id: 'light-layer', assetId: 'light' });
+      d.artboards[0].children.push({
+        ...JSON.parse(JSON.stringify(first)),
+        id: 'light-layer',
+        assetId: 'light',
+      });
     });
     editor.select(d0(editor));
     function d0(e: any) {
