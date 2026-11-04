@@ -13,6 +13,23 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.8.0',
+    fr: [
+      'Visite guidée de 2 minutes et aide « Je viens de Photoshop / Illustrator » (touches comparées).',
+      'Variantes de calques : enregistrez et rappelez visibilité, opacité et position.',
+      'Outils Dégradé de formes et Filet de dégradé ; Fluidité avec masque de gel.',
+      'Texte déformé en cercle et en montée ; grille isométrique.',
+      'Plus rapide : correcteur, gomme magique et vectorisation en Rust, démarrage plus léger.',
+    ],
+    en: [
+      '2-minute guided tour and a “Coming from Photoshop / Illustrator” help tab (keys compared).',
+      'Layer comps: save and recall visibility, opacity and position.',
+      'Shape blend and Gradient mesh tools; Liquify with a freeze mask.',
+      'Warped text in circle and rise; isometric grid.',
+      'Faster: healing, magic eraser and vectorizing in Rust, lighter startup.',
+    ],
+  },
+  {
     version: '1.7.0',
     fr: [
       'Ouvrir ou enregistrer en tapant un chemin de fichier (appli de bureau).',

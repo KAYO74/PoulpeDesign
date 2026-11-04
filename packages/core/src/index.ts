@@ -20,6 +20,8 @@ export * from './vector';
 export * from './effects';
 export * from './boolean';
 export * from './blend';
+export * from './animation';
+export * from './gif';
 export * from './regions';
 export * from './freehand';
 export * from './svgImport';
