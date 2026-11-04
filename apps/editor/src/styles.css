@@ -2007,14 +2007,6 @@ kbd {
   padding-top: 4px;
   margin-top: 4px;
 }
-/* Le compartiment Calques est parfois bas : la barre « + / poubelle » reste toujours en vue. */
-.layers-panel .layer-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  background: var(--panel);
-  padding-bottom: 6px;
-}
 .adjust-panel {
   display: flex;
   flex-direction: column;
