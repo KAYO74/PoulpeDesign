@@ -49,6 +49,16 @@ export function PanoramaDialog() {
         />
         {t('panorama.exposure')}
       </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          data-testid="panorama-perspective"
+          checked={s.perspective}
+          disabled={busy}
+          onChange={(e) => setS({ ...s, perspective: e.target.checked })}
+        />
+        {t('panorama.perspective')}
+      </label>
       {busy && (
         <div className="picker-row">
           <progress max={1} value={done} data-testid="panorama-progress" aria-label={t('panorama.working')} />

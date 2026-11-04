@@ -1,4 +1,13 @@
 import type { Pixels } from './adjust';
+import {
+  IDENTITY,
+  applyMat,
+  estimateHomography,
+  homographyScore,
+  invMat,
+  mulMat,
+  type Mat3,
+} from './homography';
 
 /*
  * Panorama : assemble des photos prises à la suite en tournant (ou en glissant) l'appareil, qui se
@@ -14,6 +23,8 @@ import type { Pixels } from './adjust';
 export interface PanoramaOptions {
   /** Égaliser la luminosité entre images (vrai par défaut). */
   exposure?: boolean;
+  /** Corriger la perspective entre images (vrai par défaut) ; sinon, simple translation. */
+  perspective?: boolean;
   /** Avancement de 0 à 1 ; renvoyer true pour annuler. */
   progress?: (fraction: number) => boolean | void;
 }
@@ -30,8 +41,12 @@ export class PanoramaError extends Error {
 }
 
 export interface PanoramaResult extends Pixels {
-  /** Position de chaque image dans le panorama, en pixels. */
+  /** Position (indicative) de chaque image dans le panorama, en pixels. */
   offsets: { x: number; y: number }[];
+  /** Image de référence, dont le repère sert à placer le résultat. */
+  ref: number;
+  /** Coin haut gauche du panorama, en pixels de l'image de référence. */
+  origin: { x: number; y: number };
 }
 
 /** Recouvrement minimal pour fier un recalage (part de la plus petite image). */
@@ -162,23 +177,13 @@ function feather(x: number, y: number, w: number, h: number): number {
   return Math.max(1e-3, Math.min(1, m / Math.max(2, Math.min(w, h) * 0.12)));
 }
 
-/**
- * Assemble les images dans l'ordre donné (chacune recouvre la précédente). Renvoie null si
- * `progress` demande d'annuler. Lève une erreur si deux images consécutives ne se recouvrent pas.
- */
-export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): PanoramaResult | null {
-  if (images.length < 2) throw new PanoramaError('tooFew');
-  const total = images.length * 2;
-  let step = 0;
-  const tick = (): boolean => !(opts.progress?.(++step / total) === true);
-  // 1 : position de chaque image par rapport à la précédente.
-  const pos: { x: number; y: number }[] = [{ x: 0, y: 0 }];
-  for (let i = 1; i < images.length; i++) {
-    const r = alignPair(images[i - 1], images[i]);
-    if (r.score < 0.3) throw new PanoramaError('noOverlap', i);
-    pos.push({ x: pos[i - 1].x + r.dx, y: pos[i - 1].y + r.dy });
-    if (!tick()) return null;
-  }
+/** Assemblage quand les images ne diffèrent que par une translation (`pos` : position de chacune). */
+function composeTranslation(
+  images: Pixels[],
+  pos: { x: number; y: number }[],
+  opts: PanoramaOptions,
+  tick: () => boolean,
+): PanoramaResult | null {
   const minX = Math.min(...pos.map((p) => p.x)),
     minY = Math.min(...pos.map((p) => p.y));
   const offsets = pos.map((p) => ({ x: p.x - minX, y: p.y - minY }));
@@ -234,5 +239,241 @@ export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): Pa
     out[i * 4 + 2] = acc[i * 3 + 2] / wsum[i];
     out[i * 4 + 3] = alpha[i] * 255;
   }
-  return { data: out, width: W, height: H, offsets };
+  return { data: out, width: W, height: H, offsets, ref: 0, origin: { x: -offsets[0].x, y: -offsets[0].y } };
+}
+
+/** Largeur maximale (pixels) du panorama de perspective : au-delà, l'image explose. */
+const MAX_SIDE = 60000;
+
+interface Placed {
+  /** Image → repère de l'image de référence. */
+  M: Mat3;
+  /** Repère de l'image de référence → image. */
+  Minv: Mat3;
+}
+
+/**
+ * Parcourt chaque pixel de la sortie couvert par l'image `im` (posée par `pl`), échantillonne
+ * l'image (bilinéaire) et appelle `put` avec la position de sortie, la couleur, l'opacité et le poids
+ * du fondu. La sortie est à l'échelle `r` ; son coin haut gauche est en (ox, oy) dans le repère de
+ * l'image de référence.
+ */
+function warpImage(
+  im: Pixels,
+  pl: Placed,
+  r: number,
+  ox: number,
+  oy: number,
+  outW: number,
+  outH: number,
+  put: (index: number, red: number, green: number, blue: number, alpha: number, weight: number) => void,
+): void {
+  const { width: w, height: h, data } = im;
+  // Boîte de la sortie touchée par l'image.
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
+  for (const [cx, cy] of [
+    [0, 0],
+    [w, 0],
+    [w, h],
+    [0, h],
+  ]) {
+    const [rx, ry] = applyMat(pl.M, cx, cy);
+    x0 = Math.min(x0, (rx - ox) * r);
+    x1 = Math.max(x1, (rx - ox) * r);
+    y0 = Math.min(y0, (ry - oy) * r);
+    y1 = Math.max(y1, (ry - oy) * r);
+  }
+  const X0 = Math.max(0, Math.floor(x0)),
+    X1 = Math.min(outW, Math.ceil(x1) + 1),
+    Y0 = Math.max(0, Math.floor(y0)),
+    Y1 = Math.min(outH, Math.ceil(y1) + 1);
+  const m = pl.Minv;
+  for (let Y = Y0; Y < Y1; Y++)
+    for (let X = X0; X < X1; X++) {
+      const rx = X / r + ox,
+        ry = Y / r + oy;
+      const den = m[6] * rx + m[7] * ry + m[8];
+      const sx = (m[0] * rx + m[1] * ry + m[2]) / den,
+        sy = (m[3] * rx + m[4] * ry + m[5]) / den;
+      if (!(sx >= 0 && sy >= 0 && sx <= w - 1 && sy <= h - 1)) continue;
+      const ix = Math.floor(sx),
+        iy = Math.floor(sy),
+        fx = sx - ix,
+        fy = sy - iy;
+      const jx = Math.min(w - 1, ix + 1),
+        jy = Math.min(h - 1, iy + 1);
+      const p00 = (iy * w + ix) * 4,
+        p10 = (iy * w + jx) * 4,
+        p01 = (jy * w + ix) * 4,
+        p11 = (jy * w + jx) * 4;
+      const w00 = (1 - fx) * (1 - fy),
+        w10 = fx * (1 - fy),
+        w01 = (1 - fx) * fy,
+        w11 = fx * fy;
+      const a = (data[p00 + 3] * w00 + data[p10 + 3] * w10 + data[p01 + 3] * w01 + data[p11 + 3] * w11) / 255;
+      if (a <= 0) continue;
+      put(
+        Y * outW + X,
+        data[p00] * w00 + data[p10] * w10 + data[p01] * w01 + data[p11] * w11,
+        data[p00 + 1] * w00 + data[p10 + 1] * w10 + data[p01 + 1] * w01 + data[p11 + 1] * w11,
+        data[p00 + 2] * w00 + data[p10 + 2] * w10 + data[p01 + 2] * w01 + data[p11 + 2] * w11,
+        a,
+        feather(sx, sy, w, h) * a,
+      );
+    }
+}
+
+/** Assemblage avec correction de perspective : image du milieu en référence, fondu pondéré. */
+function composeProjective(
+  images: Pixels[],
+  pairs: Mat3[],
+  opts: PanoramaOptions,
+  tick: () => boolean,
+): PanoramaResult | null {
+  const n = images.length;
+  const ref = n >> 1;
+  // Chaque image dans le repère de la référence : on enchaîne les paires depuis la référence.
+  const M: Mat3[] = new Array<Mat3>(n);
+  M[ref] = IDENTITY;
+  for (let i = ref + 1; i < n; i++) M[i] = mulMat(M[i - 1], pairs[i]);
+  for (let i = ref - 1; i >= 0; i--) {
+    const inv = invMat(pairs[i + 1]);
+    if (!inv) throw new PanoramaError('noOverlap', i + 1);
+    M[i] = mulMat(M[i + 1], inv);
+  }
+  const placed: Placed[] = M.map((m) => {
+    const inv = invMat(m);
+    if (!inv) throw new PanoramaError('tooLarge');
+    return { M: m, Minv: inv };
+  });
+  // Boîte du panorama dans le repère de la référence.
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
+  images.forEach((im, i) => {
+    for (const [cx, cy] of [
+      [0, 0],
+      [im.width, 0],
+      [im.width, im.height],
+      [0, im.height],
+    ]) {
+      const den = M[i][6] * cx + M[i][7] * cy + M[i][8];
+      const [rx, ry] = applyMat(M[i], cx, cy);
+      // Un coin qui passe « derrière » l'appareil : la perspective n'a plus de sens.
+      if (den <= 0 || !Number.isFinite(rx) || !Number.isFinite(ry)) throw new PanoramaError('tooLarge');
+      x0 = Math.min(x0, rx);
+      x1 = Math.max(x1, rx);
+      y0 = Math.min(y0, ry);
+      y1 = Math.max(y1, ry);
+    }
+  });
+  const ox = Math.floor(x0),
+    oy = Math.floor(y0);
+  const W = Math.ceil(x1) - ox,
+    H = Math.ceil(y1) - oy;
+  if (W > MAX_SIDE || H > MAX_SIDE || W * H > 120_000_000) throw new PanoramaError('tooLarge');
+  // Gains de luminosité : sur une version réduite, l'écart moyen entre voisines sur leur zone commune.
+  const gains = new Array<number>(n).fill(1);
+  if (opts.exposure !== false) {
+    const r = Math.min(1, 400 / Math.max(W, H));
+    const lw = Math.max(1, Math.ceil(W * r)),
+      lh = Math.max(1, Math.ceil(H * r));
+    const lum = images.map((im, i) => {
+      const L = new Float32Array(lw * lh).fill(-1);
+      warpImage(im, placed[i], r, ox, oy, lw, lh, (idx, red, green, blue) => {
+        L[idx] = red + green + blue;
+      });
+      return L;
+    });
+    const link = (i: number, j: number) => {
+      // Gain de j déduit de celui de i, voisine déjà réglée.
+      let si = 0,
+        sj = 0;
+      for (let k = 0; k < lw * lh; k++)
+        if (lum[i][k] >= 0 && lum[j][k] >= 0) {
+          si += lum[i][k];
+          sj += lum[j][k];
+        }
+      const g = si > 0 && sj > 0 ? (si / sj) * gains[i] : gains[i];
+      gains[j] = Math.min(1.5, Math.max(1 / 1.5, g));
+    };
+    for (let j = ref + 1; j < n; j++) link(j - 1, j);
+    for (let j = ref - 1; j >= 0; j--) link(j + 1, j);
+  }
+  if (!tick()) return null;
+  const acc = new Float32Array(W * H * 3),
+    wsum = new Float32Array(W * H),
+    alpha = new Float32Array(W * H);
+  for (let k = 0; k < n; k++) {
+    const g = gains[k];
+    warpImage(images[k], placed[k], 1, ox, oy, W, H, (t, red, green, blue, a, w) => {
+      acc[t * 3] += red * g * w;
+      acc[t * 3 + 1] += green * g * w;
+      acc[t * 3 + 2] += blue * g * w;
+      wsum[t] += w;
+      if (a > alpha[t]) alpha[t] = a;
+    });
+    if (!tick()) return null;
+  }
+  const out = new Uint8ClampedArray(W * H * 4);
+  for (let i = 0; i < W * H; i++) {
+    if (wsum[i] <= 0) continue;
+    out[i * 4] = acc[i * 3] / wsum[i];
+    out[i * 4 + 1] = acc[i * 3 + 1] / wsum[i];
+    out[i * 4 + 2] = acc[i * 3 + 2] / wsum[i];
+    out[i * 4 + 3] = alpha[i] * 255;
+  }
+  tick();
+  // Position de chaque image dans le panorama (coin haut gauche, indicatif).
+  const offsets = images.map((im, i) => {
+    const [rx, ry] = applyMat(M[i], 0, 0);
+    return { x: Math.round(rx - ox), y: Math.round(ry - oy) };
+  });
+  return { data: out, width: W, height: H, offsets, ref, origin: { x: ox, y: oy } };
+}
+
+/** Matrice de translation. */
+const shift = (dx: number, dy: number): Mat3 => [1, 0, dx, 0, 1, dy, 0, 0, 1];
+
+/**
+ * Assemble les images dans l'ordre donné (chacune recouvre la précédente). Renvoie null si
+ * `progress` demande d'annuler. Lève une erreur si deux images consécutives ne se recouvrent pas.
+ * Avec `perspective` (par défaut), le recalage corrige la perspective ; s'il échoue pour une paire,
+ * la translation prend le relais.
+ */
+export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): PanoramaResult | null {
+  if (images.length < 2) throw new PanoramaError('tooFew');
+  const n = images.length;
+  const total = n * 2 + 1;
+  let step = 0;
+  const tick = (): boolean => !(opts.progress?.(++step / total) === true);
+  // 1 : position de chaque image par rapport à la précédente (homographie ou translation).
+  const pairs: Mat3[] = [IDENTITY];
+  let projective = false;
+  for (let i = 1; i < n; i++) {
+    const fit = opts.perspective === false ? null : estimateHomography(images[i - 1], images[i]);
+    const r = alignPair(images[i - 1], images[i]);
+    const T = shift(r.dx, r.dy);
+    // On garde la perspective seulement si elle ne recale pas moins bien que la simple translation
+    // (sur des motifs répétitifs, les points d'intérêt peuvent se tromper).
+    const tScore = r.score >= 0.3 ? homographyScore(images[i - 1], images[i], T) : -1;
+    const hScore = fit ? homographyScore(images[i - 1], images[i], fit.H) : -1;
+    if (fit && hScore >= 0.3 && hScore >= tScore - 0.02) {
+      pairs.push(fit.H);
+      projective = true;
+    } else if (tScore >= 0.3 || r.score >= 0.3) {
+      pairs.push(T);
+    } else throw new PanoramaError('noOverlap', i);
+    if (!tick()) return null;
+  }
+  if (!projective) {
+    const pos: { x: number; y: number }[] = [{ x: 0, y: 0 }];
+    for (let i = 1; i < n; i++) pos.push({ x: pos[i - 1].x + pairs[i][2], y: pos[i - 1].y + pairs[i][5] });
+    return composeTranslation(images, pos, opts, tick);
+  }
+  return composeProjective(images, pairs, opts, tick);
 }
