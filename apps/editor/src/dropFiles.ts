@@ -18,10 +18,13 @@ const IMAGE_MIMES: Record<string, string> = {
   gif: 'image/gif',
   bmp: 'image/bmp',
   avif: 'image/avif',
+  heic: 'image/heic',
+  heif: 'image/heif',
 };
 
 const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.toLowerCase() : '');
-const isDocument = (ext: string) => OPEN_EXTENSIONS.includes(ext) || ext === 'poulpemodele';
+const isDocument = (ext: string) =>
+  (OPEN_EXTENSIONS.includes(ext) && !(ext in IMAGE_MIMES)) || ext === 'poulpemodele';
 const isVisual = (ext: string) => ext === 'svg' || ext in IMAGE_MIMES;
 
 /** Vrai si le glissement contient des fichiers (et pas un élément de la bibliothèque, par ex.). */

@@ -11,6 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 for (const [name, out] of [
   ['poulpe-engine-wasm', 'poulpe_engine.wasm'],
   ['poulpe-raw-wasm', 'poulpe_raw.wasm'],
+  ['poulpe-heic-wasm', 'poulpe_heic.wasm'],
 ]) {
   const crate = join(here, '../../../crates', name);
   execFileSync('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown'], {

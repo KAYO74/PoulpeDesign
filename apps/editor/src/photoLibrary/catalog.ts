@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { DEFAULT_DEVELOP, RAW_EXTENSIONS, RawPhoto } from '@poulpe/engine';
+import { DEFAULT_DEVELOP, HEIC_EXTENSIONS, RAW_EXTENSIONS, RawPhoto } from '@poulpe/engine';
 import rawUrl from '@poulpe/engine/wasm/poulpe_raw.wasm?url';
 import { readExif, type Exif } from './exif';
 import { Store } from '../store';
@@ -63,10 +63,13 @@ const IMAGE_MIMES: Record<string, string> = {
   avif: 'image/avif',
   tif: 'image/tiff',
   tiff: 'image/tiff',
+  heic: 'image/heic',
+  heif: 'image/heif',
 };
 
 const extOf = (name: string) => (name.includes('.') ? name.split('.').pop()!.toLowerCase() : '');
 export const isRaw = (name: string) => RAW_EXTENSIONS.includes(extOf(name));
+export const isHeicFile = (name: string) => HEIC_EXTENSIONS.includes(extOf(name));
 export const mimeOf = (name: string) => IMAGE_MIMES[extOf(name)] ?? 'image/png';
 export const isPhotoFile = (name: string) => isRaw(name) || extOf(name) in IMAGE_MIMES;
 /** Extensions acceptées par la fenêtre d'import. */
@@ -169,6 +172,13 @@ export async function photoFile(id: string): Promise<Blob | undefined> {
 
 const THUMB = 320;
 
+/** Une photo HEIC, que le navigateur ne lit pas, est d'abord convertie (décodeur Rust, chargé à la demande). */
+export async function browserReadable(file: Blob, name = (file as File).name ?? ''): Promise<Blob> {
+  if (!isHeicFile(name)) return file;
+  const { heicBlob } = await import('../photo/heic');
+  return heicBlob(new Uint8Array(await file.arrayBuffer())).catch(() => file);
+}
+
 async function makeThumb(file: File): Promise<{ thumb: string; width: number; height: number } | null> {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
@@ -187,7 +197,7 @@ async function makeThumb(file: File): Promise<{ thumb: string; width: number; he
       raw.dispose();
     }
   }
-  const bmp = await createImageBitmap(file).catch(() => null);
+  const bmp = await createImageBitmap(await browserReadable(file)).catch(() => null);
   if (!bmp) return null;
   const k = Math.min(1, THUMB / Math.max(bmp.width, bmp.height));
   canvas.width = Math.max(1, Math.round(bmp.width * k));

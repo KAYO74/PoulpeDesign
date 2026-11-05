@@ -1,0 +1,21 @@
+[package]
+name = "poulpe-heic-wasm"
+version = "1.9.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MPL-2.0"
+description = "Lecture des photos HEIC/HEIF de Poulpe Design (bibliothèque heifer, MIT ou Apache-2.0), compilé en WebAssembly"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+heifer = "=0.3.29"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

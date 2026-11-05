@@ -226,3 +226,4 @@ export function engineActive(): boolean {
 export * from './inpaint';
 export * from './trace';
 export * from './raw';
+export * from './heic';
