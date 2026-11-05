@@ -13,6 +13,19 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.9.1',
+    fr: [
+      'Les photos HEIC (iPhone) s’ouvrent maintenant.',
+      'Transparence (touche Y) aussi en Persona Photo : fondu d’un calque photo vers le transparent.',
+      'Panorama avec correction de perspective.',
+    ],
+    en: [
+      'HEIC photos (iPhone) now open.',
+      'Transparency (Y key) also in Photo Persona: fade a photo layer to transparent.',
+      'Panorama with perspective correction.',
+    ],
+  },
+  {
     version: '1.9.0',
     fr: [
       'Fusion d’expositions (HDR) et mise au point, 3 à 6 fois plus rapides grâce à Rust.',
