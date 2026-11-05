@@ -27,4 +27,5 @@ jobs:
           # zip 4.x ne sert qu'à l'extracteur de mises à jour de Tauri (même exception que dans ci.yml).
           cargo audit --file apps/desktop/src-tauri/Cargo.lock --ignore RUSTSEC-2026-0367 --ignore RUSTSEC-2026-0368 --ignore RUSTSEC-2026-0369 --ignore RUSTSEC-2026-0429
           cargo audit --file crates/poulpe-raw-wasm/Cargo.lock
+          cargo audit --file crates/poulpe-heic-wasm/Cargo.lock
           cargo audit --file crates/poulpe-engine-wasm/Cargo.lock

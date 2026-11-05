@@ -112,7 +112,7 @@ fn save_launch_prefs(app: tauri::AppHandle, prefs: String) -> Result<(), String>
 /// Extensions des fichiers que l'on peut désigner en tapant un chemin (documents, images, photos).
 const PATH_EXTENSIONS: &[&str] = &[
     "poulpe", "poulpemodele", "psd", "pdf", "ai", "png", "jpg", "jpeg", "webp", "gif", "bmp", "svg", "tif",
-    "tiff", "avif", "heic", "zip", "dng", "cr2", "cr3", "nef", "arw", "orf", "rw2", "raf",
+    "tiff", "avif", "heic", "heif", "zip", "dng", "cr2", "cr3", "nef", "arw", "orf", "rw2", "raf",
 ];
 
 /// Autorise l'appli à lire (`write` faux) ou écrire (`write` vrai) UN fichier désigné en tapant son

@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import { safeName, saveBytes } from '../io';
 import { pastedDevelopSettings } from '../photo/rawDevelop';
 import { toast, ui } from '../store';
-import { isRaw, library, photoFile } from './catalog';
+import { browserReadable, isRaw, library, photoFile } from './catalog';
 
 /*
  * Export de photos de la photothèque (comme l'export de Lightroom) : taille, qualité, filigrane
@@ -91,7 +91,7 @@ async function render(file: Blob, name: string, o: PhotoExportOptions): Promise<
       raw.dispose();
     }
   } else {
-    const bmp = await createImageBitmap(file).catch(() => null);
+    const bmp = await createImageBitmap(await browserReadable(file, name)).catch(() => null);
     if (!bmp) return null;
     const { w, h } = fitSize(bmp.width, bmp.height, o.maxSide);
     canvas.width = w;

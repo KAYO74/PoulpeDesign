@@ -37,7 +37,7 @@ import { makeRoomForDocument } from './docTabs';
 import { t } from './i18n';
 import { editor, toast, ui } from './store';
 import { placeSvg } from './vectorActions';
-import { RAW_EXTENSIONS } from '@poulpe/engine';
+import { HEIC_EXTENSIONS, RAW_EXTENSIONS, isHeic } from '@poulpe/engine';
 
 /*
  * Entrées / sorties de fichiers. Dans l'appli de bureau (Tauri), on passe par les boîtes de
@@ -80,7 +80,7 @@ const KINDS: Record<FileKind, { ext: string; mime: string; label: string }> = {
 };
 
 /** Formats que « Ouvrir » sait lire, en plus des documents Poulpe Design. */
-export const OPEN_EXTENSIONS = [POULPE_EXTENSION, 'psd', 'pdf', 'ai', ...RAW_EXTENSIONS];
+export const OPEN_EXTENSIONS = [POULPE_EXTENSION, 'psd', 'pdf', 'ai', ...RAW_EXTENSIONS, ...HEIC_EXTENSIONS];
 
 export function baseName(path: string): string {
   return path
@@ -238,6 +238,7 @@ export async function openBytes(name: string, bytes: Uint8Array): Promise<void> 
     await openRaw(bytes, baseName(name));
     return;
   }
+  if (HEIC_EXTENSIONS.includes(ext)) return openPhotoBytes(bytes, 'image/heic', baseName(name));
   if (ext !== 'psd' && ext !== 'pdf' && ext !== 'ai') return loadBytes(name, bytes);
   toast(t('file.opening'));
   try {
@@ -347,7 +348,10 @@ export async function savePsdDocument(saveAs = true): Promise<void> {
 }
 
 export async function importImage(): Promise<void> {
-  const file = await pickFile(['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'], 'image/*');
+  const file = await pickFile(
+    ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', ...HEIC_EXTENSIONS],
+    ['image/*', ...HEIC_EXTENSIONS.map((e) => `.${e}`)].join(','),
+  );
   if (!file) {
     ui.set({ tool: 'select' });
     return;
@@ -358,25 +362,54 @@ export async function importImage(): Promise<void> {
     if (placeSvg(new TextDecoder().decode(file.bytes), baseName(file.name))) return;
   }
   const mime =
-    ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
+    ext === 'jpg' || ext === 'jpeg'
+      ? 'image/jpeg'
+      : ext === 'svg'
+        ? 'image/svg+xml'
+        : HEIC_EXTENSIONS.includes(ext)
+          ? 'image/heic'
+          : `image/${ext}`;
   await placeImageBytes(file.bytes, mime);
 }
 
 /** Ouvre une photo dans un nouveau document à sa taille, en Persona Photo (comme Affinity Photo). */
 export async function openPhoto(): Promise<void> {
   const file = await pickFile(
-    ['png', 'jpg', 'jpeg', 'webp', 'gif', ...RAW_EXTENSIONS],
-    ['image/png,image/jpeg,image/webp,image/gif', ...RAW_EXTENSIONS.map((e) => `.${e}`)].join(','),
+    ['png', 'jpg', 'jpeg', 'webp', 'gif', ...HEIC_EXTENSIONS, ...RAW_EXTENSIONS],
+    [
+      'image/png,image/jpeg,image/webp,image/gif',
+      ...HEIC_EXTENSIONS.map((e) => `.${e}`),
+      ...RAW_EXTENSIONS.map((e) => `.${e}`),
+    ].join(','),
   );
   if (!file) return;
   makeRoomForDocument();
   const ext = file.name.split('.').pop()!.toLowerCase();
   if (RAW_EXTENSIONS.includes(ext)) return openBytes(file.name, file.bytes);
-  const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
+  const mime =
+    ext === 'jpg' || ext === 'jpeg'
+      ? 'image/jpeg'
+      : HEIC_EXTENSIONS.includes(ext)
+        ? 'image/heic'
+        : `image/${ext}`;
   await openPhotoBytes(file.bytes, mime, baseName(file.name));
 }
 
-export async function openPhotoBytes(bytes: Uint8Array, mime: string, name: string): Promise<void> {
+/** Une photo HEIC (reconnue à son contenu) devient un PNG ; les autres images restent telles quelles. */
+async function readableImage(
+  bytes: Uint8Array,
+  mime: string,
+): Promise<{ bytes: Uint8Array; mime: string } | null> {
+  if (!isHeic(bytes)) return { bytes, mime };
+  const { heicToPng } = await import('./photo/heic');
+  const png = await heicToPng(bytes);
+  return png && { bytes: png, mime: 'image/png' };
+}
+
+export async function openPhotoBytes(source: Uint8Array, sourceMime: string, name: string): Promise<void> {
+  const image = await readableImage(source, sourceMime);
+  if (!image) return;
+  const { bytes, mime } = image;
   const data = bytesToDataUrl(bytes, mime);
   const img = new Image();
   img.src = data;
@@ -391,10 +424,13 @@ export async function openPhotoBytes(bytes: Uint8Array, mime: string, name: stri
 }
 
 export async function placeImageBytes(
-  bytes: Uint8Array,
-  mime: string,
+  source: Uint8Array,
+  sourceMime: string,
   at?: { x: number; y: number },
 ): Promise<void> {
+  const image = await readableImage(source, sourceMime);
+  if (!image) return;
+  const { bytes, mime } = image;
   const blob = new Blob([bytes as unknown as BlobPart], { type: mime });
   const data = await new Promise<string>((resolve) => {
     const r = new FileReader();

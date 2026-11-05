@@ -63,6 +63,7 @@ jobs:
             crates/poulpe-engine
             crates/poulpe-engine-wasm
             crates/poulpe-raw-wasm
+            crates/poulpe-heic-wasm
       - name: Moteur Rust (processeur et carte graphique logicielle)
         working-directory: crates/poulpe-engine
         run: |
@@ -76,6 +77,11 @@ jobs:
         run: |
           cargo test --locked
           cargo build --locked --release --target wasm32-unknown-unknown
+      - name: Photos HEIC en WebAssembly
+        working-directory: crates/poulpe-heic-wasm
+        run: |
+          cargo test --locked
+          cargo build --locked --release --target wasm32-unknown-unknown
       - name: Sécurité des dépendances Rust
         uses: taiki-e/install-action@cargo-audit
       - name: Audit des dépendances Rust (failles connues)
@@ -84,6 +90,7 @@ jobs:
           # (aucun zip d'origine inconnue n'est ouvert) : à lever dès que tauri-plugin-updater passe à zip 9.
           cargo audit --file apps/desktop/src-tauri/Cargo.lock --ignore RUSTSEC-2026-0367 --ignore RUSTSEC-2026-0368 --ignore RUSTSEC-2026-0369 --ignore RUSTSEC-2026-0429
           cargo audit --file crates/poulpe-raw-wasm/Cargo.lock
+          cargo audit --file crates/poulpe-heic-wasm/Cargo.lock
           cargo audit --file crates/poulpe-engine-wasm/Cargo.lock
       - name: Tests Rust
         working-directory: apps/desktop/src-tauri
