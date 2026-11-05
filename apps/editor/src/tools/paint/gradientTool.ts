@@ -42,8 +42,9 @@ const OFF_LINE = 40;
 
 const modeOf = (): GradientMode | null => {
   const s = ui.get();
-  if (s.persona === 'photo') return null;
-  return s.tool === 'gradient' ? 'fill' : s.tool === 'transparency' ? 'transparency' : null;
+  // En Persona Photo, [G] est le dégradé de pixels ; la transparence (fondu d'un calque) y est permise.
+  if (s.tool === 'transparency') return 'transparency';
+  return s.tool === 'gradient' && s.persona !== 'photo' ? 'fill' : null;
 };
 
 /** Boîte où s'exprime la peinture : celle de l'objet, ou de son contenu pour la transparence d'un groupe. */
