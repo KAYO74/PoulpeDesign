@@ -302,3 +302,34 @@ test('panneau Couches : enregistre la sélection comme couche alpha et la rechar
   await page.getByRole('button', { name: 'Supprimer la couche' }).click();
   expect(await page.evaluate(() => (window as any).poulpe.editor.doc.channels)).toBeUndefined();
 });
+
+test('Transparence [Y] en Persona Photo : fondu de la photo vers le transparent', async ({ page }) => {
+  await openTestPhoto(page);
+  await expect(page.getByTestId('persona-photo')).toHaveAttribute('aria-pressed', 'true');
+  expect((await nodes(page))[0].transparency).toBeUndefined();
+  await page.keyboard.press('y');
+  await drag(page, [40, 150], [360, 150]);
+  const [layer] = await nodes(page);
+  expect(layer.transparency.type).toBe('linear');
+  expect(layer.transparency.stops.map((s: AnyNode) => s.opacity)).toEqual([1, 0]);
+  // À gauche la photo est opaque, à droite le fond du document apparaît à travers.
+  const canvasPixel = (x: number, y: number) =>
+    page.evaluate(
+      ([x, y]) => {
+        const c = (window as any).poulpe.controller().canvas as HTMLCanvasElement;
+        const k = c.width / c.getBoundingClientRect().width;
+        return [...c.getContext('2d')!.getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data];
+      },
+      [x, y],
+    );
+  const [lx, ly] = await screen(page, 50, 60);
+  const [rx, ry] = await screen(page, 350, 60);
+  const box = (await page.getByTestId('canvas').boundingBox())!;
+  const left = await canvasPixel(lx - box.x, ly - box.y);
+  const right = await canvasPixel(rx - box.x, ry - box.y);
+  // Bleu #3366cc à gauche ; à droite le bleu s'est effacé (rouge et vert montent vers le fond).
+  expect(left[2]).toBeGreaterThan(150);
+  expect(left[0]).toBeLessThan(90);
+  expect(right[0]).toBeGreaterThan(left[0] + 60);
+  expect((await history(page)).at(-1)).toBeTruthy();
+});

@@ -780,6 +780,7 @@ export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
   r: ['colorReplace'],
   e: ['eraser', 'backgroundEraser', 'floodEraser'],
   g: ['fill', 'pixelGradient'],
+  y: ['transparency'],
   j: ['magicEraser', 'heal', 'patch', 'blemish', 'redEye'],
   k: ['clone'],
   s: ['smudge'],

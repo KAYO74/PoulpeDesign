@@ -34,7 +34,16 @@ export const DRAW_GROUPS: ToolId[][] = [
 export const PHOTO_GROUPS: ToolId[][] = [
   ['select', 'crop', 'straighten', 'perspective'],
   ['marqueeRect', 'marqueeEllipse', 'lasso', 'magicWand', 'quickSelect'],
-  ['brush', 'colorReplace', 'eraser', 'backgroundEraser', 'floodEraser', 'fill', 'pixelGradient'],
+  [
+    'brush',
+    'colorReplace',
+    'eraser',
+    'backgroundEraser',
+    'floodEraser',
+    'fill',
+    'pixelGradient',
+    'transparency',
+  ],
   ['magicEraser', 'heal', 'patch', 'blemish', 'redEye', 'clone'],
   ['dodge', 'burn', 'sponge', 'blurBrush', 'sharpenBrush', 'smudge', 'liquify'],
   ['text', 'frameText'],
