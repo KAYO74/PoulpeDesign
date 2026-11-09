@@ -64,7 +64,11 @@ fn pass(
             }
             row[x * n] = if total > 0.0 { sa / total } else { inp[i * n] };
             if n == 2 {
-                row[x * n + 1] = if total > 0.0 { sb / total } else { inp[i * n + 1] };
+                row[x * n + 1] = if total > 0.0 {
+                    sb / total
+                } else {
+                    inp[i * n + 1]
+                };
             }
         }
     });
@@ -83,7 +87,11 @@ pub fn apply(data: &mut [u8], w: usize, h: usize, luminance: f64, color: f64, sc
     let mut chroma = vec![0.0f64; n * 2];
     let mut alpha = vec![0.0f64; n];
     for i in 0..n {
-        let (r, g, b) = (data[i * 4] as f64, data[i * 4 + 1] as f64, data[i * 4 + 2] as f64);
+        let (r, g, b) = (
+            data[i * 4] as f64,
+            data[i * 4 + 1] as f64,
+            data[i * 4 + 2] as f64,
+        );
         let y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         yy[i] = y;
         chroma[i * 2] = b - y;
