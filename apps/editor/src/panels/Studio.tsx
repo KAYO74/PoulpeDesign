@@ -20,6 +20,7 @@ import {
 import { STUDIO_TABS, currentTabs, defaultTabs, hideTab, moveTab, tabsKind } from './studioTabs';
 import { findNode } from '@poulpe/core';
 import { AdjustmentPanel } from './AdjustmentPanel';
+import { DevelopPanel } from './DevelopPanel';
 import { BrushPanel } from './BrushPanel';
 import { HistogramPanel } from './HistogramPanel';
 import { CharacterPanel } from './CharacterPanel';
@@ -261,6 +262,7 @@ const RENDER: Record<string, () => React.ReactNode> = {
   transform: () => <TransformPanel />,
   character: () => <CharacterPanel />,
   brush: () => <BrushPanel />,
+  develop: () => <DevelopPanel />,
   adjustment: () => <AdjustmentPanel />,
   histogram: () => <HistogramPanel />,
   layers: () => <LayersPanel />,
@@ -298,7 +300,9 @@ function useGroups(): {
   usePanels((s) => s.tabs[kind]);
   const cur = currentTabs(kind);
   const { doc, selection } = useEditor();
-  const adjusting = selection.length === 1 && findNode(doc, selection[0])?.node.type === 'adjustment';
+  const selNode = selection.length === 1 ? findNode(doc, selection[0])?.node : undefined;
+  const adjusting = selNode?.type === 'adjustment';
+  const developing = selNode?.type === 'adjustment' && selNode.adjustment.kind === 'develop';
   const detached: { tab: Tab; home: PanelId }[] = [];
   const pick = (ids: string[], home: PanelId) =>
     ids
@@ -310,7 +314,15 @@ function useGroups(): {
         return false;
       });
   const photo = kind === 'photo';
-  const focus = photo ? (adjusting ? 'adjustment' : null) : editingText ? 'character' : null;
+  const focus = photo
+    ? developing
+      ? 'develop'
+      : adjusting
+        ? 'adjustment'
+        : null
+    : editingText
+      ? 'character'
+      : null;
   const top = pick(cur.top, 'studio-top');
   const groups: GroupDef[] = [
     {

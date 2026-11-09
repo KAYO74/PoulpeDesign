@@ -23,6 +23,7 @@ export const STUDIO_TABS: { id: string; label: MessageKey }[] = [
   { id: 'transform', label: 'studio.transform' },
   { id: 'character', label: 'studio.character' },
   { id: 'brush', label: 'studio.brush' },
+  { id: 'develop', label: 'studio.develop' },
   { id: 'adjustment', label: 'studio.adjustment' },
   { id: 'histogram', label: 'studio.histogram' },
   { id: 'layers', label: 'studio.layers' },
@@ -32,7 +33,7 @@ export const STUDIO_TABS: { id: string; label: MessageKey }[] = [
 ];
 
 const TOP_DRAW = ['color', 'stroke', 'effects', 'transform', 'character'];
-const TOP_PHOTO = ['color', 'brush', 'adjustment', 'histogram', 'effects'];
+const TOP_PHOTO = ['color', 'brush', 'develop', 'adjustment', 'histogram', 'effects'];
 const BOTTOM_PHOTO = ['layers', 'channels'];
 const BOTTOM_DRAW = ['layers', 'macros'];
 /** Le troisième compartiment, tout en bas : l'Historique, toujours sous les Calques. */
