@@ -97,6 +97,7 @@ pub enum Adjustment {
         luminance: f64,
         color: f64,
     },
+    Develop(crate::develop::Develop),
     Noise {
         amount: f64,
         monochrome: bool,
@@ -598,6 +599,7 @@ pub fn apply(data: &mut [u8], w: usize, h: usize, adj: &Adjustment, opts: &Optio
                 }
             });
         }
+        Adjustment::Develop(d) => crate::develop::apply(data, d),
         Adjustment::Denoise { luminance, color } => {
             crate::denoise::apply(data, w, h, *luminance, *color, scale)
         }
