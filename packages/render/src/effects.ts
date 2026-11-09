@@ -1,4 +1,10 @@
-import { rgbaToCss, transparencyFrame, transparencyPaint, type SceneNode } from '@poulpe/core';
+import {
+  gaussianBlurred,
+  rgbaToCss,
+  transparencyFrame,
+  transparencyPaint,
+  type SceneNode,
+} from '@poulpe/core';
 import { makeCanvas, type AnyCanvas, type AnyCtx } from './canvas';
 import { fillEverywhere } from './paints';
 
@@ -12,12 +18,19 @@ import { fillEverywhere } from './paints';
 
 let filterSupport: boolean | null = null;
 
-/** Le canevas sait-il flouter (`ctx.filter`) ? Ce n'est pas le cas de Safari. */
+/**
+ * Le canevas sait-il flouter (`ctx.filter`) ? Ce n'est pas le cas de Safari ni de WebKitGTK (appli de
+ * bureau sous Linux). Relire la valeur ne suffit pas : sur un moteur qui ne connaît pas la propriété,
+ * l'affectation crée un attribut ordinaire et la relecture « réussit » ; le flou ne se ferait pas.
+ */
 function canFilter(): boolean {
   if (filterSupport === null) {
     const { ctx } = makeCanvas(1, 1);
-    ctx.filter = 'blur(2px)';
-    filterSupport = ctx.filter === 'blur(2px)';
+    filterSupport = 'filter' in ctx;
+    if (filterSupport) {
+      ctx.filter = 'blur(2px)';
+      filterSupport = ctx.filter === 'blur(2px)';
+    }
   }
   return filterSupport;
 }
@@ -34,13 +47,12 @@ export function blurred(src: AnyCanvas, sigma: number): AnyCanvas {
     ctx.drawImage(src, 0, 0);
     return canvas;
   }
-  // Repli : réduction puis agrandissement lissé, ce qui approche un flou.
-  const k = Math.max(1, sigma / 1.5);
-  const small = makeCanvas(Math.max(1, Math.round(src.width / k)), Math.max(1, Math.round(src.height / k)));
-  small.ctx.imageSmoothingQuality = 'high';
-  small.ctx.drawImage(src, 0, 0, small.canvas.width, small.canvas.height);
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(small.canvas, 0, 0, src.width, src.height);
+  // Repli (WebKit) : flou gaussien calculé sur les pixels, par le moteur Rust quand il est chargé.
+  const { ctx: from } = makeCanvas(src.width, src.height);
+  from.drawImage(src, 0, 0);
+  const px = from.getImageData(0, 0, src.width, src.height);
+  px.data.set(gaussianBlurred({ data: px.data, width: px.width, height: px.height }, sigma));
+  ctx.putImageData(px, 0, 0);
   return canvas;
 }
 
