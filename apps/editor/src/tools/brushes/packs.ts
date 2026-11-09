@@ -26,6 +26,8 @@ export interface BrushPackFile {
   version: 1;
   name: string;
   author?: string;
+  /** Licence du contenu, pour les paquets fournis avec l'appli. */
+  license?: string;
   presets: BrushPreset[];
   tips: BrushTip[];
 }
@@ -231,3 +233,20 @@ export async function sharePresets(name: string): Promise<string | null> {
   const { saveBytes } = await import('../../io');
   return saveBytes(packBytes(exportPack(name)), 'brushes', name);
 }
+
+/**
+ * Pinceaux libres fournis avec l'appli (freePack.json, construit par scripts/build-mypaint-pack.mjs) :
+ * les pinceaux MyPaint de David Revoy, Ramón Miranda, Tanda, Kaerhon et de l'équipe MyPaint, publiés
+ * en domaine public (CC0 1.0). Installés à la demande, désinstallables comme les autres paquets.
+ */
+export async function installFreeBrushes(): Promise<InstalledPack | null> {
+  const { default: pack } = (await import('./freePack.json')) as { default: unknown };
+  if (!isPackFile(pack)) return null;
+  if (brushPacks.get().list.some((p) => p.name === pack.name)) return null;
+  return installPack(pack);
+}
+
+/** Les pinceaux libres sont-ils déjà installés ? */
+export const FREE_PACK_NAME = 'Pinceaux libres (MyPaint, CC0)';
+export const freeBrushesInstalled = (list: InstalledPack[]): boolean =>
+  list.some((p) => p.name === FREE_PACK_NAME);
