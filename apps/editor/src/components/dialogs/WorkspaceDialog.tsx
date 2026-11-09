@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useT } from '../../i18n';
 import { useUi, type Persona, type ToolId, type ToolsColumns } from '../../store';
 import { Icon, type IconName } from '../Icon';
+import { ToolIcon } from '../ToolIcon';
 import { TOOL_CATALOG, toolGroupsFor, toolPersona } from '../../toolCatalog';
 import { studioTabsAll } from '../../panels/Studio';
 import { createWorkspace, deleteWorkspace, editWorkspace, workspaces } from '../../workspaces';
@@ -77,7 +78,7 @@ export function WorkspaceDialog() {
             data-testid={`workspace-base-${b.id}`}
             onClick={() => changeBase(b.id)}
           >
-            <Icon name={b.icon} />
+            <ToolIcon name={b.icon} />
             <b>{t(`workspace.base.${b.id}`)}</b>
             <span>{t(`workspace.baseHint.${b.id}`)}</span>
           </button>
@@ -114,7 +115,7 @@ export function WorkspaceDialog() {
                   data-testid={`workspace-tool-${id}`}
                   onClick={() => setTools(toggle(tools, id))}
                 >
-                  <Icon name={id as IconName} />
+                  <ToolIcon name={id} />
                 </button>
               ))}
             </div>

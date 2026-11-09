@@ -40,6 +40,7 @@ Arial, Georgia, Times New Roman, Courier New, Verdana and Trebuchet MS are only 
 
 ## Icons, templates and illustrations
 
+- **Tool and workspace icons** (tool column, workspace tabs): [Lucide](https://lucide.dev), ISC license (compatible with the MPL-2.0), copied into `apps/editor/src/components/lucideTools.ts`. Copyright (c) Lucide Icons and Contributors; some drawings derive from Feather (MIT, Cole Bemis). The ISC notice is kept in [`apps/editor/src/components/LICENSE-lucide.md`](../apps/editor/src/components/LICENSE-lucide.md).
 - **Icons** in the library: [Phosphor Icons](https://phosphoricons.com), MIT license, see [`packages/library/LICENSE-icons.md`](../packages/library/LICENSE-icons.md).
 - **Templates, shapes, frames, illustrations and palettes**: drawn for Poulpe Design, under the MPL-2.0.
 - **Logo** of Poulpe Design: drawn for Poulpe Design.
