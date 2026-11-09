@@ -134,6 +134,7 @@ const WASM_KINDS = new Set<Adjustment['kind']>([
   'gaussianBlur',
   'unsharpMask',
   'clarity',
+  'denoise',
   'hsl',
   'threshold',
 ]);

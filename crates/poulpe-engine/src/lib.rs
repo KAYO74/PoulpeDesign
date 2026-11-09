@@ -9,6 +9,7 @@
 pub mod adjust;
 pub mod blur;
 pub mod cmyk;
+pub mod denoise;
 pub mod fusion;
 pub mod inpaint;
 pub mod js;

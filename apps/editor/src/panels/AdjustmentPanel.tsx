@@ -42,6 +42,7 @@ const PARAMS: Partial<Record<AdjustmentKind, Param[]>> = {
   gaussianBlur: [P('radius', 0, 200, 'px', 0.5)],
   unsharpMask: [P('amount', 0, 500, '%'), P('radius', 0.5, 50, 'px', 0.5), P('threshold', 0, 100)],
   clarity: [P('amount', -100, 100, '%')],
+  denoise: [P('luminance', 0, 100, '%'), P('color', 0, 100, '%')],
   noise: [P('amount', 0, 100, '%')],
   vignette: [P('amount', -100, 100, '%'), P('size', 0, 100, '%'), P('softness', 0, 100, '%')],
   pixelate: [P('size', 1, 200, 'px')],
