@@ -96,6 +96,10 @@ svg.i {
   stroke-linejoin: round;
   flex: none;
 }
+/* Icônes Lucide (24 × 24) : trait de 2, ramené à l'échelle de l'icône. */
+svg.i.lucide {
+  stroke-width: 2;
+}
 .num {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
