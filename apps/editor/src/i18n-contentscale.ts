@@ -7,7 +7,7 @@ export const frContentScale = {
   'history.contentScale': "Mise à l'échelle d'après le contenu",
   'contentscale.title': "Mise à l'échelle d'après le contenu",
   'contentscale.hint':
-    "Change la taille du calque en gardant intacts les détails (visages, objets) : le ciel et les fonds unis absorbent le changement. Les très grandes images sont d'abord réduites à 2 millions de pixels.",
+    'Change la taille du calque en gardant intacts les détails (visages, objets) : le ciel et les fonds unis absorbent le changement.',
   'contentscale.width': 'Largeur',
   'contentscale.height': 'Hauteur',
   'contentscale.amount': 'Quantité',
@@ -22,7 +22,7 @@ export const enContentScale: Record<MessageKeyContentScale, string> = {
   'history.contentScale': 'Content-aware scale',
   'contentscale.title': 'Content-aware scale',
   'contentscale.hint':
-    'Resizes the layer while keeping details (faces, objects) intact: skies and plain backgrounds absorb the change. Very large images are first reduced to 2 million pixels.',
+    'Resizes the layer while keeping details (faces, objects) intact: skies and plain backgrounds absorb the change.',
   'contentscale.width': 'Width',
   'contentscale.height': 'Height',
   'contentscale.amount': 'Amount',

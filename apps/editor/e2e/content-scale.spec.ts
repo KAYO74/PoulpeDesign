@@ -80,3 +80,43 @@ test("réduit la largeur d'un calque selon son contenu, en un seul pas d'histori
   const hist = await page.evaluate(() => (window as any).poulpe.editor.getState().history);
   expect(hist.filter((h: string) => h === 'history.contentScale')).toHaveLength(1);
 });
+
+test('une grande photo garde sa pleine résolution', async ({ page }) => {
+  await page.evaluate(() => {
+    const c = document.createElement('canvas');
+    c.width = 3000;
+    c.height = 2000;
+    const g = c.getContext('2d')!;
+    const img = g.createImageData(3000, 2000);
+    for (let i = 0; i < 3000 * 2000; i++) {
+      const v = 120 + ((i * 7919) % 40);
+      img.data.set([60, 100, v + 60, 255], i * 4);
+    }
+    g.putImageData(img, 0, 0);
+    g.fillStyle = '#dd2222';
+    g.fillRect(400, 700, 300, 300);
+    (window as any).poulpe.photo.openPhotoDocument(
+      c.toDataURL('image/png'),
+      'image/png',
+      3000,
+      2000,
+      'Grande',
+    );
+  });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    const { editor } = (window as any).poulpe;
+    editor.select([editor.doc.artboards[0].children[0].id]);
+  });
+  await page.getByRole('button', { name: 'Édition' }).click();
+  await page.getByRole('menuitem', { name: "Mise à l'échelle d'après le contenu…" }).click();
+  await page.getByTestId('contentscale-width').fill('80');
+  await page.getByTestId('contentscale-apply').click();
+  await expect(page.getByRole('dialog')).toBeHidden({ timeout: 90_000 });
+  const n = (await nodes(page))[0];
+  const asset = await page.evaluate(
+    (id) => (window as any).poulpe.editor.doc.assets[id],
+    n.assetId as string,
+  );
+  expect([asset.width, asset.height]).toEqual([2400, 2000]);
+});

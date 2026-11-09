@@ -13,7 +13,7 @@ import { getSelection, selectionIn } from './selection';
  * sélection de pixels, s'il y en a une, est protégée.
  */
 
-/** Au-delà, le calcul serait trop long : l'image est d'abord réduite à ce nombre de pixels. */
+/** Au-delà, les coutures sont cherchées sur une version réduite à ce nombre de pixels. */
 export const SCALE_MAX_PIXELS = 2_000_000;
 
 export interface ContentScaleSettings {
@@ -47,12 +47,6 @@ export function closeContentScale(): void {
   ui.set({ dialog: null });
 }
 
-/** Taille de l'image de travail (réduite si elle est très grande). */
-function workSize(w: number, h: number): { w: number; h: number } {
-  const k = Math.min(1, Math.sqrt(SCALE_MAX_PIXELS / (w * h)));
-  return { w: Math.max(1, Math.round(w * k)), h: Math.max(1, Math.round(h * k)) };
-}
-
 /** Calcule et applique ; renvoie false si c'est annulé ou impossible. */
 export async function applyContentScale(
   s: ContentScaleSettings,
@@ -64,14 +58,30 @@ export async function applyContentScale(
   if (!node || node.type !== 'image') return false;
   const px = targetPixels(node, 'pixels');
   if (!px) return false;
-  const work = workSize(px.base.width, px.base.height);
+  // Très grande image : les coutures sont cherchées sur une version k fois plus petite, puis
+  // rejouées à pleine résolution (voir contentAwareScale).
+  const bw = px.base.width,
+    bh = px.base.height;
+  const k = Math.max(1, Math.ceil(Math.sqrt((bw * bh) / SCALE_MAX_PIXELS)));
+  const work = { w: Math.max(1, Math.floor(bw / k)), h: Math.max(1, Math.floor(bh / k)) };
   const src = makeCanvas(work.w, work.h);
   src.getContext('2d')!.drawImage(px.base, 0, 0, work.w, work.h);
   const data = src.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, work.w, work.h);
+  const hi =
+    k > 1
+      ? {
+          pixels: {
+            data: px.base.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, bw, bh).data,
+            width: bw,
+            height: bh,
+          },
+          k,
+        }
+      : undefined;
 
   let protect: Uint8Array | undefined;
   if (s.protect) {
-    const sel = selectionIn(px.base.width, px.base.height, px.toPx);
+    const sel = selectionIn(bw, bh, px.toPx);
     if (sel) {
       const c = makeCanvas(work.w, work.h);
       const g = c.getContext('2d', { willReadFrequently: true })!;
@@ -82,13 +92,15 @@ export async function applyContentScale(
     }
   }
 
-  // Cible, et étape selon le contenu : « Quantité » en fait une part, le reste est ordinaire.
-  const tw = Math.max(8, Math.round((work.w * s.widthPct) / 100));
-  const th = Math.max(8, Math.round((work.h * s.heightPct) / 100));
-  const iw = Math.round(work.w + (tw - work.w) * s.amount);
-  const ih = Math.round(work.h + (th - work.h) * s.amount);
+  // Cible (pleine résolution), et étape selon le contenu : « Quantité » en fait une part, le reste
+  // est une mise à l'échelle ordinaire.
+  const tw = Math.max(8, Math.round((bw * s.widthPct) / 100));
+  const th = Math.max(8, Math.round((bh * s.heightPct) / 100));
+  const iw = Math.round(work.w + ((work.w * s.widthPct) / 100 - work.w) * s.amount);
+  const ih = Math.round(work.h + ((work.h * s.heightPct) / 100 - work.h) * s.amount);
   const out = await contentAwareScale({ data: data.data, width: work.w, height: work.h }, iw, ih, {
     protect,
+    hi,
     tick: async (done, total) => {
       onProgress(done / Math.max(1, total));
       await new Promise((r) => setTimeout(r, 0));
@@ -110,8 +122,8 @@ export async function applyContentScale(
     g.drawImage(mid, 0, 0, tw, th);
   }
   const key = registerBitmap(final);
-  const kx = final.width / work.w;
-  const ky = final.height / work.h;
+  const kx = final.width / bw;
+  const ky = final.height / bh;
   editor.apply('history.contentScale', (d) => {
     const n = findNode(d, node.id)?.node;
     if (!n || n.type !== 'image') return;

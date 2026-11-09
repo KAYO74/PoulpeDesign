@@ -12,6 +12,13 @@ export interface CarveOptions {
   protect?: Uint8Array;
   /** Appelé de temps en temps pour laisser respirer l'interface ; renvoie true pour annuler. */
   tick?: (done: number, total: number) => Promise<boolean | void> | boolean | void;
+  /**
+   * Version pleine résolution de l'image, `k` fois plus grande (nombre entier) que celle qu'on
+   * traite : les coutures sont cherchées sur la petite, puis rejouées sur la grande (chacune y
+   * retire ou duplique une bande de `k` colonnes). Le résultat est alors la grande image, dont la
+   * taille tombe sur un multiple de `k` près de la cible.
+   */
+  hi?: { pixels: Pixels; k: number };
 }
 
 /** Côté minimal après un redimensionnement. */
@@ -140,66 +147,105 @@ async function findSeams(
   return seams;
 }
 
+/**
+ * Retire (`add` faux) ou duplique (`add` vrai) les coutures dans une image de `ch` canaux par pixel.
+ * L'image fait `W × H` ; les coutures viennent d'une version `k` fois plus petite (k = 1 : la même).
+ * Chaque couture touche une bande de `k` colonnes ; les colonnes en trop à droite restent telles quelles.
+ */
+function applySeams<T extends Uint8ClampedArray | Uint8Array>(
+  data: T,
+  ch: number,
+  W: number,
+  H: number,
+  seams: Int32Array[],
+  smallW: number,
+  smallH: number,
+  k: number,
+  add: boolean,
+  make: (n: number) => T,
+): { data: T; width: number } {
+  const mark = new Uint8Array(smallW * smallH);
+  for (const s of seams) for (let y = 0; y < smallH; y++) mark[y * smallW + s[y]]++;
+  const nw = add ? W + seams.length * k : W - seams.length * k;
+  const out = make(nw * H * ch);
+  for (let y = 0; y < H; y++) {
+    const sy = Math.min(smallH - 1, Math.floor(y / k));
+    const row = y * W;
+    let o = y * nw;
+    for (let b = 0; b < smallW; b++) {
+      const n = mark[sy * smallW + b];
+      const from = (row + b * k) * ch;
+      const to = from + k * ch;
+      if (!add && n) continue;
+      out.set(data.subarray(from, to), o * ch);
+      o += k;
+      for (let c = 0; add && c < n; c++) {
+        out.set(data.subarray(from, to), o * ch);
+        o += k;
+      }
+    }
+    // Colonnes en trop (largeur non multiple de k).
+    const rest = W - smallW * k;
+    if (rest > 0) out.set(data.subarray((row + smallW * k) * ch, (row + W) * ch), o * ch);
+  }
+  return { data: out, width: nw };
+}
+
+interface Work {
+  px: Pixels;
+  protect?: Uint8Array;
+  /** Pleine résolution, quand on en traite une. */
+  hi?: Pixels;
+}
+
 /** Retire ou ajoute `delta` colonnes (négatif : retire) selon le contenu. */
 async function carveColumns(
-  src: Pixels,
+  src: Work,
   delta: number,
-  protect: Uint8Array | undefined,
+  k: number,
   tick: CarveOptions['tick'],
   progress: [number, number],
-): Promise<{ px: Pixels; protect?: Uint8Array } | null> {
-  const { data, width: W, height: H } = src;
+): Promise<Work | null> {
+  const { data, width: W, height: H } = src.px;
   const count = Math.abs(delta);
-  if (count === 0) return { px: src, protect };
-  const seams = await findSeams(data, W, H, count, protect, tick, progress);
+  if (count === 0) return src;
+  const seams = await findSeams(data, W, H, count, src.protect, tick, progress);
   if (!seams) return null;
-  if (delta < 0) {
-    // Retrait : on marque les colonnes retirées de chaque ligne.
-    const gone = new Uint8Array(W * H);
-    for (const s of seams) for (let y = 0; y < H; y++) gone[y * W + s[y]] = 1;
-    const nw = W - count;
-    const out = new Uint8ClampedArray(nw * H * 4);
-    const mask = protect ? new Uint8Array(nw * H) : undefined;
-    for (let y = 0; y < H; y++) {
-      let o = y * nw;
-      for (let x = 0; x < W; x++) {
-        if (gone[y * W + x]) continue;
-        out.set(data.subarray((y * W + x) * 4, (y * W + x) * 4 + 4), o * 4);
-        if (mask && protect) mask[o] = protect[y * W + x];
-        o++;
-      }
-    }
-    return { px: { data: out, width: nw, height: H }, protect: mask };
+  const add = delta > 0;
+  const small = applySeams(data, 4, W, H, seams, W, H, 1, add, (n) => new Uint8ClampedArray(n));
+  const mask = src.protect
+    ? applySeams(src.protect, 1, W, H, seams, W, H, 1, add, (n) => new Uint8Array(n)).data
+    : undefined;
+  const out: Work = { px: { data: small.data, width: small.width, height: H }, protect: mask };
+  if (src.hi) {
+    const hi = applySeams(
+      src.hi.data,
+      4,
+      src.hi.width,
+      src.hi.height,
+      seams,
+      W,
+      H,
+      k,
+      add,
+      (n) => new Uint8ClampedArray(n),
+    );
+    out.hi = { data: hi.data, width: hi.width, height: src.hi.height };
   }
-  // Ajout : chaque colonne trouvée est dupliquée (moyenne avec sa voisine de droite).
-  const dup = new Uint8Array(W * H);
-  for (const s of seams) for (let y = 0; y < H; y++) dup[y * W + s[y]]++;
-  const nw = W + count;
-  const out = new Uint8ClampedArray(nw * H * 4);
-  const mask = protect ? new Uint8Array(nw * H) : undefined;
-  for (let y = 0; y < H; y++) {
-    let o = y * nw;
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4;
-      out.set(data.subarray(i, i + 4), o * 4);
-      if (mask && protect) mask[o] = protect[y * W + x];
-      o++;
-      const n = dup[y * W + x];
-      const j = x < W - 1 ? i + 4 : i;
-      for (let c = 0; c < n; c++) {
-        for (let k = 0; k < 4; k++) out[o * 4 + k] = (data[i + k] + data[j + k]) / 2;
-        if (mask && protect) mask[o] = protect[y * W + x];
-        o++;
-      }
-    }
-  }
-  return { px: { data: out, width: nw, height: H }, protect: mask };
+  return out;
 }
+
+const turn = (p: Pixels): Pixels => ({
+  data: transpose(p.data, p.width, p.height),
+  width: p.height,
+  height: p.width,
+});
 
 /**
  * Change la taille de l'image selon son contenu. Renvoie null si `tick` demande d'annuler.
  * Les côtés sont bornés à `MIN_SIDE` ; un agrandissement au-delà du double n'a pas de sens
  * (la même couture serait dupliquée plusieurs fois) : l'appelant le limite.
+ * Avec `opts.hi`, le résultat est la version pleine résolution (voir `CarveOptions.hi`).
  */
 export async function contentAwareScale(
   src: Pixels,
@@ -210,19 +256,26 @@ export async function contentAwareScale(
   const tw = Math.max(MIN_SIDE, Math.round(width));
   const th = Math.max(MIN_SIDE, Math.round(height));
   const total = Math.abs(tw - src.width) + Math.abs(th - src.height);
-  let cur: Pixels = src;
-  let prot = opts.protect && opts.protect.length === src.width * src.height ? opts.protect : undefined;
-  const a = await carveColumns(cur, tw - cur.width, prot, opts.tick, [0, total]);
+  const k = opts.hi?.k ?? 1;
+  let cur: Work = {
+    px: src,
+    protect: opts.protect && opts.protect.length === src.width * src.height ? opts.protect : undefined,
+    hi: opts.hi?.pixels,
+  };
+  const a = await carveColumns(cur, tw - cur.px.width, k, opts.tick, [0, total]);
   if (!a) return null;
-  cur = a.px;
-  prot = a.protect;
-  if (th !== cur.height) {
+  cur = a;
+  if (th !== cur.px.height) {
     // Même chose pour la hauteur, en tournant l'image d'un quart de tour.
-    const t = { data: transpose(cur.data, cur.width, cur.height), width: cur.height, height: cur.width };
-    const tp = prot ? transposeMask(prot, cur.width, cur.height) : undefined;
-    const b = await carveColumns(t, th - t.width, tp, opts.tick, [Math.abs(tw - src.width), total]);
+    const px = cur.px;
+    const t: Work = {
+      px: turn(px),
+      protect: cur.protect ? transposeMask(cur.protect, px.width, px.height) : undefined,
+      hi: cur.hi ? turn(cur.hi) : undefined,
+    };
+    const b = await carveColumns(t, th - t.px.width, k, opts.tick, [Math.abs(tw - src.width), total]);
     if (!b) return null;
-    cur = { data: transpose(b.px.data, b.px.width, b.px.height), width: b.px.height, height: b.px.width };
+    cur = { px: turn(b.px), hi: b.hi ? turn(b.hi) : undefined };
   }
-  return cur;
+  return cur.hi ?? cur.px;
 }

@@ -74,4 +74,29 @@ describe('contentAwareScale', () => {
     const out = (await contentAwareScale(src, 120, 60))!;
     expect(out.data).toEqual(src.data);
   });
+
+  it('rejoue les coutures sur la version pleine résolution', async () => {
+    const small = scene();
+    const k = 2;
+    const full: Pixels = {
+      data: new Uint8ClampedArray(small.width * k * small.height * k * 4),
+      width: small.width * k,
+      height: small.height * k,
+    };
+    for (let y = 0; y < full.height; y++)
+      for (let x = 0; x < full.width; x++) {
+        const a = ((y >> 1) * small.width + (x >> 1)) * 4;
+        full.data.set(small.data.subarray(a, a + 4), (y * full.width + x) * 4);
+      }
+    const out = (await contentAwareScale(small, 90, 45, { hi: { pixels: full, k } }))!;
+    expect([out.width, out.height]).toEqual([180, 90]);
+    expect(hard(out)).toBe(hard(full));
+  });
+
+  it('pleine résolution avec des côtés qui ne sont pas des multiples de k', async () => {
+    const small = scene(40, 30);
+    const full: Pixels = { data: new Uint8ClampedArray(83 * 63 * 4).fill(150), width: 83, height: 63 };
+    const out = (await contentAwareScale(small, 30, 25, { hi: { pixels: full, k: 2 } }))!;
+    expect([out.width, out.height]).toEqual([83 - 20, 63 - 10]);
+  });
 });
