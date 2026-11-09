@@ -10,6 +10,7 @@ import { findNode, isStyled } from '@poulpe/core';
 import { paintPreview } from './fields';
 import { openColorWindowFor, toggleColorWindow } from '../panels/ColorWindow';
 import { Icon, type IconName } from './Icon';
+import { ToolIcon } from './ToolIcon';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FloatingFrame } from '../panels/FloatingFrame';
@@ -135,7 +136,7 @@ export function ToolColumn() {
           hideTip();
         }}
       >
-        <Icon name={id as IconName} />
+        <ToolIcon name={id} />
         {many && (
           <span
             className="tool-more"
@@ -397,7 +398,7 @@ function ToolMenu({
             onClose();
           }}
         >
-          <Icon name={id as IconName} />
+          <ToolIcon name={id} />
           <span className="tool-menu-label">{t(`tool.${id}`)}</span>
           <span className="tool-menu-key">{keyOf(id) ?? ''}</span>
         </button>

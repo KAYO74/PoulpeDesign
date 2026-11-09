@@ -4298,3 +4298,8 @@ h4.sub .link {
   border-radius: 6px;
   box-shadow: 0 0 0 1px var(--line);
 }
+
+/* Icônes Lucide (outils, espaces de travail) : dessinées sur 24 × 24, trait de 2. */
+svg.i.lucide {
+  stroke-width: 2;
+}

@@ -7,6 +7,7 @@ import { openPersona, useActiveWorkspace } from '../workspaces';
 import { WorkspaceMenu } from './WorkspaceMenu';
 import { AdjustmentMenu } from './AdjustmentMenu';
 import { Icon, type IconName } from './Icon';
+import { ToolIcon } from './ToolIcon';
 
 function CmdButton({ id, icon }: { id: CommandId; icon: IconName }) {
   const t = useT();
@@ -116,7 +117,7 @@ export function Toolbar() {
             data-testid={`persona-${p}`}
             onClick={() => openPersona(p)}
           >
-            <Icon name={TAB_ICONS[p]} />
+            <ToolIcon name={TAB_ICONS[p]} />
             <span className="persona-label">{t(`tab.${p}`)}</span>
           </button>
         ))}
