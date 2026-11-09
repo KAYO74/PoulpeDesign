@@ -10,6 +10,7 @@ All the code in the `packages/` and `apps/` folders was written for Poulpe Desig
 
 - **File formats.** Opening and exporting Photoshop files (`.psd`) goes through the open-source library [ag-psd](https://github.com/Agamnentzar/ag-psd) (MIT), and opening PDF and Illustrator files goes through [pdf.js](https://github.com/mozilla/pdf.js) (Apache-2.0). Print PDFs follow the public PDF/X-4 and XMP standards.
 - **RAW photos.** Camera RAW files are read by [rawloader](https://github.com/pedrocr/rawloader) (LGPL-2.1), compiled to WebAssembly in `crates/poulpe-raw-wasm`; demosaicing and development are written for Poulpe Design. The LGPL is met because the whole app is open source: anyone can rebuild it with a modified rawloader.
+- **Free brushes.** The optional "Free brushes" pack (Brush panel) contains the settings of [MyPaint](https://github.com/mypaint/mypaint-brushes) brushes by David Revoy, Ramón Miranda, Tanda, Kaerhon and the MyPaint team, all released into the public domain (CC0 1.0, see the project's `Licenses.dep5`). Only settings are used (size, hardness, flow, spacing, randomness); the tip shapes are drawn for Poulpe Design. Photoshop `.abr` packs can be installed by users but none is bundled: popular `.abr` packs are almost never free for redistribution.
 - **HEIC / HEIF photos.** Read by [heifer](https://crates.io/crates/heifer) (MIT or Apache-2.0, pure Rust, no C code, no `unsafe`), compiled to WebAssembly in `crates/poulpe-heic-wasm` and loaded only when a HEIC file is opened. The code licence does not cover patents: HEVC, the codec inside HEIC, is covered by patent pools, and the app does not grant any patent licence. Poulpe Design only reads HEIC (never writes it).
 - **Print colors.** The CMYK profile is computed by Poulpe Design itself (`packages/core/src/cmyk.ts` and `icc.ts`); the official FOGRA39 profile, which cannot be redistributed, is not included, only named.
 - **Magic eraser.** It rebuilds the image from the photo itself, with an algorithm written for Poulpe Design and without any AI model.
@@ -39,6 +40,7 @@ Arial, Georgia, Times New Roman, Courier New, Verdana and Trebuchet MS are only 
 
 ## Icons, templates and illustrations
 
+- **Tool and workspace icons** (tool column, workspace tabs): [Lucide](https://lucide.dev), ISC license (compatible with the MPL-2.0), copied into `apps/editor/src/components/lucideTools.ts`. Copyright (c) Lucide Icons and Contributors; some drawings derive from Feather (MIT, Cole Bemis). The ISC notice is kept in [`apps/editor/src/components/LICENSE-lucide.md`](../apps/editor/src/components/LICENSE-lucide.md).
 - **Icons** in the library: [Phosphor Icons](https://phosphoricons.com), MIT license, see [`packages/library/LICENSE-icons.md`](../packages/library/LICENSE-icons.md).
 - **Templates, shapes, frames, illustrations and palettes**: drawn for Poulpe Design, under the MPL-2.0.
 - **Logo** of Poulpe Design: drawn for Poulpe Design.

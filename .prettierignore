@@ -3,3 +3,4 @@ pnpm-lock.yaml
 apps/desktop/src-tauri/target
 apps/desktop/src-tauri/gen
 packages/library/src/icons.generated.ts
+apps/editor/src/tools/brushes/freePack.json

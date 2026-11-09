@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useT, type MessageKey } from '../i18n';
 import { ui, useUi } from '../store';
-import { Icon, type IconName } from './Icon';
+import type { IconName } from './Icon';
+import { ToolIcon } from './ToolIcon';
 import { Modal } from './dialogs/Modal';
 
 const close = () => ui.set({ tourOpen: false });
@@ -32,7 +33,7 @@ function Tour() {
     <Modal title={t('tour.title')} onClose={close} top>
       <div className="tour" data-testid="tour">
         <div className="tour-icon" aria-hidden="true">
-          <Icon name={step.icon} size={28} />
+          <ToolIcon name={step.icon} size={28} />
         </div>
         <h3>{t(`tour.s${step.n}.title` as MessageKey)}</h3>
         <p>{t(`tour.s${step.n}.text` as MessageKey)}</p>
