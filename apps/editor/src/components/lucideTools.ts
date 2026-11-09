@@ -1,6 +1,6 @@
 /**
  * Icônes des outils et des espaces de travail, tirées de Lucide (https://lucide.dev, licence ISC,
- * compatible avec la MPL-2.0 ; voir THIRD_PARTY_LICENSES.md). Grille 24 × 24, trait 2.
+ * compatible avec la MPL-2.0 ; voir docs/licences.md et LICENSE-lucide.md). Grille 24 × 24, trait 2.
  * Généré à partir de lucide-static 1.69.0 : nom du dessin Lucide puis ses formes.
  */
 export type LucideNode = [
