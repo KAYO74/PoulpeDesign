@@ -1,5 +1,6 @@
 import { parseColor, sampleStops } from './color';
 import { applyLut, decodeLut, encodeLut, lutFromFunction } from './lut';
+import { applyDenoise, denoiseReach } from './denoise';
 import { applyDevelop, defaultDevelop, developIsNeutral } from './develop';
 import type { Adjustment, AdjustmentKind, BlendRanges, LiveFilter, SceneNode } from './types';
 
@@ -40,6 +41,7 @@ export const LIVE_FILTERS = [
   'gaussianBlur',
   'unsharpMask',
   'clarity',
+  'denoise',
   'noise',
   'vignette',
   'pixelate',
@@ -96,6 +98,8 @@ export function defaultAdjustment(kind: AdjustmentKind): Adjustment {
       return { kind, amount: 80, radius: 2, threshold: 0 };
     case 'clarity':
       return { kind, amount: 40 };
+    case 'denoise':
+      return { kind, luminance: 40, color: 50 };
     case 'noise':
       return { kind, amount: 12, monochrome: true };
     case 'vignette':
@@ -394,6 +398,9 @@ export function applyAdjustmentTs(px: Pixels, adj: Adjustment, opts: AdjustOptio
     case 'develop':
       applyDevelop(px, adj);
       return;
+    case 'denoise':
+      applyDenoise(px, adj.luminance, adj.color, { scale });
+      return;
     case 'lut':
       applyLut(px, decodeLut(adj.size, adj.data));
       return;
@@ -662,6 +669,8 @@ export function isNeutral(adj: Adjustment): boolean {
       return adj.temperature === 0 && adj.tint === 0;
     case 'develop':
       return developIsNeutral(adj);
+    case 'denoise':
+      return adj.luminance <= 0 && adj.color <= 0;
     case 'gaussianBlur':
       return adj.radius <= 0;
     case 'noise':
@@ -685,6 +694,8 @@ export function adjustmentReach(adj: Adjustment): number {
       return 72;
     case 'pixelate':
       return adj.size;
+    case 'denoise':
+      return denoiseReach(1);
     default:
       return 0;
   }

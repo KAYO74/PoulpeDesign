@@ -637,6 +637,8 @@ export type Adjustment =
   | { kind: 'vignette'; amount: number; size: number; softness: number }
   | { kind: 'pixelate'; size: number }
   | { kind: 'clarity'; amount: number }
+  /** Réduction du bruit : luminance et couleur de 0 à 100. */
+  | { kind: 'denoise'; luminance: number; color: number }
   /**
    * Développer (comme Lightroom) : température et teinte, exposition en IL, tons et présence de −100 à 100,
    * puis teinte, saturation et luminosité de −100 à 100 pour chacune des 8 plages de couleur

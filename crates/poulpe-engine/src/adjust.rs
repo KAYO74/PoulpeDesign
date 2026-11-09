@@ -93,6 +93,10 @@ pub enum Adjustment {
     Clarity {
         amount: f64,
     },
+    Denoise {
+        luminance: f64,
+        color: f64,
+    },
     Noise {
         amount: f64,
         monochrome: bool,
@@ -594,6 +598,9 @@ pub fn apply(data: &mut [u8], w: usize, h: usize, adj: &Adjustment, opts: &Optio
                 }
             });
         }
+        Adjustment::Denoise { luminance, color } => {
+            crate::denoise::apply(data, w, h, *luminance, *color, scale)
+        }
         Adjustment::Noise { amount, monochrome } => {
             let amt = amount * 2.55;
             let [ox, oy] = opts.origin;
@@ -709,6 +716,7 @@ pub fn reach_pixels(adj: &Adjustment, scale: f64) -> usize {
         Adjustment::GaussianBlur { radius } => reach((radius * scale) / 2.0),
         Adjustment::UnsharpMask { radius, .. } => reach((radius * scale).max(0.5)),
         Adjustment::Clarity { .. } => reach((24.0 * scale).max(0.5)),
+        Adjustment::Denoise { .. } => crate::denoise::reach(scale),
         // La pixellisation se cale sur l'origine : une tuile doit couvrir des blocs entiers.
         Adjustment::Pixelate { size } => (size * scale).max(1.0).ceil() as usize,
         _ => 0,
