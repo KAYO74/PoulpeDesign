@@ -28,6 +28,7 @@ export * from './svgImport';
 export * from './flow';
 export * from './pages';
 export * from './adjust';
+export * from './seamCarve';
 export { DEVELOP_BANDS, defaultDevelop, type Develop } from './develop';
 export * from './pixelMask';
 export * from './inpaint';
