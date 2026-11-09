@@ -17,7 +17,10 @@ import {
  * adoucis pour que les raccords ne se voient pas.
  *
  * Valable pour les prises de vue à main levée sans fort changement de perspective (comme
- * l'assemblage simple d'Affinity ou de Lightroom). Calcul pur (sans DOM), pour les tests et les workers.
+ * l'assemblage simple d'Affinity ou de Lightroom). Pour les vues très larges (360°, plus de 100°),
+ * les images sont d'abord projetées sur un cylindre (distance focale estimée en cherchant celle qui
+ * recale le mieux les images voisines), où une rotation de l'appareil devient une simple translation.
+ * Calcul pur (sans DOM), pour les tests et les workers.
  */
 
 export interface PanoramaOptions {
@@ -25,6 +28,12 @@ export interface PanoramaOptions {
   exposure?: boolean;
   /** Corriger la perspective entre images (vrai par défaut) ; sinon, simple translation. */
   perspective?: boolean;
+  /**
+   * Projection : `planar` (images posées à plat, avec perspective), `cylindrical` (vues très larges,
+   * appareil tourné sur lui-même : images projetées sur un cylindre) ou `auto` (par défaut : à plat,
+   * puis cylindrique si la vue est trop large pour être mise à plat).
+   */
+  projection?: 'auto' | 'planar' | 'cylindrical';
   /** Avancement de 0 à 1 ; renvoyer true pour annuler. */
   progress?: (fraction: number) => boolean | void;
 }
@@ -204,6 +213,7 @@ function composeTranslation(
         for (let x = Math.max(0, dx); x < Math.min(a.width, dx + b.width); x++) {
           const ia = (y * a.width + x) * 4,
             ib = ((y - dy) * b.width + (x - dx)) * 4;
+          if (a.data[ia + 3] === 0 || b.data[ib + 3] === 0) continue;
           sa += a.data[ia] + a.data[ia + 1] + a.data[ia + 2];
           sb += b.data[ib] + b.data[ib + 1] + b.data[ib + 2];
         }
@@ -244,6 +254,8 @@ function composeTranslation(
 
 /** Largeur maximale (pixels) du panorama de perspective : au-delà, l'image explose. */
 const MAX_SIDE = 60000;
+/** Étirement maximal (en surface) d'une image mise à plat avant de passer en projection cylindrique. */
+const MAX_STRETCH = 3;
 
 interface Placed {
   /** Image → repère de l'image de référence. */
@@ -371,6 +383,19 @@ function composeProjective(
       y1 = Math.max(y1, ry);
     }
   });
+  // Une image étirée de plus de 3 fois en surface : vue trop large pour être mise à plat.
+  if (opts.projection !== 'planar')
+    images.forEach((im, i) => {
+      const q = [
+        [0, 0],
+        [im.width, 0],
+        [im.width, im.height],
+        [0, im.height],
+      ].map(([cx, cy]) => applyMat(M[i], cx, cy));
+      let area = 0;
+      for (let j = 0; j < 4; j++) area += q[j][0] * q[(j + 1) % 4][1] - q[(j + 1) % 4][0] * q[j][1];
+      if (Math.abs(area) / 2 > MAX_STRETCH * im.width * im.height) throw new PanoramaError('tooLarge');
+    });
   const ox = Math.floor(x0),
     oy = Math.floor(y0);
   const W = Math.ceil(x1) - ox,
@@ -439,14 +464,164 @@ function composeProjective(
 /** Matrice de translation. */
 const shift = (dx: number, dy: number): Mat3 => [1, 0, dx, 0, 1, dy, 0, 0, 1];
 
+/** Panorama assemblé et note du plus mauvais recalage entre deux images voisines (de -1 à 1). */
+interface Stitched {
+  result: PanoramaResult;
+  quality: number;
+}
+
+/** En dessous de cette note, l'assemblage à plat est suspect : on essaie aussi le cylindrique. */
+const FLAT_TRUSTED = 0.75;
+/** Avance minimale de la note cylindrique sur la note à plat pour préférer le cylindrique. */
+const CYLINDER_MARGIN = 0.1;
+
+/** Version réduite (moyenne par blocs) dont le plus grand côté ne dépasse pas `maxSide`. */
+function shrink(im: Pixels, maxSide: number): Pixels {
+  const k = maxSide / Math.max(im.width, im.height);
+  if (k >= 1) return im;
+  const w = Math.max(1, Math.round(im.width * k)),
+    h = Math.max(1, Math.round(im.height * k));
+  const out = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.floor(y / k),
+      y1 = Math.min(im.height, Math.max(y0 + 1, Math.ceil((y + 1) / k)));
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.floor(x / k),
+        x1 = Math.min(im.width, Math.max(x0 + 1, Math.ceil((x + 1) / k)));
+      let r = 0,
+        g = 0,
+        b = 0,
+        a = 0,
+        c = 0;
+      for (let yy = y0; yy < y1; yy++)
+        for (let xx = x0; xx < x1; xx++) {
+          const i = (yy * im.width + xx) * 4;
+          r += im.data[i];
+          g += im.data[i + 1];
+          b += im.data[i + 2];
+          a += im.data[i + 3];
+          c++;
+        }
+      out.set([r / c, g / c, b / c, a / c], (y * w + x) * 4);
+    }
+  }
+  return { data: out, width: w, height: h };
+}
+
 /**
- * Assemble les images dans l'ordre donné (chacune recouvre la précédente). Renvoie null si
- * `progress` demande d'annuler. Lève une erreur si deux images consécutives ne se recouvrent pas.
- * Avec `perspective` (par défaut), le recalage corrige la perspective ; s'il échoue pour une paire,
- * la translation prend le relais.
+ * Image projetée sur un cylindre de rayon `f` (la distance focale, en pixels) : une rotation de
+ * l'appareil autour de l'axe vertical devient une translation horizontale. Au-delà de l'image
+ * d'origine, la couleur du bord est reprise et l'opacité est nulle.
  */
-export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): PanoramaResult | null {
-  if (images.length < 2) throw new PanoramaError('tooFew');
+function toCylinder(im: Pixels, f: number): Pixels {
+  const { width: w, height: h, data } = im;
+  const cx = w / 2,
+    cy = h / 2;
+  const u0 = f * Math.atan(-cx / f),
+    u1 = f * Math.atan((w - cx) / f);
+  const W = Math.max(1, Math.ceil(u1 - u0));
+  const sxs = new Float32Array(W),
+    scale = new Float32Array(W);
+  for (let u = 0; u < W; u++) {
+    const th = (u + 0.5 + u0) / f;
+    sxs[u] = f * Math.tan(th) + cx;
+    scale[u] = 1 / Math.cos(th);
+  }
+  const out = new Uint8ClampedArray(W * h * 4);
+  for (let v = 0; v < h; v++)
+    for (let u = 0; u < W; u++) {
+      const sx = sxs[u],
+        sy = (v + 0.5 - cy) * scale[u] + cy;
+      const inside = sx >= 0 && sx <= w - 1 && sy >= 0 && sy <= h - 1;
+      const px = Math.min(w - 1, Math.max(0, sx)),
+        py = Math.min(h - 1, Math.max(0, sy));
+      const ix = Math.floor(px),
+        iy = Math.floor(py),
+        fx = px - ix,
+        fy = py - iy;
+      const jx = Math.min(w - 1, ix + 1),
+        jy = Math.min(h - 1, iy + 1);
+      const p00 = (iy * w + ix) * 4,
+        p10 = (iy * w + jx) * 4,
+        p01 = (jy * w + ix) * 4,
+        p11 = (jy * w + jx) * 4;
+      const w00 = (1 - fx) * (1 - fy),
+        w10 = fx * (1 - fy),
+        w01 = (1 - fx) * fy,
+        w11 = fx * fy;
+      const o = (v * W + u) * 4;
+      for (let c = 0; c < 3; c++)
+        out[o + c] = data[p00 + c] * w00 + data[p10 + c] * w10 + data[p01 + c] * w01 + data[p11 + c] * w11;
+      out[o + 3] = inside
+        ? data[p00 + 3] * w00 + data[p10 + 3] * w10 + data[p01 + 3] * w01 + data[p11 + 3] * w11
+        : 0;
+    }
+  return { data: out, width: W, height: h };
+}
+
+/** Plus grand côté (pixels) des images pendant la recherche de la distance focale. */
+const SEARCH_SIDE = 200;
+/** Distances focales essayées, en multiples du plus grand côté de l'image (de 40° à 140° de champ environ). */
+const FOCAL_FROM = 0.45,
+  FOCAL_TO = 3,
+  FOCAL_STEP = 1.2;
+
+/** Somme des notes de recalage des paires voisines, images projetées avec la distance focale `k`. */
+function cylinderScore(small: Pixels[], k: number): number {
+  let prev: Pixels | null = null;
+  let sum = 0;
+  for (const im of small) {
+    const cur = toCylinder(im, k * Math.max(im.width, im.height));
+    if (prev) sum += alignPair(prev, cur).score;
+    prev = cur;
+  }
+  return sum;
+}
+
+/**
+ * Assemblage cylindrique, pour les vues très larges : on cherche la distance focale qui recale le
+ * mieux les images voisines (sur des versions réduites), puis on projette les images sur le cylindre
+ * et on les assemble par simple translation.
+ */
+function stitchCylindrical(images: Pixels[], opts: PanoramaOptions): Stitched | null {
+  const n = images.length;
+  const total = n * 2 + 4;
+  let step = 0;
+  const tick = (): boolean => !(opts.progress?.(Math.min(1, ++step / total)) === true);
+  const small = images.map((im) => shrink(im, SEARCH_SIDE));
+  let best = { k: 1, score: -Infinity };
+  const tryK = (k: number) => {
+    const score = cylinderScore(small, k);
+    if (score > best.score) best = { k, score };
+  };
+  for (let k = FOCAL_FROM; k <= FOCAL_TO; k *= FOCAL_STEP) tryK(k);
+  if (!tick()) return null;
+  for (const spread of [1.1, 1.04, 1.015]) {
+    const centre = best.k;
+    tryK(centre / spread);
+    tryK(centre * spread);
+  }
+  if (!tick()) return null;
+  const warped: Pixels[] = [];
+  for (const im of images) {
+    warped.push(toCylinder(im, best.k * Math.max(im.width, im.height)));
+    if (!tick()) return null;
+  }
+  const pos: { x: number; y: number }[] = [{ x: 0, y: 0 }];
+  let quality = 1;
+  for (let i = 1; i < n; i++) {
+    const r = alignPair(warped[i - 1], warped[i]);
+    if (r.score < 0.3) throw new PanoramaError('noOverlap', i);
+    quality = Math.min(quality, r.score);
+    pos.push({ x: pos[i - 1].x + r.dx, y: pos[i - 1].y + r.dy });
+  }
+  if (!tick()) return null;
+  const result = composeTranslation(warped, pos, opts, tick);
+  return result && { result, quality };
+}
+
+/** Assemblage à plat : recalage de chaque image sur la précédente (perspective ou translation). */
+function stitchPlanar(images: Pixels[], opts: PanoramaOptions): Stitched | null {
   const n = images.length;
   const total = n * 2 + 1;
   let step = 0;
@@ -454,6 +629,7 @@ export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): Pa
   // 1 : position de chaque image par rapport à la précédente (homographie ou translation).
   const pairs: Mat3[] = [IDENTITY];
   let projective = false;
+  let quality = 1;
   for (let i = 1; i < n; i++) {
     const fit = opts.perspective === false ? null : estimateHomography(images[i - 1], images[i]);
     const r = alignPair(images[i - 1], images[i]);
@@ -465,15 +641,53 @@ export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): Pa
     if (fit && hScore >= 0.3 && hScore >= tScore - 0.02) {
       pairs.push(fit.H);
       projective = true;
+      quality = Math.min(quality, hScore);
     } else if (tScore >= 0.3 || r.score >= 0.3) {
       pairs.push(T);
+      quality = Math.min(quality, Math.max(tScore, r.score));
     } else throw new PanoramaError('noOverlap', i);
     if (!tick()) return null;
   }
   if (!projective) {
     const pos: { x: number; y: number }[] = [{ x: 0, y: 0 }];
     for (let i = 1; i < n; i++) pos.push({ x: pos[i - 1].x + pairs[i][2], y: pos[i - 1].y + pairs[i][5] });
-    return composeTranslation(images, pos, opts, tick);
+    const result = composeTranslation(images, pos, opts, tick);
+    return result && { result, quality };
   }
-  return composeProjective(images, pairs, opts, tick);
+  const result = composeProjective(images, pairs, opts, tick);
+  return result && { result, quality };
+}
+
+/**
+ * Assemble les images dans l'ordre donné (chacune recouvre la précédente). Renvoie null si
+ * `progress` demande d'annuler. Lève une erreur si deux images consécutives ne se recouvrent pas.
+ * Avec `perspective` (par défaut), le recalage corrige la perspective ; s'il échoue pour une paire,
+ * la translation prend le relais. Voir `projection` pour les vues très larges.
+ */
+export function stitchPanorama(images: Pixels[], opts: PanoramaOptions = {}): PanoramaResult | null {
+  if (images.length < 2) throw new PanoramaError('tooFew');
+  if (opts.projection === 'cylindrical') return stitchCylindrical(images, opts)?.result ?? null;
+  if (opts.projection === 'planar' || opts.perspective === false)
+    return stitchPlanar(images, opts)?.result ?? null;
+  // Automatique : à plat d'abord ; si c'est impossible ou suspect (vue très large), on essaie le cylindrique.
+  let flat: Stitched | null = null;
+  let failure: unknown = null;
+  try {
+    flat = stitchPlanar(images, opts);
+    if (!flat) return null;
+  } catch (e) {
+    if (!(e instanceof PanoramaError)) throw e;
+    failure = e;
+  }
+  if (flat && flat.quality >= FLAT_TRUSTED) return flat.result;
+  let round: Stitched | null = null;
+  try {
+    round = stitchCylindrical(images, opts);
+    if (!round) return null;
+  } catch (e) {
+    if (!(e instanceof PanoramaError)) throw e;
+  }
+  if (round && (!flat || round.quality > flat.quality + CYLINDER_MARGIN)) return round.result;
+  if (flat) return flat.result;
+  throw failure;
 }

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /* Panorama : trois vues qui se recouvrent donnent une seule image de la largeur de la scène. */
 
@@ -11,7 +11,8 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByTestId('canvas')).toBeVisible();
 });
 
-test('assemble trois vues en un panorama', async ({ page }) => {
+/** Ouvre trois vues qui se recouvrent, sélectionnées. */
+async function openThreeViews(page: Page) {
   await page.evaluate(() => {
     // Scène 300×120, découpée en trois vues de 130 px qui se recouvrent de 45 px.
     const scene = document.createElement('canvas');
@@ -50,6 +51,10 @@ test('assemble trois vues en un panorama', async ({ page }) => {
     });
     editor.select(editor.doc.artboards[0].children.map((n: any) => n.id));
   });
+}
+
+test('assemble trois vues en un panorama', async ({ page }) => {
+  await openThreeViews(page);
   await page.getByRole('button', { name: 'Calque', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Assembler un panorama…' }).click();
   await page.getByTestId('panorama-run').click();
@@ -63,6 +68,25 @@ test('assemble trois vues en un panorama', async ({ page }) => {
   expect(info.name).toBe('Panorama');
   expect(Math.abs(info.w - 300)).toBeLessThan(3);
   expect(Math.abs(info.h - 120)).toBeLessThan(3);
+});
+
+test('projection cylindrique pour une vue très large', async ({ page }) => {
+  await openThreeViews(page);
+  await page.getByRole('button', { name: 'Calque', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Assembler un panorama…' }).click();
+  await page.getByTestId('panorama-wide').check();
+  await page.getByTestId('panorama-run').click();
+  await expect(page.getByTestId('panorama-run')).toHaveCount(0, { timeout: 30_000 });
+  const info = await page.evaluate(() => {
+    const kids = (window as any).poulpe.editor.doc.artboards[0].children;
+    const n = kids[kids.length - 1];
+    return { count: kids.length, name: n.name, w: n.width, h: n.height };
+  });
+  expect(info.count).toBe(4);
+  expect(info.name).toBe('Panorama');
+  // Vues étroites : le cylindre les redresse à peine, la largeur reste proche de celle de la scène.
+  expect(info.w).toBeGreaterThan(260);
+  expect(info.w).toBeLessThan(330);
 });
 
 test('la commande demande au moins deux images', async ({ page }) => {
