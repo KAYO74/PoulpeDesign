@@ -84,4 +84,16 @@ describe('develop', () => {
     applyAdjustment(p, dev({ exposure: 1, saturation: 20, shadows: 30 }));
     expect(p.data[3]).toBe(77);
   });
+
+  it('un fichier sans tableaux de plages ne plante pas', () => {
+    const a = {
+      ...dev({ saturation: 20 }),
+      hue: undefined,
+      sat: undefined,
+      lum: undefined,
+    } as unknown as Dev;
+    const p = px([[200, 60, 60]]);
+    expect(() => applyAdjustment(p, a)).not.toThrow();
+    expect(isNeutral(a)).toBe(false);
+  });
 });

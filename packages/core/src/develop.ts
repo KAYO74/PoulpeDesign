@@ -56,7 +56,15 @@ const tonesNeutral = (a: Develop) =>
   a.contrast === 0 && a.highlights === 0 && a.shadows === 0 && a.whites === 0 && a.blacks === 0;
 const bandsNeutral = (a: Develop) => [...a.hue, ...a.sat, ...a.lum].every((v) => v === 0);
 
+/** Complète les tableaux de plages d'un fichier incomplet ou trafiqué (8 valeurs chacun). */
+function withBands(a: Develop): Develop {
+  const fix = (v: unknown) =>
+    DEVELOP_BANDS.map((_, i) => (Array.isArray(v) && Number.isFinite(v[i]) ? (v[i] as number) : 0));
+  return { ...a, hue: fix(a.hue), sat: fix(a.sat), lum: fix(a.lum) };
+}
+
 export function developIsNeutral(a: Develop): boolean {
+  a = withBands(a);
   return (
     a.temperature === 0 &&
     a.tint === 0 &&
@@ -102,8 +110,9 @@ function bandValue(vals: readonly number[], hueDeg: number): number {
 /** Applique le réglage Développer aux pixels, sur place. */
 export function applyDevelop(
   px: { data: Uint8ClampedArray; width: number; height: number },
-  a: Develop,
+  adj: Develop,
 ): void {
+  const a = withBands(adj);
   const d = px.data;
   const n = d.length;
   const t = a.temperature / 100;
