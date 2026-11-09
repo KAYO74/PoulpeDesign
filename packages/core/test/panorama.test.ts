@@ -162,3 +162,86 @@ describe('panorama avec perspective', () => {
     expect(out.width).toBe(500);
   });
 });
+
+describe('panorama cylindrique', () => {
+  const F = 130,
+    VW = 160,
+    VH = 120;
+  /** Bruit de valeurs lissé, non périodique (hachage de la grille). */
+  const hash = (i: number, j: number) => {
+    let h = Math.imul(i, 374761393) ^ Math.imul(j, 668265263);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+  };
+  const noise = (a: number, b: number, cell: number) => {
+    const x = a / cell,
+      y = b / cell,
+      i = Math.floor(x),
+      j = Math.floor(y);
+    const fx = x - i,
+      fy = y - j;
+    const sx = fx * fx * (3 - 2 * fx),
+      sy = fy * fy * (3 - 2 * fy);
+    return (
+      hash(i, j) * (1 - sx) * (1 - sy) +
+      hash(i + 1, j) * sx * (1 - sy) +
+      hash(i, j + 1) * (1 - sx) * sy +
+      hash(i + 1, j + 1) * sx * sy
+    );
+  };
+  /** Texture de la scène sur un cylindre de rayon F : (a, b) = (arc en pixels, hauteur en pixels). */
+  const g = (a: number, b: number) => 40 + 110 * noise(a, b, 14) + 70 * noise(a + 500, b, 5);
+  /** Vue sténopé de l'appareil tourné de `yaw` radians autour de l'axe vertical. */
+  function view(yaw: number): Pixels {
+    const data = new Uint8ClampedArray(VW * VH * 4);
+    for (let y = 0; y < VH; y++)
+      for (let x = 0; x < VW; x++) {
+        const dx = x + 0.5 - VW / 2;
+        const a = F * (yaw + Math.atan(dx / F));
+        const b = ((y + 0.5 - VH / 2) * F) / Math.hypot(dx, F);
+        const v = g(a, b);
+        data.set([v, v * 0.85, 255 - v, 255], (y * VW + x) * 4);
+      }
+    return { data, width: VW, height: VH };
+  }
+  // 5 vues espacées de 40° : 160° d'écart entre la première et la dernière, plus 62° de champ.
+  const yaws = [0, 1, 2, 3, 4].map((i) => (i * 40 * Math.PI) / 180);
+  const views = yaws.map(view);
+  const expectedWidth = F * (yaws[4] + 2 * Math.atan(VW / 2 / F));
+
+  it('assemble une vue de plus de 200° (impossible à plat)', () => {
+    const out = stitchPanorama(views, { projection: 'cylindrical' })!;
+    expect(out.width).toBeGreaterThan(expectedWidth * 0.95);
+    expect(out.width).toBeLessThan(expectedWidth * 1.05);
+    expect(out.height).toBeGreaterThanOrEqual(VH - 2);
+    expect(out.height).toBeLessThanOrEqual(VH + 6);
+    // Le résultat ressemble à la scène : écart moyen faible, à quelques pixels de décalage près.
+    const a0 = F * (yaws[0] - Math.atan(VW / 2 / F));
+    let best = Infinity;
+    for (let sx = -3; sx <= 3; sx++)
+      for (let sy = -3; sy <= 3; sy++) {
+        let err = 0,
+          n = 0;
+        for (let y = 12; y < out.height - 12; y += 3)
+          for (let x = 12; x < out.width - 12; x += 3) {
+            if (out.data[(y * out.width + x) * 4 + 3] < 255) continue;
+            err += Math.abs(out.data[(y * out.width + x) * 4] - g(a0 + x + sx, y - out.height / 2 + sy));
+            n++;
+          }
+        best = Math.min(best, err / n);
+      }
+    expect(best).toBeLessThan(12);
+  });
+
+  it('passe tout seul en cylindrique quand la vue est trop large', () => {
+    const out = stitchPanorama(views)!;
+    expect(out.width).toBeGreaterThan(expectedWidth * 0.95);
+    expect(out.width).toBeLessThan(expectedWidth * 1.05);
+  });
+
+  it('laisse une vue étroite à plat (translation)', () => {
+    const full = scene(300, 120);
+    const flat = [crop(full, 0, 0, 180, 120), crop(full, 110, 4, 180, 110)];
+    expect(stitchPanorama(flat)!.width).toBe(290);
+  });
+});
