@@ -24,9 +24,11 @@ const MAX_SIDE = 3000;
 export interface PanoramaSettings {
   exposure: boolean;
   perspective: boolean;
+  /** Vue très large (plus de 100° jusqu'à 360°) : projection cylindrique. Sinon automatique. */
+  wide: boolean;
 }
 
-export const DEFAULT_PANORAMA: PanoramaSettings = { exposure: true, perspective: true };
+export const DEFAULT_PANORAMA: PanoramaSettings = { exposure: true, perspective: true, wide: false };
 
 /** Photos choisies, dans l'ordre de la prise de vue : de gauche à droite, puis de haut en bas. */
 function chosen(): SceneNode[] {
@@ -109,7 +111,15 @@ export async function stitchSelected(
       resolve(null);
     };
     worker.postMessage(
-      { id: 1, images: pixels, options: settings },
+      {
+        id: 1,
+        images: pixels,
+        options: {
+          exposure: settings.exposure,
+          perspective: settings.perspective,
+          projection: settings.wide ? 'cylindrical' : 'auto',
+        },
+      },
       pixels.map((p) => p.data.buffer),
     );
   }).finally(() => {
