@@ -20,3 +20,9 @@ Tauri et ses greffons (dialog, fs, process, updater) — Licence MIT ou Apache 2
 
 Les autres dépendances (React, Radix UI, Paper.js, pdf.js, jsPDF, ag-psd, opentype.js, fflate, immer, polices
 Fontsource) sont sous licences MIT, Apache 2.0, BSD ou SIL Open Font License ; voir leurs dépôts respectifs.
+
+Pinceaux libres (paquet « Pinceaux libres (MyPaint, CC0) », tools/brushes/freePack.json) — réglages des pinceaux
+  MyPaint de David Revoy, Ramón Miranda, Marcelo « Tanda » Cerviño, Guillaume Loussarévian et de l'équipe MyPaint,
+  publiés en domaine public (CC0 1.0). https://github.com/mypaint/mypaint-brushes
+  Seuls les réglages sont repris ; les formes (grain, craie, crayon, poils, éclaboussure, feuille) sont dessinées
+  pour Poulpe Design (scripts/build-mypaint-pack.mjs).

@@ -4,7 +4,13 @@ import { brushSettings, useStore, useUi } from '../../store';
 import { DEFAULT_PRESETS, applyPreset, deletePreset, isCurrentPreset, saveCurrentPreset } from './presets';
 import { userPresets, type BrushPreset } from './state';
 import { brushTips } from './tips';
-import { pickAndInstallBrushes, sharePresets } from './packs';
+import {
+  brushPacks,
+  freeBrushesInstalled,
+  installFreeBrushes,
+  pickAndInstallBrushes,
+  sharePresets,
+} from './packs';
 import { toast } from '../../store';
 
 /** Aperçu d'un préréglage : une touche ronde, bord plus ou moins doux, à la taille ramenée. */
@@ -34,6 +40,7 @@ export function BrushPresets() {
   useUi((s) => s.brushes);
   const mine = useStore(userPresets, (s) => s.list);
   const [name, setName] = useState('');
+  const freeDone = useStore(brushPacks, (s) => freeBrushesInstalled(s.list));
   const b = brushSettings(tool);
   const save = () => {
     if (!name.trim()) return;
@@ -95,6 +102,15 @@ export function BrushPresets() {
         </button>
         <button
           className="chip-btn"
+          data-testid="brushes-free"
+          disabled={freeDone}
+          title={t('brushPacks.freeHint')}
+          onClick={() => void addFreeBrushes(t)}
+        >
+          {freeDone ? t('brushPacks.freeDone') : t('brushPacks.free')}
+        </button>
+        <button
+          className="chip-btn"
           data-testid="brushes-share"
           disabled={!mine.length}
           title={t('brushPacks.shareHint')}
@@ -114,4 +130,10 @@ export async function installBrushes(t: ReturnType<typeof useT>): Promise<void> 
   toast(
     pack ? t('brushPacks.installed', { name: pack.name, n: pack.presetIds.length }) : t('brushPacks.invalid'),
   );
+}
+
+/** Installe les pinceaux libres fournis avec l'appli. */
+async function addFreeBrushes(t: ReturnType<typeof useT>): Promise<void> {
+  const pack = await installFreeBrushes();
+  if (pack) toast(t('brushPacks.installed', { name: pack.name, n: pack.presetIds.length }));
 }
