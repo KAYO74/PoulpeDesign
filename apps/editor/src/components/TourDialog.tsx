@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useT, type MessageKey } from '../i18n';
 import { ui, useUi } from '../store';
-import { Icon, type IconName } from './Icon';
+import type { IconName } from './Icon';
 import { ToolIcon } from './ToolIcon';
 import { Modal } from './dialogs/Modal';
 

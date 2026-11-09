@@ -9,7 +9,7 @@ import { setPersona } from '../photo/persona';
 import { findNode, isStyled } from '@poulpe/core';
 import { paintPreview } from './fields';
 import { openColorWindowFor, toggleColorWindow } from '../panels/ColorWindow';
-import { Icon, type IconName } from './Icon';
+import { Icon } from './Icon';
 import { ToolIcon } from './ToolIcon';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
