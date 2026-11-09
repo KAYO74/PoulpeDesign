@@ -13,6 +13,21 @@ export interface ReleaseNotes {
 
 export const RELEASES: ReleaseNotes[] = [
   {
+    version: '1.10.0',
+    fr: [
+      'Onglet Développer façon Lightroom : réglages de la photo au même endroit.',
+      '119 pinceaux libres (CC0) installables en un clic.',
+      'Nouvelles icônes pour les outils et les espaces de travail.',
+      'Panorama cylindrique pour les vues très larges (jusqu’à 360°).',
+    ],
+    en: [
+      'Lightroom-style Develop tab: photo adjustments in one place.',
+      '119 free brushes (CC0), installable in one click.',
+      'New icons for tools and workspaces.',
+      'Cylindrical panorama for very wide views (up to 360°).',
+    ],
+  },
+  {
     version: '1.9.1',
     fr: [
       'Les photos HEIC (iPhone) s’ouvrent maintenant.',
