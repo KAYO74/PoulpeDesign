@@ -19,6 +19,7 @@ import { enTips, frTips, type MessageKeyTips } from './i18n-tips';
 import { enAnim, frAnim, type MessageKeyAnim } from './i18n-anim';
 import { enFusion, frFusion, type MessageKeyFusion } from './i18n-fusion';
 import { enHeic, frHeic, type MessageKeyHeic } from './i18n-heic';
+import { enDevelop, frDevelop, type MessageKeyDevelop } from './i18n-develop';
 import { enPanorama, frPanorama, type MessageKeyPanorama } from './i18n-panorama';
 import { enDrop, frDrop, type MessageKeyDrop } from './i18n-drop';
 import { enKeyPresets, frKeyPresets, type MessageKeyKeyPresets } from './i18n-keypresets';
@@ -1015,7 +1016,8 @@ export type MessageKey =
   | MessageKeyAnim
   | MessageKeyFusion
   | MessageKeyPanorama
-  | MessageKeyHeic;
+  | MessageKeyHeic
+  | MessageKeyDevelop;
 
 const en: Record<
   Exclude<
@@ -1051,6 +1053,7 @@ const en: Record<
     | MessageKeyFusion
     | MessageKeyPanorama
     | MessageKeyHeic
+    | MessageKeyDevelop
   >,
   string
 > = {
@@ -2020,6 +2023,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frFusion,
     ...frPanorama,
     ...frHeic,
+    ...frDevelop,
     ...fr_shapes,
     ...fr_paint,
     ...fr_paths,
@@ -2060,6 +2064,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enFusion,
     ...enPanorama,
     ...enHeic,
+    ...enDevelop,
     ...fr_shapes,
     ...en_shapes,
     ...fr_paint,

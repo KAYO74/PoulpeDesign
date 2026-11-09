@@ -4298,6 +4298,20 @@ h4.sub .link {
   border-radius: 6px;
   box-shadow: 0 0 0 1px var(--line);
 }
+.develop-bands {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.develop-band {
+  padding: 3px 5px;
+}
+.develop-dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
 
 /* Icônes Lucide (outils, espaces de travail) : dessinées sur 24 × 24, trait de 2. */
 svg.i.lucide {

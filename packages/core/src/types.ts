@@ -636,7 +636,28 @@ export type Adjustment =
   | { kind: 'noise'; amount: number; monochrome: boolean }
   | { kind: 'vignette'; amount: number; size: number; softness: number }
   | { kind: 'pixelate'; size: number }
-  | { kind: 'clarity'; amount: number };
+  | { kind: 'clarity'; amount: number }
+  /**
+   * Développer (comme Lightroom) : température et teinte, exposition en IL, tons et présence de −100 à 100,
+   * puis teinte, saturation et luminosité de −100 à 100 pour chacune des 8 plages de couleur
+   * (rouge, orange, jaune, vert, aqua, bleu, violet, magenta).
+   */
+  | {
+      kind: 'develop';
+      temperature: number;
+      tint: number;
+      exposure: number;
+      contrast: number;
+      highlights: number;
+      shadows: number;
+      whites: number;
+      blacks: number;
+      vibrance: number;
+      saturation: number;
+      hue: number[];
+      sat: number[];
+      lum: number[];
+    };
 export type AdjustmentKind = Adjustment['kind'];
 
 /**

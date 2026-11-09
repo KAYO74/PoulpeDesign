@@ -13,32 +13,10 @@ import { useT } from '../i18n';
 import { renderBelow, selectedAdjustment, setAdjustment } from '../photo/photoActions';
 import { pickLut } from '../photo/retouchActions';
 import { useEditor } from '../store';
+import { DevelopControls } from './DevelopPanel';
+import { P, type Param } from './params';
 
-/** Réglage numérique d'un calque : clé, libellé, bornes. */
-export interface Param {
-  key: string;
-  label: string;
-  min: number;
-  max: number;
-  step?: number;
-  unit?: string;
-}
-
-export const P = (
-  key: string,
-  min: number,
-  max: number,
-  unit?: string,
-  step?: number,
-  label = `param.${key}`,
-): Param => ({
-  key,
-  label,
-  min,
-  max,
-  unit,
-  step,
-});
+export { P, type Param };
 
 const PARAMS: Partial<Record<AdjustmentKind, Param[]>> = {
   brightnessContrast: [P('brightness', -100, 100), P('contrast', -100, 100)],
@@ -285,6 +263,7 @@ export function AdjustmentPanel() {
         </button>
       </div>
       {adj.kind === 'levels' && <Histogram data={hist} />}
+      {adj.kind === 'develop' && <DevelopControls adj={adj} onChange={set} />}
       {params.map((p) => (
         <ParamField
           key={p.key}
@@ -400,6 +379,9 @@ export function AdjustmentFields({ adj, onChange }: { adj: Adjustment; onChange:
   const values = adj as unknown as Record<string, number>;
   return (
     <div className="adjust-panel">
+      {adj.kind === 'develop' && (
+        <DevelopControls adj={adj} onChange={(patch) => onChange({ ...adj, ...patch } as Adjustment)} />
+      )}
       {params.map((p) => (
         <ParamField
           key={p.key}

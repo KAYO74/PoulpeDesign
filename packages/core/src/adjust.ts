@@ -1,5 +1,6 @@
 import { parseColor, sampleStops } from './color';
 import { applyLut, decodeLut, encodeLut, lutFromFunction } from './lut';
+import { applyDevelop, defaultDevelop, developIsNeutral } from './develop';
 import type { Adjustment, AdjustmentKind, BlendRanges, LiveFilter, SceneNode } from './types';
 
 /*
@@ -17,6 +18,7 @@ export interface Pixels {
 
 /** Réglages de couleur et de tons, dans l'ordre des menus. */
 export const COLOR_ADJUSTMENTS = [
+  'develop',
   'brightnessContrast',
   'levels',
   'curves',
@@ -100,6 +102,8 @@ export function defaultAdjustment(kind: AdjustmentKind): Adjustment {
       return { kind, amount: 50, size: 50, softness: 50 };
     case 'pixelate':
       return { kind, size: 16 };
+    case 'develop':
+      return defaultDevelop();
     case 'lut':
       return { kind, name: '', size: 2, data: encodeLut(lutFromFunction(2, (r, g, b) => [r, g, b])) };
   }
@@ -387,6 +391,9 @@ export function applyAdjustmentTs(px: Pixels, adj: Adjustment, opts: AdjustOptio
     return;
   }
   switch (adj.kind) {
+    case 'develop':
+      applyDevelop(px, adj);
+      return;
     case 'lut':
       applyLut(px, decodeLut(adj.size, adj.data));
       return;
@@ -653,6 +660,8 @@ export function isNeutral(adj: Adjustment): boolean {
       return adj.exposure === 0 && adj.offset === 0 && adj.gamma === 1;
     case 'whiteBalance':
       return adj.temperature === 0 && adj.tint === 0;
+    case 'develop':
+      return developIsNeutral(adj);
     case 'gaussianBlur':
       return adj.radius <= 0;
     case 'noise':
