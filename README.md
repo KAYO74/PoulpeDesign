@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.9.1-FF5F86" alt="Version 1.9.1"></a>
+  <a href="https://github.com/KAYO74/PoulpeDesign/releases/latest"><img src="https://img.shields.io/badge/version-1.10.0-FF5F86" alt="Version 1.10.0"></a>
   <a href="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml"><img src="https://github.com/KAYO74/PoulpeDesign/actions/workflows/ci.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-7B61FF" alt="Licence MPL-2.0"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-2BA59A" alt="Windows, macOS, Linux">
@@ -45,7 +45,7 @@
 </details>
 
 > [!NOTE]
-> **Nouveautés de la 1.9.1.** Photos HEIC (iPhone), transparence en Persona Photo, panorama avec correction de perspective. Avant, dans la 1.9 : Fusion d'expositions (HDR) et panorama, animation et export GIF, panneau de droite en 3 compartiments, texte en drapeau. Avant, dans la 1.8 : Visite guidée de 2 minutes, aide « Je viens de Photoshop », variantes de calques, dégradé de formes et filet, texte en cercle, grille isométrique, moteur Rust plus rapide. Avant, dans la 1.7 : Ouvrir ou enregistrer en tapant un chemin (bureau), créer plusieurs calques de pixels d'un coup, touches d'outils dans la recherche Ctrl+K, photothèque vide plus claire. Avant, dans la 1.6 : Choix de police avec recherche et filtres, texte déformé en arc et en vague, export des photos de la photothèque (taille, qualité, filigrane), champ de recherche visible en haut. Et depuis la 1.5 : Photothèque façon Lightroom, onglets Vectoriel / Pixel / Mise en page / Export en haut, plusieurs projets ouverts à la fois, recherche de commande avec Ctrl+K, développement RAW (retouches locales, avant/après), préréglages de touches Affinity, Photoshop et Illustrator, et une fenêtre Nouveautés après chaque mise à jour. Tout est dans la [feuille de route](#feuille-de-route).
+> **Nouveautés de la 1.10.0.** Onglet Développer façon Lightroom, 119 pinceaux libres, nouvelles icônes, panorama cylindrique. Avant, dans la 1.9 : Photos HEIC (iPhone), transparence en Persona Photo, panorama avec correction de perspective. Avant, dans la 1.9 : Fusion d'expositions (HDR) et panorama, animation et export GIF, panneau de droite en 3 compartiments, texte en drapeau. Avant, dans la 1.8 : Visite guidée de 2 minutes, aide « Je viens de Photoshop », variantes de calques, dégradé de formes et filet, texte en cercle, grille isométrique, moteur Rust plus rapide. Avant, dans la 1.7 : Ouvrir ou enregistrer en tapant un chemin (bureau), créer plusieurs calques de pixels d'un coup, touches d'outils dans la recherche Ctrl+K, photothèque vide plus claire. Avant, dans la 1.6 : Choix de police avec recherche et filtres, texte déformé en arc et en vague, export des photos de la photothèque (taille, qualité, filigrane), champ de recherche visible en haut. Et depuis la 1.5 : Photothèque façon Lightroom, onglets Vectoriel / Pixel / Mise en page / Export en haut, plusieurs projets ouverts à la fois, recherche de commande avec Ctrl+K, développement RAW (retouches locales, avant/après), préréglages de touches Affinity, Photoshop et Illustrator, et une fenêtre Nouveautés après chaque mise à jour. Tout est dans la [feuille de route](#feuille-de-route).
 
 > [!TIP]
 > **Fait avec l'IA.** Poulpe Design est un projet personnel, construit avec l'intelligence artificielle : le code, la documentation et les images de cette page ont été écrits par Claude (Anthropic) à partir des demandes de son créateur, pour offrir à tous une vraie application de design, libre et gratuite. Rien n'est repris de logiciels propriétaires ; voir [Licences et origine du contenu](docs/licences.md).
@@ -178,7 +178,7 @@ Trois espaces de travail, comme dans Affinity, qu'on change d'un clic en haut à
 
 ## Feuille de route
 
-Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La version actuelle est la **1.9.1**. Le détail de chaque version est sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases) et dans la [feuille de route](docs/feuille-de-route.md).
+Chaque version sort seule, avec ses tests, sans casser ce qui marche déjà. La version actuelle est la **1.10.0**. Le détail de chaque version est sur la page [Versions](https://github.com/KAYO74/PoulpeDesign/releases) et dans la [feuille de route](docs/feuille-de-route.md).
 
 ### Ce qui reste à faire
 
@@ -200,8 +200,9 @@ Il manque un outil, un bogue vous gêne, une fonction d'Affinity, d'Illustrator 
 ### Déjà disponible
 
 <details>
-<summary><b>Versions 1.2.5 à 1.9.1, en résumé</b></summary>
+<summary><b>Versions 1.2.5 à 1.10.0, en résumé</b></summary>
 
+- **1.10** : onglet Développer façon Lightroom, 119 pinceaux libres, nouvelles icônes, panorama cylindrique.
 - **1.9.1** : photos HEIC, transparence en Persona Photo, panorama avec correction de perspective.
 - **1.9** : fusion d'expositions (HDR) et panorama, animation simple et export GIF, panneau de droite en 3 compartiments, texte en drapeau, fusion d'images en Rust 3 à 6 fois plus rapide.
 - **1.8** : visite guidée, aide « Je viens de Photoshop », variantes de calques, dégradé de formes et filet, fluidité avec gel, texte en cercle, grille isométrique, moteur Rust plus rapide, démarrage plus léger.
