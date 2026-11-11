@@ -326,3 +326,55 @@ pub unsafe extern "C" fn fusion_finish(out: *mut u8, len: usize) -> u32 {
 pub extern "C" fn fusion_reset() {
     FUSION.with(|f| *f.borrow_mut() = None);
 }
+
+// ————— Échelle selon le contenu : recherche des coutures —————
+thread_local! {
+    static CARVER: std::cell::RefCell<Option<poulpe_engine::seam::Carver>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// Commence la recherche des coutures d'une image de `w` × `h` pixels. `protect` : un octet par
+/// pixel (zone à protéger), ou 0 s'il n'y en a pas. 0 = fait, 2 = tailles incohérentes.
+///
+/// # Safety
+/// `px` (`w * h * 4` octets) et `protect` (`w * h` octets) doivent avoir été réservés par `alloc`.
+#[no_mangle]
+pub unsafe extern "C" fn seam_begin(px: *const u8, w: usize, h: usize, protect: *const u8) -> u32 {
+    let Some(n) = w.checked_mul(h) else {
+        return 2;
+    };
+    let d = std::slice::from_raw_parts(px, n * 4);
+    let p = (!protect.is_null()).then(|| std::slice::from_raw_parts(protect, n));
+    match poulpe_engine::seam::Carver::new(d, w, h, p) {
+        Some(c) => {
+            CARVER.with(|s| *s.borrow_mut() = Some(c));
+            0
+        }
+        None => 2,
+    }
+}
+
+/// Trouve `count` coutures de plus et écrit leurs colonnes d'origine dans `out` (`count × h`
+/// entiers). Renvoie le nombre de coutures trouvées, ou -1 s'il n'y a pas de recherche en cours.
+///
+/// # Safety
+/// `out` doit avoir été réservé par `alloc` pour `count * h` entiers de 32 bits.
+#[no_mangle]
+pub unsafe extern "C" fn seam_next(count: usize, h: usize, out: *mut i32) -> i32 {
+    if (out as usize) % 4 != 0 {
+        return -1;
+    }
+    CARVER.with(|s| match s.borrow_mut().as_mut() {
+        Some(c) => {
+            let o = std::slice::from_raw_parts_mut(out, count * h);
+            c.seams(count, o) as i32
+        }
+        None => -1,
+    })
+}
+
+/// Termine (ou abandonne) la recherche en cours et libère sa mémoire.
+#[no_mangle]
+pub extern "C" fn seam_end() {
+    CARVER.with(|s| *s.borrow_mut() = None);
+}

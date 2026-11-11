@@ -372,6 +372,15 @@ export interface AdjustmentEngine {
     nx: number,
     ny: number,
   ): Float64Array | null;
+  /** Recherche des coutures de l'échelle selon le contenu (voir `findSeams`) : null si le moteur ne sait pas. */
+  carve?(data: Uint8ClampedArray, w: number, h: number, protect?: Uint8Array): SeamSession | null;
+}
+
+/** Recherche de coutures en cours dans le moteur. */
+export interface SeamSession {
+  /** Les `count` coutures suivantes (colonnes d'origine, une par ligne) ; moins s'il n'en reste pas assez. */
+  next(count: number): Int32Array[];
+  end(): void;
 }
 
 let engine: AdjustmentEngine | null = null;

@@ -24,6 +24,7 @@ import {
   startEngine,
   stopEngine,
 } from '../src/index';
+import { findSeams, findSeamsTs } from '@poulpe/core/src/seamCarve';
 import { alignPair, nccScanTs, type Gray } from '@poulpe/core/src/panorama';
 import { engineInpaint, startInpaintEngine } from '../src/inpaint';
 import { engineLabel, startTraceEngine } from '../src/trace';
@@ -209,6 +210,27 @@ describe('moteur Rust (WebAssembly)', () => {
     stopEngine();
     const without = alignPair(px(a), px(b));
     expect(withRust).toEqual(without);
+  });
+
+  it('échelle selon le contenu : mêmes coutures que le TypeScript', async () => {
+    const w = 120,
+      h = 70;
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const v =
+          100 + 80 * Math.sin(x / 9 + Math.cos(y / 6) * 2) * (x > 60 ? 1 : 0.2) + ((x * 31 + y * 17) % 13);
+        data.set([v, v * 0.7, 255 - v, x < 5 && y % 3 ? 120 : 255], (y * w + x) * 4);
+      }
+    const protect = new Uint8Array(w * h);
+    for (let y = 20; y < 50; y++) for (let x = 70; x < 90; x++) protect[y * w + x] = 1;
+    await startEngine(wasm);
+    for (const prot of [undefined, protect]) {
+      const rs = (await findSeams(data, w, h, 45, prot, undefined, [0, 45]))!;
+      const ts = (await findSeamsTs(data, w, h, 45, prot, undefined, [0, 45]))!;
+      expect(rs.length).toBe(45);
+      expect(rs.map((s) => Array.from(s))).toEqual(ts.map((s) => Array.from(s)));
+    }
   });
 
   it('correcteur identique au TypeScript', async () => {

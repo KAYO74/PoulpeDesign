@@ -1,4 +1,4 @@
-import type { Pixels } from './adjust';
+import { adjustmentEngine, type Pixels, type SeamSession } from './adjust';
 
 /*
  * Mise à l'échelle selon le contenu (Photoshop : Content-Aware Scale), par « seam carving » :
@@ -49,11 +49,56 @@ function transposeMask(src: Uint8Array, w: number, h: number): Uint8Array {
   return out;
 }
 
+function engineSession(
+  data: Uint8ClampedArray,
+  W: number,
+  H: number,
+  protect: Uint8Array | undefined,
+): SeamSession | null {
+  try {
+    return adjustmentEngine()?.carve?.(data, W, H, protect) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Trouve `count` coutures verticales (une colonne par ligne, d'une ligne à l'autre au plus un pixel
  * d'écart) dans l'ordre où on les retire, exprimées en colonnes de l'image d'origine.
  */
-async function findSeams(
+export async function findSeams(
+  data: Uint8ClampedArray,
+  W: number,
+  H: number,
+  count: number,
+  protect: Uint8Array | undefined,
+  tick: CarveOptions['tick'],
+  progress: [number, number],
+): Promise<Int32Array[] | null> {
+  // Le moteur Rust trouve les mêmes coutures, plus vite ; en cas de souci on reprend en TypeScript.
+  const session = engineSession(data, W, H, protect);
+  if (session) {
+    const found: Int32Array[] = [];
+    try {
+      while (found.length < count) {
+        const n = Math.min(8, count - found.length);
+        const got = session.next(n);
+        if (got.length < n) throw new Error('coutures manquantes');
+        found.push(...got);
+        if (tick && n === 8 && (await tick(progress[0] + found.length, progress[1]))) return null;
+      }
+      return found;
+    } catch (e) {
+      console.warn('Moteur Rust indisponible (échelle selon le contenu), calcul en TypeScript :', e);
+    } finally {
+      session.end();
+    }
+  }
+  return findSeamsTs(data, W, H, count, protect, tick, progress);
+}
+
+/** Calcul TypeScript d'origine (référence du moteur Rust, et solution de repli). */
+export async function findSeamsTs(
   data: Uint8ClampedArray,
   W: number,
   H: number,
