@@ -307,6 +307,7 @@ export async function startEngine(source: BufferSource | Response | Promise<Resp
       heal: engineHeal,
       proof: engineProof,
       nccScan: engineNccScan,
+      carve: engineCarve,
     });
     return true;
   } catch (e) {

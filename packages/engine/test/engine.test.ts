@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  adjustmentEngine,
   applyAdjustment,
   defaultAdjustment,
   encodeLut,
@@ -225,6 +226,12 @@ describe('moteur Rust (WebAssembly)', () => {
     const protect = new Uint8Array(w * h);
     for (let y = 20; y < 50; y++) for (let x = 70; x < 90; x++) protect[y * w + x] = 1;
     await startEngine(wasm);
+    // Le moteur est bien branché : sans cela, les deux calculs seraient le même code TypeScript.
+    expect(adjustmentEngine()?.carve).toBeDefined();
+    expect(adjustmentEngine()?.nccScan).toBeDefined();
+    const session = adjustmentEngine()!.carve!(data, w, h);
+    expect(session).not.toBeNull();
+    session!.end();
     for (const prot of [undefined, protect]) {
       const rs = (await findSeams(data, w, h, 45, prot, undefined, [0, 45]))!;
       const ts = (await findSeamsTs(data, w, h, 45, prot, undefined, [0, 45]))!;
