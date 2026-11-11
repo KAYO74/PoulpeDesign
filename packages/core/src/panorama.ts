@@ -1,4 +1,4 @@
-import type { Pixels } from './adjust';
+import { adjustmentEngine, type Pixels } from './adjust';
 import {
   IDENTITY,
   applyMat,
@@ -65,7 +65,7 @@ const COARSE = 64;
 /** Candidats gardés au niveau grossier. */
 const CANDIDATES = 6;
 
-interface Gray {
+export interface Gray {
   w: number;
   h: number;
   d: Float32Array;
@@ -104,7 +104,7 @@ function pyramid(g: Gray): Gray[] {
  * Corrélation normalisée de `b` posée à (dx, dy) sur `a` ; -2 si le recouvrement est trop petit.
  * Compte les pixels communs seulement.
  */
-function ncc(a: Gray, b: Gray, dx: number, dy: number): number {
+export function ncc(a: Gray, b: Gray, dx: number, dy: number): number {
   const x0 = Math.max(0, dx),
     x1 = Math.min(a.w, dx + b.w),
     y0 = Math.max(0, dy),
@@ -139,6 +139,21 @@ function ncc(a: Gray, b: Gray, dx: number, dy: number): number {
   return cov / Math.sqrt(va * vb);
 }
 
+/** Notes de tous les décalages d'une fenêtre (dx de x0 à x0+nx-1, dy de y0 à y0+ny-1), ligne par ligne. */
+export function nccScanTs(a: Gray, b: Gray, x0: number, y0: number, nx: number, ny: number): Float64Array {
+  const out = new Float64Array(nx * ny);
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) out[j * nx + i] = ncc(a, b, x0 + i, y0 + j);
+  return out;
+}
+
+/** Comme `nccScanTs`, avec le moteur Rust (mêmes notes) quand il est là. */
+function nccScan(a: Gray, b: Gray, x0: number, y0: number, nx: number, ny: number): Float64Array {
+  return (
+    adjustmentEngine()?.nccScan?.(a.d, a.w, a.h, b.d, b.w, b.h, x0, y0, nx, ny) ??
+    nccScanTs(a, b, x0, y0, nx, ny)
+  );
+}
+
 /** Décalage (dx, dy) qui pose `b` sur `a`, et la qualité de la correspondance (-1 à 1). */
 export function alignPair(a: Pixels, b: Pixels): { dx: number; dy: number; score: number } {
   const pa = pyramid(toGray(a)),
@@ -149,9 +164,11 @@ export function alignPair(a: Pixels, b: Pixels): { dx: number; dy: number; score
   const A = pa[top],
     B = pb[top];
   let cands: { dx: number; dy: number; score: number }[] = [];
+  const cw = A.w + B.w - 1;
+  const coarse = nccScan(A, B, -B.w + 1, -B.h + 1, cw, A.h + B.h - 1);
   for (let dy = -B.h + 1; dy < A.h; dy++)
     for (let dx = -B.w + 1; dx < A.w; dx++) {
-      const s = ncc(A, B, dx, dy);
+      const s = coarse[(dy + B.h - 1) * cw + dx + B.w - 1];
       if (s > -1) cands.push({ dx, dy, score: s });
     }
   cands.sort((p, q) => q.score - p.score);
@@ -169,9 +186,10 @@ export function alignPair(a: Pixels, b: Pixels): { dx: number; dy: number; score
       const cx = cur.dx * 2,
         cy = cur.dy * 2;
       cur = { dx: cx, dy: cy, score: -3 };
+      const win = nccScan(pa[l], pb[l], cx - 3, cy - 3, 7, 7);
       for (let dy = cy - 3; dy <= cy + 3; dy++)
         for (let dx = cx - 3; dx <= cx + 3; dx++) {
-          const s = ncc(pa[l], pb[l], dx, dy);
+          const s = win[(dy - cy + 3) * 7 + dx - cx + 3];
           if (s > cur.score) cur = { dx, dy, score: s };
         }
     }

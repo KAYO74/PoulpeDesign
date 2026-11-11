@@ -359,6 +359,19 @@ export interface AdjustmentEngine {
   heal?(dest: Pixels, src: Pixels, sigma: number): Uint8ClampedArray | null;
   /** Épreuvage CMJN sur place avec la table `grid`³ × 3 ; faux si le moteur ne sait pas. */
   proof?(data: Uint8ClampedArray, lut: Float32Array, grid: number): boolean;
+  /** Recalage du panorama (voir `nccScanTs`) : null si le moteur ne sait pas. */
+  nccScan?(
+    a: Float32Array,
+    aw: number,
+    ah: number,
+    b: Float32Array,
+    bw: number,
+    bh: number,
+    x0: number,
+    y0: number,
+    nx: number,
+    ny: number,
+  ): Float64Array | null;
 }
 
 let engine: AdjustmentEngine | null = null;
