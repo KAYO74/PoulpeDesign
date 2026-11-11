@@ -138,6 +138,50 @@ pub unsafe extern "C" fn proof(
     0
 }
 
+/// Recalage du panorama : note (corrélation normalisée) de chaque décalage de `b` sur `a`, ligne
+/// par ligne, écrite dans `out` (`nx` × `ny` nombres). 0 = fait, 2 = tailles incohérentes.
+///
+/// # Safety
+/// Les zones doivent avoir été réservées par `alloc` : `a` et `b` avec `aw * ah` et `bw * bh`
+/// nombres de 32 bits, `out` avec `nx * ny` nombres de 64 bits.
+#[no_mangle]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn ncc_scan(
+    a: *const f32,
+    aw: usize,
+    ah: usize,
+    b: *const f32,
+    bw: usize,
+    bh: usize,
+    x0: i32,
+    y0: i32,
+    nx: usize,
+    ny: usize,
+    out: *mut f64,
+) -> u32 {
+    let (Some(na), Some(nb), Some(no)) =
+        (aw.checked_mul(ah), bw.checked_mul(bh), nx.checked_mul(ny))
+    else {
+        return 2;
+    };
+    if (a as usize) % 4 != 0 || (b as usize) % 4 != 0 || (out as usize) % 8 != 0 {
+        return 2;
+    }
+    let ga = poulpe_engine::align::Gray {
+        w: aw,
+        h: ah,
+        d: std::slice::from_raw_parts(a, na),
+    };
+    let gb = poulpe_engine::align::Gray {
+        w: bw,
+        h: bh,
+        d: std::slice::from_raw_parts(b, nb),
+    };
+    let o = std::slice::from_raw_parts_mut(out, no);
+    poulpe_engine::align::ncc_scan(&ga, &gb, x0 as i64, y0 as i64, nx, ny, o);
+    0
+}
+
 /// Vectorisation : étiquette chaque pixel avec le centre le plus proche (`centers` : `n_centers`
 /// nombres, `dim` par centre), écrit les étiquettes dans `labels` (`len / 4` entiers) et les
 /// totaux des groupes dans `sums` (4 nombres par centre). 0 = fait, 2 = tailles incohérentes.

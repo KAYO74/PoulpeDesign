@@ -7,6 +7,7 @@
 //! - dans le navigateur et la vue web, compilé en WebAssembly (crate `poulpe-engine-wasm`).
 
 pub mod adjust;
+pub mod align;
 pub mod blur;
 pub mod cmyk;
 pub mod denoise;

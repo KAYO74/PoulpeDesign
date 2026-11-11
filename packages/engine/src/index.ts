@@ -24,6 +24,19 @@ interface Exports {
   blur(px: number, len: number, w: number, h: number, sigma: number): number;
   heal?(dest: number, src: number, len: number, w: number, h: number, sigma: number): number;
   proof?(px: number, len: number, lut: number, lutLen: number, grid: number): number;
+  ncc_scan?(
+    a: number,
+    aw: number,
+    ah: number,
+    b: number,
+    bw: number,
+    bh: number,
+    x0: number,
+    y0: number,
+    nx: number,
+    ny: number,
+    out: number,
+  ): number;
   version(): number;
 }
 
@@ -184,6 +197,39 @@ export function engineHeal(dest: Pixels, src: Pixels, sigma: number): Uint8Clamp
   return ok ? out.data : null;
 }
 
+/** Notes de recalage du panorama avec le moteur Rust : null si le moteur n'est pas là ou trop ancien. */
+export function engineNccScan(
+  a: Float32Array,
+  aw: number,
+  ah: number,
+  b: Float32Array,
+  bw: number,
+  bh: number,
+  x0: number,
+  y0: number,
+  nx: number,
+  ny: number,
+): Float64Array | null {
+  if (!wasm?.ncc_scan) return null;
+  const sizes = [a.byteLength, b.byteLength, nx * ny * 8];
+  const ptrs = sizes.map((n) => wasm!.alloc(n));
+  try {
+    // Les trois zones sont réservées d'abord : la mémoire peut grandir (et changer de tampon) à chaque réservation.
+    new Float32Array(wasm.memory.buffer, ptrs[0], a.length).set(a);
+    new Float32Array(wasm.memory.buffer, ptrs[1], b.length).set(b);
+    if (wasm.ncc_scan(ptrs[0], aw, ah, ptrs[1], bw, bh, x0, y0, nx, ny, ptrs[2]) !== 0) {
+      stats.fallbacks++;
+      return null;
+    }
+    return new Float64Array(new Float64Array(wasm.memory.buffer, ptrs[2], nx * ny));
+  } catch (e) {
+    crash(e);
+    return null;
+  } finally {
+    if (wasm) ptrs.forEach((p, i) => wasm!.dealloc(p, sizes[i]));
+  }
+}
+
 /** Épreuvage CMJN (sur place) avec le moteur Rust : faux si le moteur n'est pas là ou trop ancien. */
 export function engineProof(data: Uint8ClampedArray, lut: Float32Array, grid: number): boolean {
   if (!wasm?.proof) return false;
@@ -207,7 +253,13 @@ export async function startEngine(source: BufferSource | Response | Promise<Resp
     const { instance } = await WebAssembly.instantiate(bytes, {});
     wasm = instance.exports as unknown as Exports;
     scratch.len = text.len = aux.len = 0;
-    setAdjustmentEngine({ apply: engineApply, blur: engineBlur, heal: engineHeal, proof: engineProof });
+    setAdjustmentEngine({
+      apply: engineApply,
+      blur: engineBlur,
+      heal: engineHeal,
+      proof: engineProof,
+      nccScan: engineNccScan,
+    });
     return true;
   } catch (e) {
     console.warn('Moteur Rust indisponible, calcul en TypeScript :', e);

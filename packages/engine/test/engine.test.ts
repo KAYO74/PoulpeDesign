@@ -16,7 +16,15 @@ import {
   type Adjustment,
   type AdjustOptions,
 } from '@poulpe/core';
-import { engineApplyAny, engineHandles, engineStats, startEngine, stopEngine } from '../src/index';
+import {
+  engineApplyAny,
+  engineHandles,
+  engineNccScan,
+  engineStats,
+  startEngine,
+  stopEngine,
+} from '../src/index';
+import { alignPair, nccScanTs, type Gray } from '@poulpe/core/src/panorama';
 import { engineInpaint, startInpaintEngine } from '../src/inpaint';
 import { engineLabel, startTraceEngine } from '../src/trace';
 import { engineFuse, startFusionEngine } from '../src/fusion';
@@ -170,6 +178,37 @@ describe('moteur Rust (WebAssembly)', () => {
     await startEngine(wasm);
     const rs = gaussianBlurred(src, 3.3);
     expect(Buffer.from(rs).equals(Buffer.from(ts))).toBe(true);
+  });
+
+  it('recalage du panorama : mêmes notes et même décalage que le TypeScript', async () => {
+    const gray = (w: number, h: number, seed: number): Gray => {
+      const d = new Float32Array(w * h);
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++)
+          d[y * w + x] =
+            0.5 + 0.3 * Math.sin(x / 7 + Math.sin(y / 11 + seed) * 2) + 0.1 * Math.cos(x * y * 0.01 + seed);
+      d.fill(0.4, 0, 30); // zone unie : note -1
+      return { w, h, d };
+    };
+    const a = gray(70, 45, 0),
+      b = gray(53, 38, 1);
+    await startEngine(wasm);
+    const rs = engineNccScan(a.d, a.w, a.h, b.d, b.w, b.h, -b.w + 1, -b.h + 1, a.w + b.w - 1, a.h + b.h - 1)!;
+    const ts = nccScanTs(a, b, -b.w + 1, -b.h + 1, a.w + b.w - 1, a.h + b.h - 1);
+    expect(rs.length).toBe(ts.length);
+    let diff = 0;
+    for (let i = 0; i < ts.length; i++) if (!Object.is(ts[i], rs[i])) diff++;
+    expect(diff).toBe(0);
+    // Et le décalage trouvé est le même avec ou sans moteur.
+    const px = (g: Gray) => {
+      const data = new Uint8ClampedArray(g.w * g.h * 4);
+      for (let i = 0; i < g.d.length; i++) data.set([g.d[i] * 255, g.d[i] * 255, g.d[i] * 255, 255], i * 4);
+      return { data, width: g.w, height: g.h };
+    };
+    const withRust = alignPair(px(a), px(b));
+    stopEngine();
+    const without = alignPair(px(a), px(b));
+    expect(withRust).toEqual(without);
   });
 
   it('correcteur identique au TypeScript', async () => {
