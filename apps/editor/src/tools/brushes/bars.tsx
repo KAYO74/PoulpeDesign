@@ -253,7 +253,14 @@ export function RefineDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-const SELECT_TOOLS: ToolId[] = ['marqueeRect', 'marqueeEllipse', 'lasso', 'magicWand', 'quickSelect'];
+const SELECT_TOOLS: ToolId[] = [
+  'marqueeRect',
+  'marqueeEllipse',
+  'lasso',
+  'magicWand',
+  'quickSelect',
+  'objectSelect',
+];
 
 /** Options ajoutées à la fin de la barre contextuelle des outils de la Persona Photo. */
 export function BrushesExtra() {

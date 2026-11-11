@@ -781,7 +781,7 @@ export const PHOTO_TOOL_KEYS: Record<string, ToolId[]> = {
   c: ['crop', 'straighten'],
   m: ['marqueeRect', 'marqueeEllipse'],
   l: ['lasso'],
-  w: ['quickSelect', 'magicWand'],
+  w: ['quickSelect', 'objectSelect', 'magicWand'],
   b: ['brush'],
   r: ['colorReplace'],
   e: ['eraser', 'backgroundEraser', 'floodEraser'],
