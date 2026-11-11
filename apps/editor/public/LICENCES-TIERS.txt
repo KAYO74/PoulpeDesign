@@ -8,6 +8,12 @@ Modèle de détourage « silueta » (models/silueta.onnx) — dérivé de U²-Ne
   Version « silueta » publiée par le projet rembg : Copyright (c) Daniel Gatis. Licence MIT.
   https://github.com/danielgatis/rembg
 
+Modèle de sélection d'objet SlimSAM (models/slimsam-encoder.onnx, models/slimsam-decoder.onnx) — dérivé de
+  Segment Anything (SAM). Segment Anything : Copyright (c) Meta Platforms, Inc. Licence Apache 2.0.
+  https://github.com/facebookresearch/segment-anything
+  SlimSAM : Copyright (c) Zigeng Chen et coll. Licence Apache 2.0. https://github.com/czg1225/SlimSAM
+  Conversion ONNX quantifiée : Xenova (Hugging Face), https://huggingface.co/Xenova/slimsam-77-uniform
+
 QuickJS — Copyright (c) Fabrice Bellard et Charlie Gordon. Licence MIT. https://bellard.org/quickjs/
 quickjs-emscripten — Copyright (c) Jake Teton-Landis. Licence MIT. https://github.com/justjake/quickjs-emscripten
 
