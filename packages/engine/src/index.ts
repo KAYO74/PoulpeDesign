@@ -5,6 +5,7 @@ import {
   type AdjustOptions,
   type Adjustment,
   type Pixels,
+  type SeamSession,
 } from '@poulpe/core';
 
 /*
@@ -24,6 +25,9 @@ interface Exports {
   blur(px: number, len: number, w: number, h: number, sigma: number): number;
   heal?(dest: number, src: number, len: number, w: number, h: number, sigma: number): number;
   proof?(px: number, len: number, lut: number, lutLen: number, grid: number): number;
+  seam_begin?(px: number, w: number, h: number, protect: number): number;
+  seam_next?(count: number, h: number, out: number): number;
+  seam_end?(): void;
   ncc_scan?(
     a: number,
     aw: number,
@@ -230,6 +234,50 @@ export function engineNccScan(
   }
 }
 
+/** Recherche des coutures de l'échelle selon le contenu avec le moteur Rust : null s'il n'est pas là ou trop ancien. */
+export function engineCarve(
+  data: Uint8ClampedArray,
+  w: number,
+  h: number,
+  protect?: Uint8Array,
+): SeamSession | null {
+  if (!wasm?.seam_begin || !wasm.seam_next || !wasm.seam_end) return null;
+  const px = wasm.alloc(data.length);
+  const pp = protect ? wasm.alloc(protect.length) : 0;
+  try {
+    new Uint8Array(wasm.memory.buffer, px, data.length).set(data);
+    if (protect) new Uint8Array(wasm.memory.buffer, pp, protect.length).set(protect);
+    if (wasm.seam_begin(px, w, h, pp) !== 0) return null;
+  } catch (e) {
+    crash(e);
+    return null;
+  } finally {
+    // Le moteur a gardé sa propre copie.
+    if (wasm) {
+      wasm.dealloc(px, data.length);
+      if (protect) wasm.dealloc(pp, protect.length);
+    }
+  }
+  return {
+    next(count) {
+      if (!wasm?.seam_next) throw new Error('moteur arrêté');
+      const bytes = count * h * 4;
+      const out = wasm.alloc(bytes);
+      try {
+        const n = wasm.seam_next(count, h, out);
+        if (n < 0) throw new Error('pas de recherche en cours');
+        const all = new Int32Array(new Int32Array(wasm.memory.buffer, out, n * h));
+        return Array.from({ length: n }, (_, i) => all.subarray(i * h, (i + 1) * h));
+      } finally {
+        wasm?.dealloc(out, bytes);
+      }
+    },
+    end() {
+      wasm?.seam_end?.();
+    },
+  };
+}
+
 /** Épreuvage CMJN (sur place) avec le moteur Rust : faux si le moteur n'est pas là ou trop ancien. */
 export function engineProof(data: Uint8ClampedArray, lut: Float32Array, grid: number): boolean {
   if (!wasm?.proof) return false;
@@ -259,6 +307,7 @@ export async function startEngine(source: BufferSource | Response | Promise<Resp
       heal: engineHeal,
       proof: engineProof,
       nccScan: engineNccScan,
+      carve: engineCarve,
     });
     return true;
   } catch (e) {

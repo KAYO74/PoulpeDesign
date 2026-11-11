@@ -17,6 +17,7 @@ pub mod inpaint;
 pub mod js;
 pub mod par;
 pub mod retouch;
+pub mod seam;
 pub mod stats;
 pub mod tiles;
 pub mod trace;
