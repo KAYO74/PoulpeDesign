@@ -51,6 +51,7 @@ export type ToolId =
   | 'sharpenBrush'
   | 'polyLasso'
   | 'quickSelect'
+  | 'objectSelect'
   | 'heal'
   | 'smudge'
   | 'liquify'

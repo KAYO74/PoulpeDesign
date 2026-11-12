@@ -9,6 +9,7 @@ import { fillAt, runInpaint } from './photoFill';
 import { drawPhotoOverlay } from './photoOverlay';
 import { images } from './pixels';
 import { QuickSelect, selectShape, selectSimilar } from './selection';
+import { selectObjectAt } from '../smart/objectSelect';
 import { isPhotoTool } from './toolKinds';
 
 // Noms exportés de ce module avant son découpage, inchangés pour les autres fichiers.
@@ -149,6 +150,10 @@ export class PhotoTools {
     // Lasso en mode polygonal (et l'ancien outil Lasso polygonal).
     if (tool === 'polyLasso' || tool === 'lasso') {
       this.polyClick(p, e);
+      return true;
+    }
+    if (tool === 'objectSelect') {
+      void selectObjectAt(p, this.mode(e));
       return true;
     }
     if (tool === 'quickSelect') {
