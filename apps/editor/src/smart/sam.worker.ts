@@ -18,7 +18,8 @@ let sessions: Promise<Sessions> | null = null;
 
 async function open(url: string): Promise<ort.InferenceSession> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error('model-missing');
+  // Sans le fichier, un serveur peut répondre par sa page d'accueil (HTML) avec un code 200.
+  if (!res.ok || res.headers.get('content-type')?.includes('text/html')) throw new Error('model-missing');
   const bytes = new Uint8Array(await res.arrayBuffer());
   return ort.InferenceSession.create(bytes, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
 }
