@@ -12,7 +12,7 @@ export const UPSCALE_FACTOR = 4;
 /** Côté d'une tuile (sans les marges), en pixels de l'image d'origine. */
 export const UPSCALE_TILE = 192;
 /** Marge ajoutée de chaque côté intérieur d'une tuile, puis jetée : le modèle y voit le voisinage. */
-export const UPSCALE_MARGIN = 16;
+export const UPSCALE_MARGIN = 24;
 
 export interface UpscaleTile {
   /** Zone envoyée au modèle (marges comprises), dans l'image d'origine. */

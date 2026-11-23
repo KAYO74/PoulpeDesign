@@ -96,9 +96,7 @@ export async function applyAiUpscale(
   // ×4 : tel quel ; ×2 : on réduit le résultat ×4 (plus net qu'un agrandissement ×2 direct).
   const big = makeCanvas(w * full, h * full);
   const bigCtx = big.getContext('2d')!;
-  const img = bigCtx.createImageData(big.width, big.height);
-  img.data.set(out);
-  bigCtx.putImageData(img, 0, 0);
+  bigCtx.putImageData(new ImageData(out, big.width, big.height), 0, 0);
   let final = big;
   if (factor === 2) {
     final = makeCanvas(w * 2, h * 2);
