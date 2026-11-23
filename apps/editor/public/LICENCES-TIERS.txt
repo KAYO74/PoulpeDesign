@@ -14,6 +14,11 @@ Modèle de sélection d'objet SlimSAM (models/slimsam-encoder.onnx, models/slims
   SlimSAM : Copyright (c) Zigeng Chen et coll. Licence Apache 2.0. https://github.com/czg1225/SlimSAM
   Conversion ONNX quantifiée : Xenova (Hugging Face), https://huggingface.co/Xenova/slimsam-77-uniform
 
+Modèle de profondeur Depth Anything V2 Small (models/depth-anything-small.onnx, flou d'objectif) —
+  Depth Anything V2 : Copyright (c) Lihe Yang et coll. Licence Apache 2.0 (version Small).
+  https://github.com/DepthAnything/Depth-Anything-V2
+  Conversion ONNX quantifiée : onnx-community (Hugging Face), https://huggingface.co/onnx-community/depth-anything-v2-small
+
 Modèle d'agrandissement Real-ESRGAN « realesr-general-x4v3 » (models/realesrgan-x4.onnx).
   Real-ESRGAN : Copyright (c) 2021, Xintao Wang. Licence BSD 3-Clause. https://github.com/xinntao/Real-ESRGAN
   Conversion ONNX des poids officiels : https://huggingface.co/vlad-grig/realesr-general-x4v3-onnx

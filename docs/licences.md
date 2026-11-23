@@ -18,6 +18,7 @@ All the code in the `packages/` and `apps/` folders was written for Poulpe Desig
 - **AI background removal.** The U²-Net "silueta" model (Apache-2.0 for U²-Net, MIT for the rembg project's version) is downloaded at build time, with its checksum verified, and run by ONNX Runtime (MIT) on the computer.
 - **AI object selection.** The SlimSAM model (Apache-2.0, derived from Meta's Segment Anything, also Apache-2.0; quantized ONNX conversion by Xenova) is downloaded at build time, pinned to a Hugging Face commit with its checksum verified, and run by ONNX Runtime on the computer.
 - **AI upscale.** The Real-ESRGAN `realesr-general-x4v3` model (BSD-3-Clause; ONNX conversion of the official weights) is downloaded at build time, pinned to a Hugging Face commit with its checksum verified, and run by ONNX Runtime on the computer.
+- **Lens blur (depth).** The Depth Anything V2 _Small_ model (Apache-2.0; the larger variants are non-commercial and are not used; community ONNX int8 conversion) is downloaded at build time, pinned to a Hugging Face commit with its checksum verified, and run by ONNX Runtime on the computer.
 - **Extensions.** They run in QuickJS (MIT).
 - **LUT looks.** The six looks are computed by Poulpe Design; `.cube` files are a public format.
 

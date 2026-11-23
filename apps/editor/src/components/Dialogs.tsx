@@ -33,6 +33,7 @@ const CompsDialog = lazyDialog(() => import('./dialogs/CompsDialog'), 'CompsDial
 const PhotoExportDialog = lazyDialog(() => import('./dialogs/PhotoExportDialog'), 'PhotoExportDialog');
 const RawDialog = lazyDialog(() => import('./dialogs/RawDialog'), 'RawDialog');
 const AiUpscaleDialog = lazyDialog(() => import('./dialogs/AiUpscaleDialog'), 'AiUpscaleDialog');
+const DepthBlurDialog = lazyDialog(() => import('./dialogs/DepthBlurDialog'), 'DepthBlurDialog');
 const ContentScaleDialog = lazyDialog(() => import('./dialogs/ContentScaleDialog'), 'ContentScaleDialog');
 const ContentFillDialog = lazyDialog(() => import('./dialogs/ContentFillDialog'), 'ContentFillDialog');
 const BlendRangesDialog = lazyDialog(() => import('./dialogs/BlendRangesDialog'), 'BlendRangesDialog');
@@ -111,6 +112,7 @@ function MainDialog() {
   if (dialog === 'contentFill') return <ContentFillDialog />;
   if (dialog === 'contentScale') return <ContentScaleDialog />;
   if (dialog === 'aiUpscale') return <AiUpscaleDialog />;
+  if (dialog === 'depthBlur') return <DepthBlurDialog />;
   if (dialog === 'blendRanges') return <BlendRangesDialog />;
   if (dialog === 'meshWarp') return <MeshWarpDialog />;
   if (dialog === 'selectionModify') return <SelectionModifyDialog />;

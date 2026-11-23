@@ -21,6 +21,7 @@ import { enFusion, frFusion, type MessageKeyFusion } from './i18n-fusion';
 import { enHeic, frHeic, type MessageKeyHeic } from './i18n-heic';
 import { enDenoise, frDenoise, type MessageKeyDenoise } from './i18n-denoise';
 import { enAiUpscale, frAiUpscale, type MessageKeyAiUpscale } from './i18n-aiupscale';
+import { enDepthBlur, frDepthBlur, type MessageKeyDepthBlur } from './i18n-depthblur';
 import { enObjectSelect, frObjectSelect, type MessageKeyObjectSelect } from './i18n-objectselect';
 import { enDevelop, frDevelop, type MessageKeyDevelop } from './i18n-develop';
 import { enContentScale, frContentScale, type MessageKeyContentScale } from './i18n-contentscale';
@@ -1025,6 +1026,7 @@ export type MessageKey =
   | MessageKeyContentScale
   | MessageKeyDenoise
   | MessageKeyObjectSelect
+  | MessageKeyDepthBlur
   | MessageKeyAiUpscale;
 
 const en: Record<
@@ -1066,6 +1068,7 @@ const en: Record<
     | MessageKeyDenoise
     | MessageKeyObjectSelect
     | MessageKeyAiUpscale
+    | MessageKeyDepthBlur
   >,
   string
 > = {
@@ -2040,6 +2043,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...frDenoise,
     ...frObjectSelect,
     ...frAiUpscale,
+    ...frDepthBlur,
     ...fr_shapes,
     ...fr_paint,
     ...fr_paths,
@@ -2085,6 +2089,7 @@ const dictionaries: Record<Lang, Record<string, string>> = {
     ...enDenoise,
     ...enObjectSelect,
     ...enAiUpscale,
+    ...enDepthBlur,
     ...fr_shapes,
     ...en_shapes,
     ...fr_paint,

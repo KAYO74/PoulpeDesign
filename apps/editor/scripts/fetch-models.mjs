@@ -31,6 +31,12 @@ const MODELS = [
     url: 'https://huggingface.co/vlad-grig/realesr-general-x4v3-onnx/resolve/0e95d93e454cf6b5de9bdf5a1c9e7ec340d38231/onnx/model.onnx',
     sha256: '7b10e80021ec3e0ff35017ae5022791879d93a799b2e201e1010a37510202266',
   },
+  {
+    // Flou d'objectif par profondeur : Depth Anything V2 Small, version int8 (Apache-2.0), conversion ONNX de la communauté.
+    file: 'depth-anything-small.onnx',
+    url: 'https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/4472b7362082ad9968fee890ca0f1e5aca36b93d/onnx/model_int8.onnx',
+    sha256: '01aa7a23de3f4a0ee1a2bb9997e6918104c85a9f95dea46d27b9b3fb0c6b9001',
+  },
 ];
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'models');

@@ -142,6 +142,7 @@ export type Dialog =
   | 'contentFill'
   | 'contentScale'
   | 'aiUpscale'
+  | 'depthBlur'
   | 'blendRanges'
   | 'meshWarp'
   | 'selectionModify'

@@ -40,6 +40,7 @@ export * from './trace';
 export * from './matte';
 export * from './sam';
 export * from './upscale';
+export * from './depth';
 export * from './lut';
 export * from './retouch';
 export * from './symbols';
