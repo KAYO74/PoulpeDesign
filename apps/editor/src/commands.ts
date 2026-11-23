@@ -52,6 +52,7 @@ import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
 import { openContentFill } from './photo/contentFill';
 import { canAiUpscale, openAiUpscale } from './photo/aiUpscale';
+import { canDepthBlur, openDepthBlur } from './photo/depthBlur';
 import { canContentScale, openContentScale } from './photo/contentScale';
 import { exportSlices, sliceFileCount, slicesFromArtboards, slicesFromSelection } from './slices';
 import { takeSnapshot } from './snapshots';
@@ -255,6 +256,11 @@ export const COMMANDS = {
     label: 'edit.aiUpscale',
     run: () => openAiUpscale(),
     enabled: canAiUpscale,
+  },
+  'edit.depthBlur': {
+    label: 'edit.depthBlur',
+    run: () => openDepthBlur(),
+    enabled: canDepthBlur,
   },
   'edit.contentAwareScale': {
     label: 'edit.contentAwareScale',

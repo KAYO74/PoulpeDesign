@@ -177,6 +177,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('edit.contentAwareFill'),
         cmd('edit.contentAwareScale'),
         cmd('edit.aiUpscale'),
+        cmd('edit.depthBlur'),
         sep,
         ...(opts.nativeMac ? [] : [cmd('app.preferences')]),
       ],
@@ -307,6 +308,7 @@ export function menuSpec(opts: { nativeMac?: boolean } = {}): TopMenu[] {
         cmd('edit.contentAwareFill'),
         cmd('edit.contentAwareScale'),
         cmd('edit.aiUpscale'),
+        cmd('edit.depthBlur'),
       ],
     },
     {
