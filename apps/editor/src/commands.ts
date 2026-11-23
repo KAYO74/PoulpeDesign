@@ -51,6 +51,7 @@ import { addLutPreset, loadLutFile } from './photo/retouchActions';
 import { addLiveFilter, canLiveFilter } from './photo/liveFilters';
 import * as LK from './photo/linkedImages';
 import { openContentFill } from './photo/contentFill';
+import { canAiUpscale, openAiUpscale } from './photo/aiUpscale';
 import { canContentScale, openContentScale } from './photo/contentScale';
 import { exportSlices, sliceFileCount, slicesFromArtboards, slicesFromSelection } from './slices';
 import { takeSnapshot } from './snapshots';
@@ -249,6 +250,11 @@ export const COMMANDS = {
     label: 'edit.contentAwareFill',
     run: () => openContentFill(),
     enabled: pixelSel,
+  },
+  'edit.aiUpscale': {
+    label: 'edit.aiUpscale',
+    run: () => openAiUpscale(),
+    enabled: canAiUpscale,
   },
   'edit.contentAwareScale': {
     label: 'edit.contentAwareScale',

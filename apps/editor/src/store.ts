@@ -141,6 +141,7 @@ export type Dialog =
   | 'recolor'
   | 'contentFill'
   | 'contentScale'
+  | 'aiUpscale'
   | 'blendRanges'
   | 'meshWarp'
   | 'selectionModify'

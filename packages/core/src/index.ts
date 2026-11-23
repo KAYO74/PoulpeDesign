@@ -39,6 +39,7 @@ export * from './pdfPrint';
 export * from './trace';
 export * from './matte';
 export * from './sam';
+export * from './upscale';
 export * from './lut';
 export * from './retouch';
 export * from './symbols';

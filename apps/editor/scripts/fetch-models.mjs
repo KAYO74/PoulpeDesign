@@ -25,6 +25,12 @@ const MODELS = [
     url: 'https://huggingface.co/Xenova/slimsam-77-uniform/resolve/5850ab45f587c112167512ffef949107115e26a0/onnx/prompt_encoder_mask_decoder_quantized.onnx',
     sha256: 'cb90b279f549d2cab7fd6e20c38522438c65d84bdcca3d2a764cff7d857fdce2',
   },
+  {
+    // Agrandissement par IA : Real-ESRGAN « general x4v3 » (BSD-3-Clause), conversion ONNX sans modification des poids officiels.
+    file: 'realesrgan-x4.onnx',
+    url: 'https://huggingface.co/vlad-grig/realesr-general-x4v3-onnx/resolve/0e95d93e454cf6b5de9bdf5a1c9e7ec340d38231/onnx/model.onnx',
+    sha256: '7b10e80021ec3e0ff35017ae5022791879d93a799b2e201e1010a37510202266',
+  },
 ];
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'models');
