@@ -9,6 +9,7 @@ const SELECT_TOOLS: ToolId[] = [
   'polyLasso',
   'magicWand',
   'quickSelect',
+  'objectSelect',
 ];
 /** Outils qui transforment le calque entier. */
 const GEOMETRY_TOOLS: ToolId[] = ['straighten', 'perspective'];

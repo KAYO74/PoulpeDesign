@@ -16,6 +16,7 @@ All the code in the `packages/` and `apps/` folders was written for Poulpe Desig
 - **Magic eraser.** It rebuilds the image from the photo itself, with an algorithm written for Poulpe Design and without any AI model.
 - **Image tracing.** The algorithm is written for Poulpe Design from published methods (k-means, edge following, Schneider curves). Potrace, whose GPL license is incompatible, is not used.
 - **AI background removal.** The U²-Net "silueta" model (Apache-2.0 for U²-Net, MIT for the rembg project's version) is downloaded at build time, with its checksum verified, and run by ONNX Runtime (MIT) on the computer.
+- **AI object selection.** The SlimSAM model (Apache-2.0, derived from Meta's Segment Anything, also Apache-2.0; quantized ONNX conversion by Xenova) is downloaded at build time, pinned to a Hugging Face commit with its checksum verified, and run by ONNX Runtime on the computer.
 - **Extensions.** They run in QuickJS (MIT).
 - **LUT looks.** The six looks are computed by Poulpe Design; `.cube` files are a public format.
 

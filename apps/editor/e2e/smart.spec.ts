@@ -126,3 +126,14 @@ test('sélectionne le sujet', async ({ page }) => {
     .poll(() => page.evaluate(() => (window as any).poulpe.ui.get().hasPixelSelection), { timeout: 60_000 })
     .toBe(true);
 });
+
+test("l'outil Sélection d'objet sélectionne l'objet cliqué", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.getByTestId('persona-photo').click();
+  await openTestPhoto(page);
+  await page.evaluate(() => (window as any).poulpe.ui.set({ tool: 'objectSelect' }));
+  await page.getByTestId('canvas').click();
+  await expect
+    .poll(() => page.evaluate(() => (window as any).poulpe.ui.get().hasPixelSelection), { timeout: 120_000 })
+    .toBe(true);
+});

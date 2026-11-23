@@ -210,7 +210,8 @@ export function PhotoContext({ tool }: { tool: ToolId }) {
     tool === 'lasso' ||
     tool === 'polyLasso' ||
     tool === 'magicWand' ||
-    tool === 'quickSelect';
+    tool === 'quickSelect' ||
+    tool === 'objectSelect';
   return (
     <>
       {(isBrushTool(tool) || tool === 'fill') && tool !== 'magicEraser' && <PaintChip target="fill" />}
